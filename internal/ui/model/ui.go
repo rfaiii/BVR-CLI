@@ -146,6 +146,9 @@ type (
 		state common.ModelRuntimeStatus
 		err   error
 	}
+	afkTickMsg struct {
+		time time.Time
+	}
 	// cancelTimerExpiredMsg is sent when the cancel timer expires.
 	cancelTimerExpiredMsg struct{}
 	// userCommandsLoadedMsg is sent when user commands are loaded.
@@ -278,6 +281,9 @@ type UI struct {
 	// sendProgressBar instructs the TUI to send progress bar updates to the
 	// terminal.
 	sendProgressBar    bool
+
+	lastActivity time.Time
+	isAFK        bool
 	progressBarEnabled bool
 
 	// caps hold different terminal capabilities that we query for.
@@ -565,6 +571,8 @@ type hoverSettleMsg struct{}
 func (m *UI) Init() tea.Cmd {
 	var cmds []tea.Cmd
 	cmds = append(cmds, m.playAudio("BVR-CLI", "Starting BVR-CLI", "startup"))
+	cmds = append(cmds, m.tickAFK())
+	m.lastActivity = time.Now()
 	cmds = append(cmds, m.bannerAnim.Start())
 	cmds = append(cmds, beaverPulseCmd(4000*time.Millisecond))
 	if cmd := m.versionBanner.start(); cmd != nil {
@@ -657,10 +665,16 @@ func (m *UI) playAudio(title, message, audioType string) tea.Cmd {
 	if m.audioBackend == nil {
 		return nil
 	}
+	vol := "high"
+	if cfg := m.com.Config(); cfg != nil && cfg.Options != nil && cfg.Options.AudioVolume != "" {
+		vol = cfg.Options.AudioVolume
+	}
+
 	return m.audioBackend.Play(audio.Audio{
 		Title:   title,
 		Message: message,
 		Type:    audioType,
+		Volume:  vol,
 	})
 }
 
@@ -788,6 +802,14 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	// Update terminal capabilities
 	m.caps.Update(msg)
+	if _, isKey := msg.(tea.KeyMsg); isKey {
+		m.lastActivity = time.Now()
+		m.isAFK = false
+	} else if _, isMouse := msg.(tea.MouseMsg); isMouse {
+		m.lastActivity = time.Now()
+		m.isAFK = false
+	}
+
 	switch msg := msg.(type) {
 	case tea.EnvMsg:
 		// Is this Windows Terminal?
@@ -803,6 +825,12 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.notifyWindowFocused = true
 	case tea.BlurMsg:
 		m.notifyWindowFocused = false
+	case afkTickMsg:
+		cmds = append(cmds, m.tickAFK())
+		if !m.isAFK && time.Since(m.lastActivity) >= 10*time.Minute {
+			m.isAFK = true
+			cmds = append(cmds, m.playAudio("Advert", "", "advert"))
+		}
 	case ollamaModelStateMsg:
 		if msg.model == m.selectedOllamaModel() {
 			m.ollamaRuntime = msg.state
@@ -2053,6 +2081,17 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionToggleCodeMode:
 		m.coderMode = !m.coderMode
+		m.dialog.CloseDialog(dialog.CommandsID)
+	case dialog.ActionSetAudioVolume:
+		cfg := m.com.Config()
+		if cfg != nil && cfg.Options != nil {
+			cfg.Options.AudioVolume = msg.Volume
+			if err := m.com.Workspace.SetConfigField(config.ScopeGlobal, "options.audio_volume", msg.Volume); err != nil {
+				cmds = append(cmds, util.ReportError(err))
+			} else {
+				cmds = append(cmds, util.CmdHandler(util.NewInfoMsg("Volume set to: "+msg.Volume)), m.playAudio("Volume Updated", "Volume set to "+msg.Volume, "notification"))
+			}
+		}
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionSelectNotificationStyle:
 		cfg := m.com.Config()
@@ -4691,14 +4730,17 @@ func (m *UI) openDialog(id string) tea.Cmd {
 	var cmds []tea.Cmd
 	switch id {
 	case dialog.SessionsID:
+		cmds = append(cmds, m.playAudio("Sessions", "", "chat"))
 		if cmd := m.openSessionsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
 	case dialog.ModelsID:
+		cmds = append(cmds, m.playAudio("Models", "", "sub"))
 		if cmd := m.openModelsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
 	case dialog.CommandsID:
+		cmds = append(cmds, m.playAudio("Commands", "", "notification"))
 		if cmd := m.openCommandsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
@@ -4711,6 +4753,7 @@ func (m *UI) openDialog(id string) tea.Cmd {
 			cmds = append(cmds, cmd)
 		}
 	case dialog.FilePickerID:
+		cmds = append(cmds, m.playAudio("File Picker", "", "incoming"))
 		if cmd := m.openFilesDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
@@ -5518,5 +5561,11 @@ func renderLogo(t *styles.Styles, compact, hyper bool, width, frame int, animati
 		Animated:     !compact,
 		Frame:        frame,
 		Animation:    animation,
+	})
+}
+
+func (m *UI) tickAFK() tea.Cmd {
+	return tea.Tick(time.Minute, func(t time.Time) tea.Msg {
+		return afkTickMsg{t}
 	})
 }

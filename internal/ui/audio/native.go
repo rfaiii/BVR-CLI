@@ -16,7 +16,7 @@ import (
 // See NativeSupported.
 type NativeAudioBackend struct {
 	// audioFunc is the function used to send audio (swappable for testing).
-	audioFunc func(title, message, audioType string) error
+	audioFunc func(title, message, audioType, volume string) error
 }
 
 // NewNativeAudioBackend creates a new native audio backend.
@@ -29,9 +29,9 @@ func NewNativeAudioBackend() *NativeAudioBackend {
 // Play returns a command that sends audio using the native OS audio system.
 func (b *NativeAudioBackend) Play(a Audio) tea.Cmd {
 	return func() tea.Msg {
-		slog.Debug("Sending native audio", "title", a.Title, "message", a.Message, "type", a.Type)
+		slog.Debug("Sending native audio", "title", a.Title, "message", a.Message, "type", a.Type, "volume", a.Volume)
 
-		if err := b.audioFunc(a.Title, a.Message, a.Type); err != nil {
+		if err := b.audioFunc(a.Title, a.Message, a.Type, a.Volume); err != nil {
 			slog.Error("Failed to send audio", "error", err)
 		} else {
 			slog.Debug("Audio sent successfully")
@@ -42,7 +42,7 @@ func (b *NativeAudioBackend) Play(a Audio) tea.Cmd {
 }
 
 // SetAudioFunc allows replacing the audio function for testing.
-func (b *NativeAudioBackend) SetAudioFunc(fn func(title, message, audioType string) error) {
+func (b *NativeAudioBackend) SetAudioFunc(fn func(title, message, audioType, volume string) error) {
 	b.audioFunc = fn
 }
 
@@ -53,7 +53,9 @@ func (b *NativeAudioBackend) ResetAudioFunc() {
 
 // defaultAudioFunc is a no-op fallback for unsupported platforms.
 // Actual implementations will override this in their init() functions.
-var defaultAudioFunc = func(title, message, audioType string) error { return nil }
+var defaultAudioFunc = func(title, message, audioType, volume string) error { return nil }
+
+var loadingState int
 
 // getAudioFilename maps a notification type to its corresponding .wav file.
 func getAudioFilename(audioType string) string {
@@ -66,13 +68,16 @@ func getAudioFilename(audioType string) string {
 	case "startup":
 		return "startup-song-01.wav"
 	case "chainsaw":
-		// Could randomize between 01, 02, 03, but let's stick to 01 for now
-		return "chainsaw-01.wav"
+		return fmt.Sprintf("chainsaw-%02d.wav", rand.Intn(3)+1)
 	case "chat":
 		return "chat-01.wav"
 	case "incoming":
 		return "incoming-01.wav"
 	case "loading":
+		loadingState = (loadingState + 1) % 2
+		if loadingState == 1 {
+			return "loading-02.wav"
+		}
 		return "loading-01.wav"
 	case "error":
 		return fmt.Sprintf("error-%02d.wav", rand.Intn(3)+1)

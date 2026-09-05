@@ -502,6 +502,9 @@ func (c *Commands) defaultCommands() []*CommandItem {
 		NewCommandItem(c.com.Styles, "other_models", "Other Models", "", ActionOpenDialog{OtherModelsID}).WithAliases("other", "/other", "cline", "/cline", "external"),
 		NewCommandItem(c.com.Styles, "ollama_how_to", "Ollama How To", "", ActionOpenDialog{OllamaHowToID}),
 		NewCommandItem(c.com.Styles, "themes", "Themes", "ctrl+shift+t", ActionOpenDialog{ThemesID}).WithAliases("themes", "/themes"),
+		NewCommandItem(c.com.Styles, "sound_high", "Sound: High (100%)", "", ActionSetAudioVolume{"high"}).WithAliases("sounds", "volume", "audio", "high"),
+		NewCommandItem(c.com.Styles, "sound_low", "Sound: Low (50%)", "", ActionSetAudioVolume{"low"}).WithAliases("sounds", "volume", "audio", "low"),
+		NewCommandItem(c.com.Styles, "sound_silent", "Sound: Silent", "", ActionSetAudioVolume{"silent"}).WithAliases("sounds", "volume", "audio", "silent", "mute"),
 	}
 
 	// Only show compact command if there's an active session

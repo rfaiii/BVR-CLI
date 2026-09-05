@@ -10,7 +10,11 @@ import (
 )
 
 func init() {
-	defaultAudioFunc = func(title, message, audioType string) error {
+	defaultAudioFunc = func(title, message, audioType, volume string) error {
+		if volume == "silent" {
+			return nil
+		}
+		
 		filename := getAudioFilename(audioType)
 		path, err := audio.GetSoundPath(filename)
 		if err != nil {
@@ -18,8 +22,13 @@ func init() {
 			return err
 		}
 
+		paplayArgs := []string{path}
+		if volume == "low" {
+			paplayArgs = append(paplayArgs, "--volume=32768")
+		}
+
 		// Try paplay (PulseAudio) first, fallback to aplay (ALSA)
-		cmd := exec.Command("paplay", path)
+		cmd := exec.Command("paplay", paplayArgs...)
 		if err := cmd.Start(); err != nil {
 			cmd = exec.Command("aplay", "-q", path)
 			if err := cmd.Start(); err != nil {

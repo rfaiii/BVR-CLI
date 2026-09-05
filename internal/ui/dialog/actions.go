@@ -58,6 +58,7 @@ type (
 	ActionTogglePills             struct{}
 	ActionExternalEditor          struct{}
 	ActionToggleBeastmodeMode     struct{}
+	ActionSetAudioVolume          struct{ Volume string }
 	ActionToggleCodeMode          struct{}
 	ActionToggleNotifications     struct{}
 	ActionSelectNotificationStyle struct {

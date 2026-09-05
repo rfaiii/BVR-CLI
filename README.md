@@ -12,9 +12,9 @@ workspace, choose the model, and ship.
 > is now in BVR neon green (#3BF66B), and the project is organized with
 > `packaging/icons/` and a single `Taskfile.yaml`.
 
-![BVR Authentication Demo](docs/media/demo-auth.gif)
-
-![BVR Usage Demo](docs/media/demo-usage.gif)
+![BVR-CLI Header](resources/screenshots/HEADER.png)
+![BVR Mascot](resources/screenshots/BVR-MASCOT.png)
+![BVR Background](resources/screenshots/BACKGROUND.png)
 
 ## ⚡ Quick start
 
@@ -92,7 +92,7 @@ BVR discovers all models available from Ollama’s local API. Open `/models`,
 The model diamond is gray when unknown, purple while loading, green when ready,
 and red if loading fails. Read [`docs/OLLAMA_HOW_TO.md`](docs/OLLAMA_HOW_TO.md).
 
-![BVR models](resources/screenshots/menu-models.jpg)
+![Command Menu](resources/screenshots/COMMAND-MENU.png)
 
 For smaller Ollama coding models such as `qwen2.5-coder:3b-instruct`, use the
 fantasy-free native coder. It talks directly to Ollama with a small tool set,
@@ -130,8 +130,10 @@ troubleshooting.
 - Optional embedded Ghostty shader installation and in-TUI cursor animations
 - Persistent project registration and recently accessed project tracking
 
-![BVR home](resources/screenshots/home-menu.jpg)
-![BVR file finder](resources/screenshots/file-finder.jpg)
+![BVR Home Screen](resources/screenshots/BVR-CLI-HOME-MENU.png)
+![Project Text](resources/screenshots/PROJECT-TEXT.png)
+![File Finder](resources/screenshots/FILE-FINDER.png)
+![Create File](resources/screenshots/CREATE-FILE.png)
 
 ## 🛠 Developer checks
 
@@ -185,10 +187,11 @@ installer guide.
 | [`docs/NODE_SSH_TRANSPORT.md`](docs/NODE_SSH_TRANSPORT.md) | NODE SSH transport |
 | [`docs/TASKLIST.md`](docs/TASKLIST.md) | Active task tracking |
 
-![BVR notifications](resources/screenshots/notification-select.jpg)
-![BVR pink theme](resources/screenshots/theme-pink.jpg)
-![BVR purple theme](resources/screenshots/theme-purple.jpg)
-![BVR default green theme](resources/screenshots/home-green.jpg)
+![Model Info](resources/screenshots/MODEL-INFO.png)
+![Node Info](resources/screenshots/NODE-INFO.png)
+![Skills Info](resources/screenshots/SKILLS-INFO.png)
+![Web Browser](resources/screenshots/WEB-BROWSER.png)
+![Footer](resources/screenshots/FOOTER.png)
 
 ## 🧪 Beta report checklist
 

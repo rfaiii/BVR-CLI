@@ -10,7 +10,11 @@ import (
 )
 
 func init() {
-	defaultAudioFunc = func(title, message, audioType string) error {
+	defaultAudioFunc = func(title, message, audioType, volume string) error {
+		if volume == "silent" {
+			return nil
+		}
+		
 		filename := getAudioFilename(audioType)
 		path, err := audio.GetSoundPath(filename)
 		if err != nil {
@@ -18,8 +22,13 @@ func init() {
 			return err
 		}
 
+		volFlag := "1"
+		if volume == "low" {
+			volFlag = "0.5"
+		}
+
 		// afplay is native to macOS
-		cmd := exec.Command("afplay", path)
+		cmd := exec.Command("afplay", "-v", volFlag, path)
 		if err := cmd.Start(); err != nil {
 			slog.Error("Failed to start afplay", "error", err)
 			return err

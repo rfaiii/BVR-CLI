@@ -20,6 +20,7 @@ type Audio struct {
 	Title   string
 	Message string
 	Type    string // "notification", "startup", "error", "exit", "chainsaw"
+	Volume  string // "high", "low", "silent"
 }
 
 // Backend defines the interface for sending audio notifications.

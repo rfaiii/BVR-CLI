@@ -26,6 +26,8 @@ This covers everything a new user or installer needs on macOS and Windows.
 
 ### User install
 
+<!-- [ASSET PLACEHOLDER: macOS Install Demo GIF (Dragging app to Applications)] -->
+
 - macOS 13.0+ for signed DMG builds.
 - Rosetta 2 on Apple Silicon if using Intel-only terminal plugins.
 - Internet connection for first-run model/provider setup.
@@ -124,6 +126,8 @@ Use `/login` or the models dialog to complete setup.
 
 ## Verification
 
+<!-- [ASSET PLACEHOLDER: Models Menu Verification Screenshot] -->
+
 ```sh
 bvr-cli --version
 bvr-cli --help
@@ -134,6 +138,8 @@ bvr-cli projects
 Then open BVR, run `/models`, refresh, and confirm a model becomes ready.
 
 ## UI Dialogs and Controls
+
+![BVR Home Screen](resources/screenshots/BVR-CLI-HOME-MENU.png)
 
 ### Landing Screen Buttons
 

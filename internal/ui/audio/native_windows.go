@@ -12,7 +12,11 @@ import (
 )
 
 func init() {
-	defaultAudioFunc = func(title, message, audioType string) error {
+	defaultAudioFunc = func(title, message, audioType, volume string) error {
+		if volume == "silent" {
+			return nil
+		}
+
 		filename := getAudioFilename(audioType)
 		path, err := audio.GetSoundPath(filename)
 		if err != nil {
