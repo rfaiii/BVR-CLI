@@ -1,0 +1,21 @@
+[project]
+name = "mcp-server"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "richard", email = "richardfaveryiii@icloud.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "fastmcp>=3.4.7",
+    "google-genai>=2.19.0",
+    "pydantic>=2.13.4",
+]
+
+[project.scripts]
+mcp-server = "mcp_server:main"
+
+[build-system]
+requires = ["uv_build>=0.12.3,<0.13.0"]
+build-backend = "uv_build"

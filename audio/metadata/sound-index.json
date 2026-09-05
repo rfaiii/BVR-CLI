@@ -1,0 +1,74 @@
+{
+  "sounds": [
+    {
+      "name": "notification",
+      "file": "notification.wav",
+      "duration": 0.8,
+      "size": 245024,
+      "format": "WAV",
+      "sampleRate": 22100,
+      "bitDepth": 16,
+      "channels": "mono",
+      "description": "Short notification alert sound",
+      "usage": "General notifications and system events",
+      "source": "Freesound.org (CC BY 3.0)",
+      "license": "CC BY 3.0"
+    },
+    {
+      "name": "startup",
+      "file": "startup.wav",
+      "duration": 3.2,
+      "size": 524288,
+      "format": "WAV",
+      "sampleRate": 22100,
+      "bitDepth": 16,
+      "channels": "stereo",
+      "description": "Musical jingle for application startup",
+      "usage": "Application startup confirmation",
+      "source": "Pixabay (Free for commercial use)",
+      "license": "Free for commercial use"
+    },
+    {
+      "name": "error",
+      "file": "error.wav",
+      "duration": 0.6,
+      "size": 202432,
+      "format": "WAV",
+      "sampleRate": 22100,
+      "bitDepth": 16,
+      "channels": "mono",
+      "description": "Distinctive alert sound for error conditions",
+      "usage": "Error notifications and failure confirmations",
+      "source": "CC Mixter (Creative Commons)",
+      "license": "Creative Commons"
+    },
+    {
+      "name": "exit",
+      "file": "exit.wav",
+      "duration": 0.9,
+      "size": 281824,
+      "format": "WAV",
+      "sampleRate": 22100,
+      "bitDepth": 16,
+      "channels": "mono",
+      "description": "Confirmation sound for application termination",
+      "usage": "Clean exit notification",
+      "source": "Pixabay (Free for commercial use)",
+      "license": "Free for commercial use"
+    },
+    {
+      "name": "chainsaw",
+      "file": "chainsaw.wav",
+      "duration": 2.3,
+      "size": 422112,
+      "format": "WAV",
+      "sampleRate": 22100,
+      "bitDepth": 16,
+      "channels": "stereo",
+      "description": "Unique beaver chainsaw effect for git operations",
+      "usage": "Git uploads, pushes, and file synchronization events",
+      "source": "Custom production for BVR branding",
+      "license": "Custom production"
+    }
+  ]
+}

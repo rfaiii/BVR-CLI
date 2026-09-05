@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BVR-CLI iOS Mock</title>
+    <!-- Import JetBrains Mono via Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Phosphor Icons for iOS-like glyphs -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body>
+    <div id="iphone-frame">
+        <div id="app-container">
+            <!-- Header -->
+            <header>
+                <div class="header-content">
+                    <span class="node-badge"><i class="ph-fill ph-network"></i> Local Device</span>
+                    <span class="mcp-badge"><i class="ph-fill ph-plug"></i> fastmcp</span>
+                </div>
+                <div style="text-align: center; margin-bottom: 12px;">
+                    <span class="glitch-text" id="glitch-banner">AWAITING NEURAL LINK...</span>
+                </div>
+                <div class="model-accordion">
+                    <div class="model-header" id="model-toggle">
+                        <span>OpenAI: GPT-5.6 Luna Pro</span>
+                        <i class="ph ph-caret-down"></i>
+                    </div>
+                    <div class="model-list" id="model-list">
+                        <div class="model-item active">
+                            <i class="ph-fill ph-check-circle" style="color: #64ffda;"></i>
+                            <span>OpenAI: GPT-5.6 Luna Pro</span>
+                        </div>
+                        <div class="model-item">
+                            <i class="ph-fill ph-check-circle" style="color: #64ffda;"></i>
+                            <span>ornith:latest <small>(Ollama - Local)</small></span>
+                        </div>
+                        <div class="model-item">
+                            <i class="ph-fill ph-warning-circle" style="color: #ff5252;"></i>
+                            <span>ph14-mini: latest <small>(Error)</small></span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Chat Area -->
+            <main id="chat-view">
+                <div class="message user">
+                    <div class="bubble">Can you help me parse this JSON file?</div>
+                </div>
+                <div class="message system">
+                    <div class="bubble">Sure! Let's take a look at the structure of your JSON file. You can use the `jq` tool or write a small Go script to unmarshal it into a struct. What language are you using?</div>
+                </div>
+                <div class="message user">
+                    <div class="bubble">I'm using Go.</div>
+                </div>
+            </main>
+
+            <!-- Command Palette Overlay -->
+            <div id="command-palette" class="hidden">
+                <div class="palette-list" id="palette-list">
+                    <!-- JS populated -->
+                </div>
+            </div>
+
+            <!-- Input Bar -->
+            <footer id="chat-input-bar">
+                <button class="icon-btn"><i class="ph ph-plus"></i></button>
+                <div class="input-wrapper">
+                    <input type="text" id="chat-input" placeholder="Message BVR..." autocomplete="off">
+                </div>
+                <button class="icon-btn"><i class="ph ph-export"></i></button>
+            </footer>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

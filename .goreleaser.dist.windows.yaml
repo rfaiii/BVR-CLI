@@ -1,0 +1,17 @@
+name: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+format: zip
+format_overrides:
+  - goos: windows
+    formats: [zip]
+wrap_in_directory: true
+files:
+  - src: README*
+    dst: .
+  - src: LICENSE*
+    dst: .
+  - src: docs/installation.md
+    dst: .
+  - src: completions/*
+    dst: completions
+  - src: manpages/*
+    dst: manpages

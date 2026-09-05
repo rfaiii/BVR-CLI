@@ -1,0 +1,69 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+go.work.sum
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.log
+
+# Binary output directory
+/bin/
+/dist/
+
+# Local environment variables
+.env
+.env.local
+
+# Nix/direnv
+.direnv/
+
+**/.bvr/**
+
+/bvr
+/bvr-cli
+/bvr-cli-*
+/tmp/
+
+manpages/
+completions/bvr.*sh
+completions/bvr-cli.*sh
+.prettierignore
+.task
+.node_modules
+node_modules/
+
+# Local/experimental files
+antigravity/rules.md
+mcp-server/src/mcp_server/__pycache__/
+
+# Private/internal notes (kept on disk, not broadcast to GitHub)
+docs/TASKLIST.md
+CONTEXT.md

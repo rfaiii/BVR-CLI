@@ -1,0 +1,30 @@
+{
+  "name": "@bvrcli/bvr-cli",
+  "version": "1.1.9",
+  "description": "BVR is a keyboard-first terminal AI workspace.",
+  "bin": {
+    "bvr-cli": "./bin/bvr-cli"
+  },
+  "scripts": {
+    "postinstall": "node ./scripts/install.js",
+    "preuninstall": "node ./scripts/uninstall.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "darwin",
+    "win32",
+    "linux"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/richavery/bvr-cli-main.git"
+  },
+  "homepage": "https://bvr-cli.com",
+  "license": "MIT"
+}

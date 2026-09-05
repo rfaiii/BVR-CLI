@@ -1,0 +1,26 @@
+{
+  "$schema": "https://aka.ms/winget-packages.schema.2.0.0.json",
+  "PackageIdentifier": "richavery.BvrCLI",
+  "PackageVersion": "1.2.1",
+  "Moniker": "bvr-cli",
+  "Publisher": "richavery",
+  "PublisherUrl": "https://github.com/richavery/bvr-cli-main",
+  "License": "MIT",
+  "ShortDescription": "Keyboard-first terminal AI workspace.",
+  "Installers": [
+    {
+      "Architecture": "x64",
+      "InstallerType": "exe",
+      "Url": "https://github.com/richavery/bvr-cli-main/releases/download/v1.2.1/bvr-cli_1.2.1_windows_amd64.exe",
+      "InstallationMetadata": {
+        "InstallLocation": "$LOCALAPPDATA\\Programs\\bvr-cli"
+      },
+      "InstallerFunction": "install",
+      "InstallationNotes": "Copy bvr-cli.exe into a folder on PATH."
+    }
+  ],
+  "InstallationMetadata": {
+    "DefaultInstallLocation": "$LOCALAPPDATA\\Programs\\bvr-cli"
+  },
+  "ElevationRequirement": "user"
+}
