@@ -34,3 +34,4 @@ To sell and distribute BVR-CLI effectively, sign up for or configure the followi
 ### Launch Day Platforms
 - [ ] **Product Hunt:** Draft the upcoming product page, tag makers, and prep the launch day assets.
 - [ ] **Hacker News (Show HN):** Draft the introductory post explaining the "keyboard-first AI workspace" pitch.
+- [ ] Finish adding all SOUNDFX before updating to the next version

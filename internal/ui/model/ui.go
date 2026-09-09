@@ -964,7 +964,8 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case pubsub.Event[session.Session]:
 		if msg.Type == pubsub.DeletedEvent {
 			if m.session != nil && m.session.ID == msg.Payload.ID {
-				if cmd := m.newSession(); cmd != nil {
+				cmds = append(cmds, m.playAudio("Reload", "", "reload"))
+		if cmd := m.newSession(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 			}
@@ -2065,15 +2066,18 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 	// Session dialog messages.
 	case dialog.ActionSelectSession:
 		m.dialog.CloseDialog(dialog.SessionsID)
+		cmds = append(cmds, m.playAudio("Sub", "", "sub"))
 		cmds = append(cmds, m.loadSession(msg.Session.ID))
 
 	// Open dialog message.
 	case dialog.ActionOpenDialog:
 		m.dialog.CloseDialog(dialog.CommandsID)
+		cmds = append(cmds, m.playAudio("Sub", "", "sub"))
 		if cmd := m.openDialog(msg.DialogID); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
 	case dialog.ActionSelectTheme:
+		cmds = append(cmds, m.playAudio("Sub", "", "sub"))
 		m.setTheme(msg.ID)
 	// Command dialog messages.
 	case dialog.ActionToggleBeastmodeMode:
@@ -2093,6 +2097,7 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 			}
 		}
 		m.dialog.CloseDialog(dialog.CommandsID)
+		m.dialog.CloseDialog(dialog.SoundsID)
 	case dialog.ActionSelectNotificationStyle:
 		cfg := m.com.Config()
 		if cfg != nil && cfg.Options != nil {
@@ -2111,6 +2116,7 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before starting a new session..."))
 			break
 		}
+		cmds = append(cmds, m.playAudio("Reload", "", "reload"))
 		if cmd := m.newSession(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
@@ -2223,6 +2229,7 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 			cmds = append(cmds, m.refreshClineModels())
 			break
 		}
+		cmds = append(cmds, m.playAudio("Connected", "", "connected"))
 		if cmd := m.handleSelectModel(msg); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
@@ -2862,7 +2869,8 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 					cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before starting a new session..."))
 					break
 				}
-				if cmd := m.newSession(); cmd != nil {
+				cmds = append(cmds, m.playAudio("Reload", "", "reload"))
+		if cmd := m.newSession(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 			case key.Matches(msg, m.keyMap.Tab):
@@ -3021,7 +3029,8 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 					break
 				}
 				m.focus = uiFocusEditor
-				if cmd := m.newSession(); cmd != nil {
+				cmds = append(cmds, m.playAudio("Reload", "", "reload"))
+		if cmd := m.newSession(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 			case key.Matches(msg, m.keyMap.Chat.Expand):
@@ -4775,6 +4784,12 @@ func (m *UI) openDialog(id string) tea.Cmd {
 		m.dialog.OpenDialog(dialog.NewOllamaHowTo(m.com))
 	case dialog.ThemesID:
 		m.dialog.OpenDialog(dialog.NewThemes(m.com, m.themeID))
+	case dialog.SoundsID:
+		var currentVolume string
+		if cfg := m.com.Config(); cfg != nil && cfg.Options != nil {
+			currentVolume = cfg.Options.AudioVolume
+		}
+		m.dialog.OpenDialog(dialog.NewSounds(m.com, currentVolume))
 	case dialog.OtherModelsID:
 		m.dialog.OpenDialog(dialog.NewOtherModels(m.com))
 	case dialog.QuitID:

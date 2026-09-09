@@ -41,7 +41,7 @@ struct BottomToolbarView: View {
             HStack(spacing: 8) {
                 BottomButton(title: "OPEN\nMODEL")
                 BottomButton(title: "SWITCH\nMODEL")
-                BottomButton(title: "REFRESH")
+                BottomButton(title: "TOGGLE\nSOUND")
                 BottomButton(title: "MORE\nOPTIONS")
             }
             .padding(.horizontal)
