@@ -13,6 +13,7 @@ import (
 	mcp "github.com/richavery/bvr-cli/internal/agent/tools/mcp"
 	"github.com/richavery/bvr-cli/internal/config"
 	"github.com/richavery/bvr-cli/internal/localmodel"
+	"github.com/richavery/bvr-cli/internal/ui/anim"
 	"github.com/richavery/bvr-cli/internal/ui/common"
 	"github.com/richavery/bvr-cli/internal/ui/logo"
 )
@@ -180,6 +181,15 @@ func (m *UI) drawSidebar(scr uv.Screen, area uv.Rectangle) {
 		layout.Len(lipgloss.Height(sidebarLogo)),
 		layout.Fill(1),
 	).Split(area).Assign(&logoRect, &contentRect)
+	mascot := anim.MiniMascotFrame(m.beaverGaze, m.bannerFrame, m.beaverErrored)
+	mascotWidth := lipgloss.Width(mascot)
+	mascotHeight := lipgloss.Height(mascot)
+	m.sidebarBeaverRect = image.Rect(
+		logoRect.Min.X+(logoRect.Dx()-mascotWidth)/2,
+		logoRect.Min.Y,
+		logoRect.Min.X+(logoRect.Dx()-mascotWidth)/2+mascotWidth,
+		logoRect.Min.Y+mascotHeight,
+	)
 
 	// Slice visible lines.
 	end := min(m.sidebarOffset+contentHeight, totalLines)

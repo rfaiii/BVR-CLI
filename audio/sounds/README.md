@@ -30,8 +30,8 @@ bundled filename.
 | `LONG-UPLOADING-FLAT.wav` | Reserved for future upload/sync progress. |
 | `DENIED-FLAT.wav` | Permission denial. |
 | `WHAT-FLAT.wav` | User question/clarification cue. |
+| `WHAT-FLAT.wav` + `OH-BEAV-01.wav` … `OH-BEAV-05.wav` | Randomized Beaver logo interaction pool. Clicking the animated landing or chat/sidebar Beaver chooses one of all six cues. |
 | `RELOAD-FLAT.wav` | New session and reload/reset actions. |
-
 ## Current creative placements
 
 These are deliberately playful additions to the original event list:
@@ -45,6 +45,8 @@ These are deliberately playful additions to the original event list:
 - Opening and closing menus use separate cues.
 - The homescreen File Finder, Create File, and Web Browser actions each have
   their own quick-notify cue so the four launch buttons do not sound identical.
+- Clicking the animated Beaver logo on the homescreen or in the chat sidebar
+  randomly selects one of six Beaver cues, including `WHAT-FLAT.wav`.
 
 ## Legacy / not-yet-processed cues
 

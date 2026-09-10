@@ -258,6 +258,7 @@ type UI struct {
 	commandButtonRect    image.Rectangle
 	createFileButtonRect image.Rectangle
 	browserButtonRect    image.Rectangle
+	sidebarBeaverRect    image.Rectangle
 
 	// isCanceling tracks whether the user has pressed escape once to cancel.
 	isCanceling bool
@@ -1174,8 +1175,11 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.Button == uv.MouseLeft {
 			if m.state == uiLanding && image.Pt(msg.X, msg.Y).In(m.beaverRect) {
-				m.beaverBoopUntil = time.Now().Add(650 * time.Millisecond)
-				cmds = append(cmds, m.playAudio("Beaver", "Boop", "what"))
+				cmds = append(cmds, m.triggerBeaverBoop())
+				return m, tea.Batch(cmds...)
+			}
+			if m.state == uiChat && image.Pt(msg.X, msg.Y).In(m.sidebarBeaverRect) {
+				cmds = append(cmds, m.triggerBeaverBoop())
 				return m, tea.Batch(cmds...)
 			}
 			if image.Pt(msg.X, msg.Y).In(m.commandButtonRect) {
@@ -4442,11 +4446,23 @@ func (m *UI) renderEditorView(width int) string {
 // cacheSidebarLogo renders and caches the sidebar logo at the specified width.
 func (m *UI) cacheSidebarLogo(width int) {
 	compactLogo := renderLogo(m.com.Styles, true, m.com.IsHyper(), width, m.bannerFrame, m.bannerAnimation())
+	mascotState := m.beaverGaze
+	if time.Now().Before(m.beaverBoopUntil) {
+		mascotState = anim.StateClickBoop
+	}
 	m.sidebarLogo = lipgloss.JoinVertical(
 		lipgloss.Center,
-		anim.MiniMascotFrame(m.beaverGaze, m.bannerFrame, m.beaverErrored),
+		anim.MiniMascotFrame(mascotState, m.bannerFrame, m.beaverErrored),
 		compactLogo,
 	)
+}
+
+func (m *UI) triggerBeaverBoop() tea.Cmd {
+	m.beaverBoopUntil = time.Now().Add(650 * time.Millisecond)
+	if m.state == uiChat && m.sidebarContentWidth > 0 {
+		m.cacheSidebarLogo(m.sidebarContentWidth)
+	}
+	return m.playAudio("Beaver", "Beaver logo interaction", "beaver")
 }
 
 // startOnboarding opens the onboarding dialog when requested.

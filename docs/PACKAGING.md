@@ -19,6 +19,8 @@ and where each artifact lives.
 
 - `scripts/package/macos.sh` — build and zip macOS binary
 - `scripts/package/windows.bat` — build and zip Windows binary
+- `scripts/package/build-beta-packages.sh` — build local beta archives for
+  macOS ARM64/Intel, Windows x64/ARM64, and Linux x64/ARM64
 - `.goreleaser.dist.windows.yaml` — Windows archive/zip fallback config
 
 ## Install wrappers
@@ -41,5 +43,10 @@ Each package should include:
 ## Notes
 
 - Signed/notarized DMG/EXE/MSI packaging is not yet implemented.
+- Run `./scripts/package/build-beta-packages.sh 1.2.3` to create six local
+  archives under `dist/packages/` for smoke testing on the target machines.
+- The GoReleaser configuration produces Linux `deb`, `rpm`, `apk`, and
+  ArchLinux packages, plus release archives for the same six targets.
 - The current `.goreleaser.yml` targets cross-platform archives and tap/scoop/npm manifests.
-- Windows installer scripts under `scripts/windows/` are placeholders for future NSIS/WiX work.
+- Windows MSI generation is available through
+  `scripts/package/windows-msi.ps1` when WiX Toolset is installed.

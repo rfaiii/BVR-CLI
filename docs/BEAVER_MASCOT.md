@@ -15,8 +15,10 @@ buck teeth, belly, raised paw, textured tail, feet, and ground line.
 
 Mouse motion maps to five gaze buckets: center, left, right, up, and down. A
 dead zone around the face prevents twitching. Clicking the hero's fixed hitbox
-plays the BOOP cue and briefly switches to the click expression before the
-current gaze returns.
+randomly plays one of six Beaver cues (`WHAT-FLAT.wav` or
+`OH-BEAV-01.wav` through `OH-BEAV-05.wav`) and briefly switches to the click
+expression before the current gaze returns. The same interaction is available
+on the chat sidebar's mini Beaver.
 
 The state vocabulary already includes laugh, shocked, dance, chomp, music, and
 boop expressions. Transient expressions are rendered independently from the

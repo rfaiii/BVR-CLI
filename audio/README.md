@@ -23,6 +23,8 @@ audio/
   WPF `MediaPlayer` when available.
 - The backend maps semantic event names such as `menu-open`, `chat`, and
   `quick-notify-03` to bundled filenames.
+- The `beaver` event randomly selects `WHAT-FLAT.wav` or one of the five
+  `OH-BEAV-##.wav` cues for interactive Beaver logos.
 - Audio volume starts at a conservative 25% by default. The Sounds menu and
   `options.audio_volume` support `25`, `50`, `75`, `100`, and `silent`.
 

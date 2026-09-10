@@ -17,7 +17,8 @@ bvr-cli --help
 
 ### macOS
 
-Use `darwin_arm64` for Apple Silicon and `darwin_x86_64` for Intel Macs:
+Use `darwin_arm64` for Apple Silicon and `darwin_amd64`/`darwin_x86_64`
+for Intel Macs:
 
 ```sh
 chmod +x bvr-cli
@@ -47,13 +48,20 @@ Ensure `~/.local/bin` is on `PATH`.
 
 ### Windows x64
 
-Use the `windows_x86_64` ZIP archive. Extract `bvr-cli.exe` to a folder such
+Use the `windows_amd64` ZIP archive on standard Intel/AMD PCs, or
+`windows_arm64` on Windows ARM. Extract `bvr-cli.exe` to a folder such
 as `%LOCALAPPDATA%\BVR\bin`, add that folder to the user `PATH`, and open a
 new PowerShell window:
 
 ```powershell
 bvr-cli.exe --version
 bvr-cli.exe --help
+```
+
+For local beta package generation across all six targets:
+
+```sh
+./scripts/package/build-beta-packages.sh 1.2.3
 ```
 
 ## Build from source

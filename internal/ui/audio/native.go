@@ -57,6 +57,16 @@ var defaultAudioFunc = func(title, message, audioType, volume string) error { re
 
 var loadingState int
 
+// beaverAudioFilename converts an equal-weight pool choice into a Beaver
+// interaction cue. Choice zero is the existing WHAT cue; choices 1-5 map to
+// the five new Beaver vocalizations.
+func beaverAudioFilename(choice int) string {
+	if choice == 0 {
+		return "WHAT-FLAT.wav"
+	}
+	return fmt.Sprintf("OH-BEAV-%02d.wav", choice)
+}
+
 // getAudioFilename maps a notification type to its corresponding .wav file.
 func getAudioFilename(audioType string) string {
 	typeName := strings.ToLower(strings.TrimSuffix(audioType, ".wav"))
@@ -139,6 +149,8 @@ func getAudioFilename(audioType string) string {
 		return "DENIED-FLAT.wav"
 	case "what":
 		return "WHAT-FLAT.wav"
+	case "beaver", "beaver-boop", "beaver-logo":
+		return beaverAudioFilename(rand.Intn(6))
 	default:
 		return "QUICK-NOTIFY-01-FLAT.wav"
 	}

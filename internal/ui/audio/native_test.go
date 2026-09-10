@@ -16,6 +16,31 @@ func TestQuickNotifyMappings(t *testing.T) {
 	}
 }
 
+func TestBeaverAudioPool(t *testing.T) {
+	want := []string{
+		"WHAT-FLAT.wav",
+		"OH-BEAV-01.wav",
+		"OH-BEAV-02.wav",
+		"OH-BEAV-03.wav",
+		"OH-BEAV-04.wav",
+		"OH-BEAV-05.wav",
+	}
+	for choice, expected := range want {
+		if got := beaverAudioFilename(choice); got != expected {
+			t.Errorf("beaverAudioFilename(%d) = %q, want %q", choice, got, expected)
+		}
+	}
+	allowed := make(map[string]bool, len(want))
+	for _, filename := range want {
+		allowed[filename] = true
+	}
+	for i := 0; i < 100; i++ {
+		if filename := getAudioFilename("beaver"); !allowed[filename] {
+			t.Fatalf("getAudioFilename(\"beaver\") returned unexpected file %q", filename)
+		}
+	}
+}
+
 func TestVolumeDefaultsAndCompatibility(t *testing.T) {
 	tests := map[string]string{
 		"":        "25",

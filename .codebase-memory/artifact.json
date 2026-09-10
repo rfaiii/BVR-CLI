@@ -1,11 +1,11 @@
 {
     "schema_version": 2,
-    "commit": "386ccdd3a4af854e264629f33c1055c5c974c179",
-    "indexed_at": "2026-09-10T06:35:17Z",
+    "commit": "7c5e67987c9177db4adf70c97e83982b3314dbbb",
+    "indexed_at": "2026-09-10T07:15:51Z",
     "project": "Users-richavery-Projects-BVR-CLI",
-    "nodes": 8625,
-    "edges": 45482,
+    "nodes": 8628,
+    "edges": 45615,
     "original_size": 35454976,
-    "compressed_size": 6824824,
+    "compressed_size": 6834745,
     "compression_level": 3
 }
