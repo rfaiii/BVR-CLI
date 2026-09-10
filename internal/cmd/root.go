@@ -156,27 +156,22 @@ bvr-cli --continue
 	},
 }
 
-// versionMascot is the dense beaver-head silhouette prepended to --version
-// output (in place of the old heart mark), rendered in BVR neon green (#3BF66B).
+// versionMascot is the compact outline Beaver prepended to --version output.
+// Keep it ASCII-first and line-art based so it remains readable in every
+// terminal instead of turning into a solid block when font rendering differs.
 var versionMascot = lipgloss.NewStyle().Foreground(lipgloss.Color("#3BF66B")).SetString(`
-  ██      ██
-  ██      ██
-  ██████████
- ███████████████████████
- ██  ██  █████████████████████
- ██████████████████████████████
-  █████  ████████████████████████      ████████
-  ██     █████████████████████████   ██  ██  ██ ██
-  ██ █  █ ████████████████████████ ██  ██  ██  ██
-  ████  ██████████████████████████   ██  ██  ██ ██
-  ███ ██ █████████████████████████ ██  ██  ██  ██
-   ███████████████████████████████   ██  ██  ██ ██
-       ███████████████████████████ ██  ██  ██  ██
-        ████████████    ██  ██████   ██████████
-       ████  ███████    ██  ██████
-       ████  ███████    ██  ██████
-       ██████████████  ███████████
-         ███████████████████████
+          .-^^^^-.
+       .-'  .--.  '-.
+      /   / X  X \   \
+     |       v        |==
+     |     .---.      |==
+     |     | | |      |
+      \     \_/      /
+       '._        _.'
+      /|___|____|___|\\
+     /_/  /      \\  \\_
+    //// /_/    \\_\\ ////
+   ========================
 `)
 
 // copied from cobra:

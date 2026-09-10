@@ -15,11 +15,11 @@ This document outlines the BVR-CLI beta testing program, including invite manage
 ```bash
 # Build DMG for distribution
 cd /Users/richavery/Projects/BVR-CLI
-./scripts/package/macos-dmg.sh v1.2.2-beta.1
+./scripts/package/macos-dmg.sh v1.2.3-beta.1
 ```
 
 **Installation:**
-1. Download `bvr-cli_v1.2.2-beta.1_darwin_arm64.dmg`
+1. Download `bvr-cli_v1.2.3-beta.1_darwin_arm64.dmg`
 2. Open DMG and drag BVR.app to Applications
 3. First launch may require: Right-click → Open (to bypass Gatekeeper)
 4. Launcher auto-detects terminal preference
@@ -63,7 +63,7 @@ go install github.com/richavery/bvr-cli@latest
 
 **Platform:** Windows 10/11
 **Format:** EXE installer / MSI
-**Status:** Planned for v1.2.2
+**Status:** Planned for v1.2.3
 
 ---
 
@@ -185,7 +185,7 @@ Verify:
 
 **Template:**
 ```
-**Version:** v1.2.2-beta.X
+**Version:** v1.2.3-beta.X
 **Platform:** macOS/Windows/Linux
 **Terminal:** Ghostty/Alacritty/etc.
 **Go Version:** (if applicable)
@@ -212,7 +212,7 @@ Verify:
 
 For testers without GitHub, use this form:
 - Email: averydevz@outlook.com
-- Subject: `[BVR Beta] Feedback - v1.2.2-beta.X`
+- Subject: `[BVR Beta] Feedback - v1.2.3-beta.X`
 
 ---
 
@@ -247,7 +247,7 @@ For testers without GitHub, use this form:
 
 1. **Build beta DMG:**
    ```bash
-   ./scripts/package/macos-dmg.sh v1.2.2-beta.1
+   ./scripts/package/macos-dmg.sh v1.2.3-beta.1
    ```
 
 2. **Upload to distribution:**
@@ -272,7 +272,7 @@ After 2 weeks of beta testing:
 1. **Fix all P0/P1 bugs**
 2. **Build RC:**
    ```bash
-   ./scripts/package/macos-dmg.sh v1.2.2-rc.1
+   ./scripts/package/macos-dmg.sh v1.2.3-rc.1
    ```
 3. **Send to full beta list**
 4. **Wait 3 days for showstoppers**
@@ -283,13 +283,13 @@ If no showstoppers:
 
 1. **Tag release:**
    ```bash
-   git tag v1.2.2
-   git push origin v1.2.2
+   git tag v1.2.3
+   git push origin v1.2.3
    ```
 
 2. **Build final DMG:**
    ```bash
-   ./scripts/package/macos-dmg.sh v1.2.2
+   ./scripts/package/macos-dmg.sh v1.2.3
    ```
 
 3. **Publish:**

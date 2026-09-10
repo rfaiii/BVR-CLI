@@ -15,3 +15,25 @@ func TestQuickNotifyMappings(t *testing.T) {
 		}
 	}
 }
+
+func TestVolumeDefaultsAndCompatibility(t *testing.T) {
+	tests := map[string]string{
+		"":        "25",
+		"high":    "100",
+		"low":     "50",
+		"25":      "25",
+		"50":      "50",
+		"75":      "75",
+		"100":     "100",
+		"silent":  "silent",
+		"unknown": "25",
+	}
+	for input, want := range tests {
+		if got := NormalizeVolume(input); got != want {
+			t.Errorf("NormalizeVolume(%q) = %q, want %q", input, got, want)
+		}
+	}
+	if got := VolumePercent(""); got != 25 {
+		t.Fatalf("VolumePercent(\"\") = %d, want 25", got)
+	}
+}

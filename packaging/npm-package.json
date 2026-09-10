@@ -1,6 +1,6 @@
 {
   "name": "@bvrcli/bvr-cli",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "BVR is a keyboard-first terminal AI workspace.",
   "bin": {
     "bvr-cli": "./bin/bvr-cli"

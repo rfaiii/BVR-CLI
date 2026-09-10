@@ -58,11 +58,13 @@ These remain embedded and available but are not part of the processed set:
 ## Technical notes
 
 - Native playback uses `afplay` on macOS, `paplay`/`aplay` on Linux, and
-  PowerShell `SoundPlayer` on Windows.
+  PowerShell WPF `MediaPlayer` on Windows when available.
 - The audio package extracts embedded files to a temporary directory on first
   use and cleans them up at process exit.
-- `high`, `low`, and `silent` volume modes are controlled from the Sounds menu
-  or `options.audio_volume`.
+- `25`, `50`, `75`, `100`, and `silent` volume modes are controlled from the
+  Sounds menu or `options.audio_volume`. New installs default to 25% to avoid
+  surprising headphone users; the older `high` and `low` values remain
+  compatible as aliases for 100% and 50%.
 - Long cues should not be assigned to high-frequency key events.
 - All files must remain readable by the application; executable permissions are
   unnecessary.

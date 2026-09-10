@@ -330,7 +330,7 @@ type Options struct {
 	AutoLSP                   *bool        `json:"auto_lsp,omitempty" jsonschema:"description=Automatically setup LSPs based on root markers,default=true"`
 	Progress                  *bool        `json:"progress,omitempty" jsonschema:"description=Show indeterminate progress updates during long operations,default=true"`
 	Notifications             string       `json:"notifications,omitempty" jsonschema:"description=Notification style to use. Options: auto (default)\\, native\\, osc\\, bell\\, disabled. Auto selects based on environment: native for local sessions\\, osc for SSH (with automatic OSC 99/777 detection).,enum=auto,enum=native,enum=osc,enum=bell,enum=disabled,default=auto"`
-	AudioVolume               string       `json:"audio_volume,omitempty" jsonschema:"description=Volume for audio notifications. Options: high (default)\\, low\\, silent.,enum=high,enum=low,enum=silent,default=high"`
+	AudioVolume               string       `json:"audio_volume,omitempty" jsonschema:"description=Volume for audio notifications. Options: 25 (default)\\, 50\\, 75\\, 100\\, silent.,enum=25,enum=50,enum=75,enum=100,enum=silent,default=25"`
 	DisabledSkills            []string     `json:"disabled_skills,omitempty" jsonschema:"description=List of skill names to disable and hide from the agent,example=bvr-config"`
 }
 

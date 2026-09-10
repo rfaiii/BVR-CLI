@@ -13,14 +13,53 @@
 //   - If focus events are not supported in local sessions, audio is disabled (NoopBackend)
 package audio
 
-import tea "charm.land/bubbletea/v2"
+import (
+	"strings"
+
+	tea "charm.land/bubbletea/v2"
+)
+
+const DefaultVolume = "25"
 
 // Audio represents an audio notification request.
 type Audio struct {
 	Title   string
 	Message string
 	Type    string // "notification", "startup", "error", "exit", "chainsaw"
-	Volume  string // "high", "low", "silent"
+	Volume  string // "25", "50", "75", "100", or "silent"
+}
+
+// NormalizeVolume keeps older user configs working while making the safe
+// headphone-friendly default explicit for new and unset configurations.
+func NormalizeVolume(volume string) string {
+	switch strings.ToLower(strings.TrimSpace(volume)) {
+	case "silent":
+		return "silent"
+	case "high", "100":
+		return "100"
+	case "low", "50":
+		return "50"
+	case "25", "75":
+		return strings.TrimSpace(volume)
+	default:
+		return DefaultVolume
+	}
+}
+
+// VolumePercent returns the requested linear playback percentage.
+func VolumePercent(volume string) int {
+	switch NormalizeVolume(volume) {
+	case "100":
+		return 100
+	case "75":
+		return 75
+	case "50":
+		return 50
+	case "silent":
+		return 0
+	default:
+		return 25
+	}
 }
 
 // Backend defines the interface for sending audio notifications.

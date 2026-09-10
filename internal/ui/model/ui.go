@@ -233,12 +233,15 @@ type UI struct {
 	themeKey string
 	themeID  string
 
-	focus         uiFocusState
-	state         uiState
-	beaverErrored bool   // idle beaver: dense Beta (x-ray) when the agent errors
-	beaverResting bool   // idle beaver: slow "rest" (center) pose between direction changes
-	beaverFacing  int    // idle beaver: 0=center, -1=left, +1=right (last applied direction)
-	projectSource string // current project source directory displayed in the header
+	focus           uiFocusState
+	state           uiState
+	beaverErrored   bool // idle beaver: dense Beta (x-ray) when the agent errors
+	beaverResting   bool // idle beaver: slow "rest" (center) pose between direction changes
+	beaverFacing    int  // idle beaver: 0=center, -1=left, +1=right (last applied direction)
+	beaverGaze      anim.MascotState
+	beaverRect      image.Rectangle
+	beaverBoopUntil time.Time
+	projectSource   string // current project source directory displayed in the header
 
 	keyMap KeyMap
 	keyenh tea.KeyboardEnhancementsMsg
@@ -669,9 +672,9 @@ func (m *UI) playAudio(title, message, audioType string) tea.Cmd {
 	if m.audioBackend == nil {
 		return nil
 	}
-	vol := "high"
+	vol := audio.DefaultVolume
 	if cfg := m.com.Config(); cfg != nil && cfg.Options != nil && cfg.Options.AudioVolume != "" {
-		vol = cfg.Options.AudioVolume
+		vol = audio.NormalizeVolume(cfg.Options.AudioVolume)
 	}
 
 	return m.audioBackend.Play(audio.Audio{
@@ -1170,6 +1173,11 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(cmds...)
 		}
 		if msg.Button == uv.MouseLeft {
+			if m.state == uiLanding && image.Pt(msg.X, msg.Y).In(m.beaverRect) {
+				m.beaverBoopUntil = time.Now().Add(650 * time.Millisecond)
+				cmds = append(cmds, m.playAudio("Beaver", "Boop", "what"))
+				return m, tea.Batch(cmds...)
+			}
 			if image.Pt(msg.X, msg.Y).In(m.commandButtonRect) {
 				if cmd := m.openCommandsDialog(); cmd != nil {
 					cmds = append(cmds, cmd)
@@ -1255,20 +1263,15 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(cmds...)
 		}
 
-		// Track hover position for inline editors and the homescreen
-		// mascot, which faces the cursor/prompt direction.
+		// Track hover position for inline editors and the homescreen mascot.
 		if m.hoverX != msg.X || m.hoverY != msg.Y {
 			m.hoverX = msg.X
 			m.hoverY = msg.Y
 
-			if m.activeInline == nil {
-				if m.hoverX < 0 {
-					m.beaverFacing = 0
-				} else if m.hoverX < m.layout.main.Dx()/2 {
-					m.beaverFacing = -1
-				} else {
-					m.beaverFacing = 1
-				}
+			if m.activeInline == nil && m.state == uiLanding && !m.beaverRect.Empty() {
+				centerX := m.beaverRect.Min.X + m.beaverRect.Dx()/2
+				centerY := m.beaverRect.Min.Y + m.beaverRect.Dy()/2
+				m.beaverGaze = anim.EyeDirection(msg.X-centerX, msg.Y-centerY)
 			}
 
 			if m.activeInline != nil {
@@ -4441,7 +4444,7 @@ func (m *UI) cacheSidebarLogo(width int) {
 	compactLogo := renderLogo(m.com.Styles, true, m.com.IsHyper(), width, m.bannerFrame, m.bannerAnimation())
 	m.sidebarLogo = lipgloss.JoinVertical(
 		lipgloss.Center,
-		anim.BeaverHeroFrame(m.bannerFrame, m.beaverErrored),
+		anim.MiniMascotFrame(m.beaverGaze, m.bannerFrame, m.beaverErrored),
 		compactLogo,
 	)
 }

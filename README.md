@@ -1,4 +1,4 @@
-# BVR-CLI 1.2.2
+# BVR-CLI 1.2.3
 
 **A keyboard-first AI workspace for the terminal.**
 
@@ -83,7 +83,7 @@ For packaged macOS, Windows, and Linux installation paths, see
 - Gradient branding, status indicators, cursor effects, and resource meters
 - Audio cues for startup, menus, prompt submission, chat responses, loading,
   permissions, errors, navigation, and long-running work
-- Configurable notification style and audio volume
+- Configurable notification style and safe audio volume controls (25/50/75/100% or silent)
 
 ### Nodes and multi-device work
 
@@ -128,7 +128,7 @@ go build ./...
 Package the supported targets with:
 
 ```sh
-./scripts/package/build-all.sh 1.2.2
+./scripts/package/build-all.sh 1.2.3
 ```
 
 ## Documentation
@@ -141,6 +141,7 @@ Package the supported targets with:
 | [`docs/LAUNCH_TASKLIST.md`](docs/LAUNCH_TASKLIST.md) | Release readiness and beta work |
 | [`docs/BETA.md`](docs/BETA.md) | Beta testing and release process |
 | [`docs/GGWAVE.md`](docs/GGWAVE.md) | GGWave pairing architecture |
+| [`docs/BEAVER_MASCOT.md`](docs/BEAVER_MASCOT.md) | Animated Beaver states and layout contract |
 | [`docs/NODE_TRANSPORTS.md`](docs/NODE_TRANSPORTS.md) | Multi-device transport options |
 | [`docs/FILE_FINDER.md`](docs/FILE_FINDER.md) | File Finder behavior |
 | [`docs/OLLAMA_HOW_TO.md`](docs/OLLAMA_HOW_TO.md) | Local Ollama setup |

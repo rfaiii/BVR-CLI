@@ -1,6 +1,7 @@
 package anim
 
 import (
+	"strings"
 	"testing"
 
 	"charm.land/lipgloss/v2"
@@ -56,6 +57,54 @@ func TestBeaverHeroFrameKeepsStableWidthAndChangesPose(t *testing.T) {
 	}
 	if a == b {
 		t.Fatal("hero animation did not change pose")
+	}
+}
+
+func TestMascotFramesKeepCanonicalFootprints(t *testing.T) {
+	t.Parallel()
+	states := []MascotState{
+		StateCenter, StateLookLeft, StateLookRight, StateLookUp, StateLookDown,
+		StateLaugh, StateShocked, StateDanceA, StateDanceB, StateChompA,
+		StateChompB, StateClickBoop,
+	}
+	for _, state := range states {
+		large := LargeMascotFrame(state, 0, false)
+		mini := MiniMascotFrame(state, 0, false)
+		if got := lipgloss.Width(large); got != LargeMascotWidth {
+			t.Errorf("%v large width = %d, want %d", state, got, LargeMascotWidth)
+		}
+		if got := lipgloss.Height(large); got != LargeMascotHeight {
+			t.Errorf("%v large height = %d, want %d", state, got, LargeMascotHeight)
+		}
+		if got := lipgloss.Width(mini); got != MiniMascotWidth {
+			t.Errorf("%v mini width = %d, want %d", state, got, MiniMascotWidth)
+		}
+		if got := lipgloss.Height(mini); got != MiniMascotHeight {
+			t.Errorf("%v mini height = %d, want %d", state, got, MiniMascotHeight)
+		}
+		if got := len(strings.Split(large, "\n")); got != LargeMascotHeight {
+			t.Errorf("%v large rows = %d, want %d", state, got, LargeMascotHeight)
+		}
+	}
+}
+
+func TestEyeDirectionUsesStableBuckets(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		dx, dy int
+		want   MascotState
+	}{
+		{0, 0, StateCenter},
+		{-10, 0, StateLookLeft},
+		{10, 0, StateLookRight},
+		{0, -10, StateLookUp},
+		{0, 10, StateLookDown},
+		{2, 1, StateCenter},
+	}
+	for _, tt := range tests {
+		if got := EyeDirection(tt.dx, tt.dy); got != tt.want {
+			t.Errorf("EyeDirection(%d, %d) = %v, want %v", tt.dx, tt.dy, got, tt.want)
+		}
 	}
 }
 

@@ -1,7 +1,7 @@
 // Package main is the entry point for the BVR CLI.
 //
 //	@title			BVR API
-//	@version		1.2.2
+//	@version		1.2.3
 //	@description	BVR is a terminal-based AI coding assistant. This API is served over a Unix socket (or Windows named pipe) and provides programmatic access to workspaces, sessions, agents, LSP, MCP, and more.
 //	@contact.name	BVR
 //	@contact.url	https://bvr-cli.com

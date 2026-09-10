@@ -4,7 +4,7 @@ set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 cd "$ROOT"
 
-VERSION="${1:-1.2.2}"
+VERSION="${1:-1.2.3}"
 OUT="$ROOT/dist/release"
 mkdir -p "$OUT"
 

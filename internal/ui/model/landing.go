@@ -2,6 +2,7 @@ package model
 
 import (
 	"image"
+	"time"
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/ultraviolet/layout"
@@ -83,7 +84,18 @@ func (m *UI) landingView() string {
 		lipgloss.NewStyle().Foreground(accent).Bold(true).Render(modelName) +
 		lipgloss.NewStyle().Foreground(alt).Render("   PROVIDER  ") +
 		lipgloss.NewStyle().Foreground(accent).Bold(true).Render(providerName)
-	hero := anim.BeaverHeroFrame(m.bannerFrame, m.beaverErrored)
+	mascotState := m.beaverGaze
+	if time.Now().Before(m.beaverBoopUntil) {
+		mascotState = anim.StateClickBoop
+	}
+	hero := anim.LargeMascotFrame(mascotState, m.bannerFrame, m.beaverErrored)
+	heroTop := m.layout.main.Min.Y + 1 + lipgloss.Height(cwdStyled) + 1
+	m.beaverRect = image.Rect(
+		m.layout.main.Min.X,
+		heroTop,
+		m.layout.main.Min.X+lipgloss.Width(hero),
+		heroTop+lipgloss.Height(hero),
+	)
 
 	// Click rectangles for the stacked home buttons (Command on top,
 	// File Finder below, CREATE FILE at the bottom). All start at the

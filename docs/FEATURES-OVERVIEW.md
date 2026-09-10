@@ -11,9 +11,11 @@ for beta marketing, release notes, onboarding copy, and internal triage.
 - Streaming assistant responses with markdown rendering.
 - Onboarding wizard with terminal-aware ASCII previews.
 - Explicit opt-out onboarding; never forces setup without user choice.
-- Animated Beaver hero branding with stable-width terminal poses.
+- Animated Beaver hero branding with stable-width terminal poses, mouse-follow
+  gaze, click/BOOP feedback, and a compact persistent sidebar Beaver.
 - Contextual audio feedback for startup, prompts, menus, model activity,
-  permissions, errors, navigation, and long-running work.
+  permissions, errors, navigation, and long-running work, with a safe 25%
+  default and selectable 50/75/100% levels.
 
 ## AI and providers
 

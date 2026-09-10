@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.3
+
+### Safer audio defaults and branding
+
+- Set new-install audio to a headphone-friendly 25% default.
+- Added 50%, 75%, 100%, and Silent choices to the Sounds menu while keeping
+  legacy `high`/`low` configuration aliases compatible.
+- Added native volume handling for macOS, Linux, and Windows playback paths.
+- Replaced the solid-block `--version` mascot with readable ASCII Beaver line
+  art closer to the homescreen identity.
+- Documented the fixed-size animated hero, persistent mini mascot, gaze states,
+  click/BOOP behavior, and audio safety controls.
+
 ## 1.2.2
 
 ### TUI branding and navigation

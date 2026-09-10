@@ -17,8 +17,10 @@ type soundOption struct {
 }
 
 var soundOptions = []soundOption{
-	{Name: "High (100%)", Volume: "high"},
-	{Name: "Low (50%)", Volume: "low"},
+	{Name: "Quiet (25%) — recommended", Volume: "25"},
+	{Name: "Medium (50%)", Volume: "50"},
+	{Name: "Loud (75%)", Volume: "75"},
+	{Name: "Maximum (100%)", Volume: "100"},
 	{Name: "Silent", Volume: "silent"},
 }
 
@@ -28,6 +30,15 @@ type Sounds struct {
 }
 
 func NewSounds(com *common.Common, currentVolume string) *Sounds {
+	if currentVolume == "" {
+		currentVolume = "25"
+	}
+	if currentVolume == "high" {
+		currentVolume = "100"
+	}
+	if currentVolume == "low" {
+		currentVolume = "50"
+	}
 	selected := 0
 	for i, opt := range soundOptions {
 		if opt.Volume == currentVolume {

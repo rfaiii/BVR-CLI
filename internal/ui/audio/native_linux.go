@@ -3,6 +3,7 @@
 package audio
 
 import (
+	"fmt"
 	"log/slog"
 	"os/exec"
 
@@ -11,10 +12,11 @@ import (
 
 func init() {
 	defaultAudioFunc = func(title, message, audioType, volume string) error {
-		if volume == "silent" {
+		percent := VolumePercent(volume)
+		if percent == 0 {
 			return nil
 		}
-		
+
 		filename := getAudioFilename(audioType)
 		path, err := audio.GetSoundPath(filename)
 		if err != nil {
@@ -23,9 +25,7 @@ func init() {
 		}
 
 		paplayArgs := []string{path}
-		if volume == "low" {
-			paplayArgs = append(paplayArgs, "--volume=32768")
-		}
+		paplayArgs = append(paplayArgs, fmt.Sprintf("--volume=%d", 65536*percent/100))
 
 		// Try paplay (PulseAudio) first, fallback to aplay (ALSA)
 		cmd := exec.Command("paplay", paplayArgs...)

@@ -3,6 +3,7 @@
 package audio
 
 import (
+	"fmt"
 	"log/slog"
 	"os/exec"
 
@@ -11,10 +12,11 @@ import (
 
 func init() {
 	defaultAudioFunc = func(title, message, audioType, volume string) error {
-		if volume == "silent" {
+		percent := VolumePercent(volume)
+		if percent == 0 {
 			return nil
 		}
-		
+
 		filename := getAudioFilename(audioType)
 		path, err := audio.GetSoundPath(filename)
 		if err != nil {
@@ -22,10 +24,7 @@ func init() {
 			return err
 		}
 
-		volFlag := "1"
-		if volume == "low" {
-			volFlag = "0.5"
-		}
+		volFlag := fmt.Sprintf("%.2f", float64(percent)/100)
 
 		// afplay is native to macOS
 		cmd := exec.Command("afplay", "-v", volFlag, path)
