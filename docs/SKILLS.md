@@ -54,8 +54,8 @@ small model that struggles with multi-step coding, the coder system prompt
 (`internal/agent/templates/coder.md.tpl`) directs the agent to hand off to Cline
 or Hermes. Both follow the
 [agentskills.io](https://agentskills.io) open standard — the same format BVR
-skills use — so project rules and skills can be shared. See
-[`BVR_CODER.md`](BVR_CODER.md) for the coder-entry design.
+skills use — so project rules and skills can be shared. The coder-entry design
+lives alongside the agent templates in `internal/agent/templates/`.
 
 User skills with the same name as a builtin override the builtin (last
 occurrence wins in `skills.Deduplicate()`).

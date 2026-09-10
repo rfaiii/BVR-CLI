@@ -11,6 +11,9 @@ for beta marketing, release notes, onboarding copy, and internal triage.
 - Streaming assistant responses with markdown rendering.
 - Onboarding wizard with terminal-aware ASCII previews.
 - Explicit opt-out onboarding; never forces setup without user choice.
+- Animated Beaver hero branding with stable-width terminal poses.
+- Contextual audio feedback for startup, prompts, menus, model activity,
+  permissions, errors, navigation, and long-running work.
 
 ## AI and providers
 
@@ -85,6 +88,7 @@ for beta marketing, release notes, onboarding copy, and internal triage.
 - NODE connection testing and device routing.
 - Laptop↔iPhone sync breadcrumbs in docs.
 - Local transport, HTTP, and WebSocket protocol docs.
+- GGWave pairing envelope boundary and animated homescreen waveform surface.
 
 ## Mobile companion
 
@@ -172,7 +176,7 @@ for beta marketing, release notes, onboarding copy, and internal triage.
 
 - Maintainer: Richard Aizen Avery III
 - Email: averydevz@outlook.com
-- GitHub: https://github.com/richavery/bvr-cli-main
+- GitHub: https://github.com/rfaiii/BVR-CLI
 - Website: https://bvr-cli.com
 
 ## Beta feedback and bug collection

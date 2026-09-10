@@ -5,6 +5,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/ultraviolet/layout"
+	"github.com/richavery/bvr-cli/internal/ggwave"
 	"github.com/richavery/bvr-cli/internal/home"
 	"github.com/richavery/bvr-cli/internal/ui/anim"
 	"github.com/richavery/bvr-cli/internal/workspace"
@@ -65,7 +66,7 @@ func (m *UI) landingView() string {
 	commandButton := buttonStyle.Render(terminalIcon + " " + "OPEN COMMANDS — ctrl+p")
 	folderButton := buttonStyle.Render(folderIcon + " " + "OPEN FILE FINDER — ctrl+shift+f")
 	createButton := buttonStyle.Render(paperIcon + " " + "CREATE FILE — ctrl+n")
-	browserBtn := buttonStyle.Render(browserIcon + " " + "WEB BROWSER — ctrl+b")
+	browserBtn := buttonStyle.Render(browserIcon + "  " + "WEB BROWSER — ctrl+b")
 	buttons := commandButton + "\n\n" + folderButton + "\n\n" + createButton + "\n\n" + browserBtn
 
 	// Prominent MODEL / PROVIDER line on the homescreen so it's immediately
@@ -82,12 +83,15 @@ func (m *UI) landingView() string {
 		lipgloss.NewStyle().Foreground(accent).Bold(true).Render(modelName) +
 		lipgloss.NewStyle().Foreground(alt).Render("   PROVIDER  ") +
 		lipgloss.NewStyle().Foreground(accent).Bold(true).Render(providerName)
+	hero := anim.BeaverHeroFrame(m.bannerFrame, m.beaverErrored)
 
 	// Click rectangles for the stacked home buttons (Command on top,
 	// File Finder below, CREATE FILE at the bottom). All start at the
 	// left edge; each subsequent rectangle is pushed down past the
 	// previous button plus the gap line.
-	btnTop := m.layout.main.Min.Y + 3
+	// Keep hitboxes aligned with the rendered stack: the landing view has one
+	// line of top padding, then CWD, a gap, the hero, and a gap before buttons.
+	btnTop := landingButtonTop(m.layout.main.Min.Y, lipgloss.Height(cwdStyled), lipgloss.Height(hero))
 	cmdH := lipgloss.Height(commandButton)
 	folderH := lipgloss.Height(folderButton)
 	createH := lipgloss.Height(createButton)
@@ -108,15 +112,10 @@ func (m *UI) landingView() string {
 		m.layout.main.Min.X, btnTop+cmdH+1+folderH+1+createH+1,
 		m.layout.main.Min.X+lipgloss.Width(browserBtn), btnTop+cmdH+1+folderH+1+createH+1+browserH,
 	)
-	parts := []string{cwdStyled, "", buttons, "", modelLine}
-
-	// Idle beaver mascot beneath the status monitors. It shows the normal
-	// dense Alpha variant, or the x-ray Beta variant (X_X eyes) when the agent
-	// errors. The mascot tracks the cursor/prompt: it faces left when the
-	// cursor sits on the left half of the terminal and right when it sits on
-	// the right half, and idles in a slow "rest" pose between direction
-	// changes instead of cycling on the banner ticker.
-	parts = append(parts, "", anim.BeaverFrame(m.beaverFacing, m.beaverErrored, m.beaverResting))
+	waveWidth := min(56, max(18, width-4))
+	waveLabel := lipgloss.NewStyle().Foreground(alt).Render("GGWAVE NODE LINK  ")
+	wave := lipgloss.NewStyle().Foreground(accent).Render(ggwave.Waveform(waveWidth, m.ggwaveFrame, m.ggwaveMode))
+	parts := []string{cwdStyled, "", hero, "", buttons, "", modelLine, "", waveLabel + wave}
 	infoSection := lipgloss.JoinVertical(lipgloss.Left, parts...)
 
 	var remainingHeightArea image.Rectangle
@@ -147,4 +146,8 @@ func (m *UI) landingView() string {
 		Render(
 			lipgloss.JoinVertical(lipgloss.Left, infoSection, "", content),
 		)
+}
+
+func landingButtonTop(mainY, cwdHeight, heroHeight int) int {
+	return mainY + 1 + cwdHeight + 1 + heroHeight + 1
 }

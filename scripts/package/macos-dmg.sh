@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 VERSION=${1:-dev}
 BUILD_DIR="$ROOT/dist/darwin"
 STAGING="$BUILD_DIR/dmg-staging"

@@ -1,4 +1,4 @@
-# Phase 4 Launch Tasklist
+# v1.2.2 Launch Tasklist
 
 This document tracks our progress towards launching BVR-CLI, covering essential testing phases and marketplace distribution accounts.
 
@@ -7,14 +7,15 @@ Before launching, run through this manual checklist on your primary machine (mac
 
 ### Audio & UI Polish
 - [x] **Startup Chime:** Verify the startup sound triggers when BVR-CLI launches.
-- [ ] **Action Sounds:** Verify sounds for `Enter` key presses, success notifications, and error notifications.
-- [ ] **Animations:** Check the beaver mascot pulse animation (4s) and hover debounce (400ms) on the homescreen.
+- [x] **Action Sounds:** Map distinct sounds to prompt submission, menus, launch buttons, permissions, and errors.
+- [x] **Animations:** Add and test the fixed-width Beaver hero poses and GGWave waveform surface.
 - [ ] **Resource Bars:** Verify the CPU/RAM gradient bars animate smoothly and accurately reflect system load.
 
 ### Core Workflows
 - [ ] **Authentication:** Test `/login` or `bvr auth` workflow and ensure the key is saved correctly.
 - [ ] **Ollama Discovery:** Ensure `/models` correctly loads and lists available models from `localhost:11434`.
 - [ ] **File Finder:** Test `Ctrl+Shift+F` across a large project. Verify previews, metadata, hidden files, and clipboard.
+- [x] **Landing Actions:** Verify Commands, File Finder, Create File, and Web Browser buttons and their audio cues.
 - [ ] **Project Switching:** Use `/cd` or `/project` to switch workspaces and confirm BVR updates the working directory.
 - [ ] **NODE Transports:** Test connection via HTTP/JSON, WebSocket, and SSH.
 
@@ -34,4 +35,5 @@ To sell and distribute BVR-CLI effectively, sign up for or configure the followi
 ### Launch Day Platforms
 - [ ] **Product Hunt:** Draft the upcoming product page, tag makers, and prep the launch day assets.
 - [ ] **Hacker News (Show HN):** Draft the introductory post explaining the "keyboard-first AI workspace" pitch.
-- [ ] Finish adding all SOUNDFX before updating to the next version
+- [x] Finish the processed SOUNDFX inventory and update `audio/metadata/sound-index.json`.
+- [x] Update release-facing documentation and version metadata to `v1.2.2`.

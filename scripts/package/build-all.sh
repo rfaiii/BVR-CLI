@@ -1,10 +1,10 @@
 #!/bin/sh
 set -eu
 
-ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 cd "$ROOT"
 
-VERSION="${1:-1.2.1}"
+VERSION="${1:-1.2.2}"
 OUT="$ROOT/dist/release"
 mkdir -p "$OUT"
 

@@ -4,7 +4,7 @@ version: "3"
 
 vars:
   VERSION:
-    sh: git describe --long 2>/dev/null || echo "1.2.1"
+    sh: git describe --long 2>/dev/null || echo "1.2.2"
   RACE:
     sh: test -f race.log && echo "1" || echo ""
 

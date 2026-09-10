@@ -59,49 +59,87 @@ var loadingState int
 
 // getAudioFilename maps a notification type to its corresponding .wav file.
 func getAudioFilename(audioType string) string {
-	// If the audioType specifies a variation (e.g. "chat-02" or "drill-01")
-	if strings.Contains(audioType, "-") && !strings.HasSuffix(audioType, ".wav") {
-		return audioType + ".wav"
+	typeName := strings.ToLower(strings.TrimSuffix(audioType, ".wav"))
+
+	// Explicit variations are semantic event names; callers do not need to
+	// know the bundled filename casing or the processed suffix.
+	if strings.HasPrefix(typeName, "chat-") {
+		return "CHAT-" + strings.TrimPrefix(typeName, "chat-") + "-FLAT.wav"
+	}
+	if strings.HasPrefix(typeName, "quick-notify-") {
+		return "QUICK-NOTIFY-" + strings.TrimPrefix(typeName, "quick-notify-") + "-FLAT.wav"
+	}
+	if strings.HasPrefix(typeName, "error-") {
+		return "ERROR-" + strings.TrimPrefix(typeName, "error-") + "-FLAT.wav"
+	}
+	if strings.HasPrefix(typeName, "chainsaw-") {
+		return "CHAINSAW-" + strings.TrimPrefix(typeName, "chainsaw-") + "-FLAT.wav"
+	}
+	if strings.HasPrefix(typeName, "drill-") {
+		if strings.HasSuffix(typeName, "-02") {
+			return "MENU-CLOSE-FLAT.wav"
+		}
+		return "MENU-OPEN-FLAT.wav"
 	}
 
-	switch audioType {
+	switch typeName {
 	case "startup":
-		return "startup-song-01.wav"
+		return "STARTUP-SONG-FLAT.wav"
 	case "chainsaw":
-		return fmt.Sprintf("chainsaw-%02d.wav", rand.Intn(3)+1)
+		return fmt.Sprintf("CHAINSAW-%02d-FLAT.wav", rand.Intn(2)+1)
 	case "chat":
-		return "chat-01.wav"
+		return fmt.Sprintf("CHAT-%02d-FLAT.wav", rand.Intn(4)+1)
+	case "chat-open":
+		return "CHAT-OPEN-FLAT.wav"
+	case "chat-close":
+		return "CHAT-CLOSE-FLAT.wav"
 	case "incoming":
-		return "incoming-01.wav"
+		return "INCOMING-FLAT.wav"
 	case "loading":
 		loadingState = (loadingState + 1) % 2
 		if loadingState == 1 {
-			return "loading-02.wav"
+			return "LONG-LOAD-02-FLAT.wav"
 		}
-		return "loading-01.wav"
+		return "LONG-LOAD-01-FLAT.wav"
+	case "long-load":
+		return fmt.Sprintf("LONG-LOAD-%02d-FLAT.wav", rand.Intn(2)+1)
+	case "long-uploading":
+		return "LONG-UPLOADING-FLAT.wav"
+	case "connection", "connection-issue":
+		return "CONNECTION-ISSUE-FLAT.wav"
+	case "menu-open":
+		return "MENU-OPEN-FLAT.wav"
+	case "menu-close":
+		return "MENU-CLOSE-FLAT.wav"
+	case "quick-notify":
+		return fmt.Sprintf("QUICK-NOTIFY-%02d-FLAT.wav", rand.Intn(3)+1)
 	case "error":
-		return fmt.Sprintf("error-%02d.wav", rand.Intn(3)+1)
+		return fmt.Sprintf("ERROR-%02d-FLAT.wav", rand.Intn(3)+1)
 	case "exit":
-		return "exit-01.wav"
+		return fmt.Sprintf("exit-%02d.wav", rand.Intn(3)+1)
 	case "notification":
-		return "notification-01.wav"
+		return "QUICK-NOTIFY-01-FLAT.wav"
 	case "question":
-		return "question-01.wav"
+		return "WHAT-FLAT.wav"
 	case "reload":
-		return "reload-01.wav"
+		return "RELOAD-FLAT.wav"
 	case "drill":
-		return "drill-01.wav"
+		return "MENU-OPEN-FLAT.wav"
 	case "sub":
 		return "sub-01.wav"
 	case "oops":
-		return "oops-01.wav"
+		return "BROKEN-FLAT.wav"
 	case "connected":
-		return "connected-01.wav"
+		return "QUICK-NOTIFY-01-FLAT.wav"
 	case "advert":
 		return "advert-01.wav"
 	case "broken":
-		return "broken-01.wav"
+		return "BROKEN-FLAT.wav"
+	case "denied":
+		return "DENIED-FLAT.wav"
+	case "what":
+		return "WHAT-FLAT.wav"
 	default:
-		return "notification-01.wav"
+		return "QUICK-NOTIFY-01-FLAT.wav"
 	}
 }

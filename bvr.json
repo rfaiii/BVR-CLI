@@ -1,11 +1,11 @@
 {
-  "$schema": "https://raw.githubusercontent.com/richavery/bvr-cli/main/schema.json",
+  "$schema": "https://raw.githubusercontent.com/rfaiii/BVR-CLI/main/schema.json",
   "mcpServers": {
     "gemini-sync-mcp": {
       "command": "uv",
       "args": [
         "--directory",
-        "/Users/richavery/Projects/bvr-cli-main/mcp-server",
+        "/Users/richavery/Projects/BVR-CLI/mcp-server",
         "run",
         "mcp-server"
       ],

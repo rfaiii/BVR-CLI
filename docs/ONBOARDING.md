@@ -63,7 +63,7 @@ This covers everything a new user or installer needs on macOS and Windows.
 
 ### Charm libraries
 
-BVR depends on Charm ecosystem libraries. In the `rfaiii/bvr-cli-main`
+BVR depends on Charm ecosystem libraries. In the `rfaiii/BVR-CLI`
 repo, the expected modules are:
 
 - `charm.land/bubbletea/v2`
@@ -86,7 +86,7 @@ If these are not published under `charm.land`, map them to the local
 This repo may expect a shared `go.work` that includes sibling Charm module
 paths. If `go build ./...` fails from this repo alone, use one of:
 
-- `go build .` from `bvr-cli-main` only
+- `go build .` from `BVR-CLI` only
 - Add this repo to the shared workspace
 - Replace missing `charm.land/*` modules with local paths in `go.mod`
 
@@ -139,11 +139,11 @@ Then open BVR, run `/models`, refresh, and confirm a model becomes ready.
 
 ## UI Dialogs and Controls
 
-![BVR Home Screen](resources/screenshots/BVR-CLI-HOME-MENU.png)
+![BVR Home Screen](../resources/screenshots/BVR-CLI-HOME-MENU.png)
 
 ### Landing Screen Buttons
 
-Three buttons are displayed on the landing screen:
+Four buttons are displayed on the landing screen:
 
 | Button | Icon | Shortcut | Action |
 |--------|------|----------|--------|

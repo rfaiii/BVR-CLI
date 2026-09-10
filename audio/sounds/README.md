@@ -1,210 +1,74 @@
-# Audio Resources for BVR-CLI
+# BVR-CLI Audio Resources
 
-This directory contains audio files for the BVR-CLI audio/notification system.
+BVR embeds WAV cues for startup, interaction feedback, model activity, errors,
+permissions, and remote-workspace events. Audio playback is asynchronous so a
+sound never blocks the Bubble Tea update loop.
 
-## Audio File Structure
+## Sound files
 
-### Sound Files
-- **startup-song-01.wav**: Musical jingle for application startup
-- **advert-01.wav**: Used for future advertisement space or smoke break
-- **broken-01.wav**: Used to indicate that model is broken or too jank to work
-- **notification-01.wav**: Short alert sound for general notifications variation 1
-- **notification-02.wav**: Short alert sound for general notifications variation 2
-- **notification-03.wav**: Short alert sound for general notifications variation 3
-- **connected-01.wav**: Indication for successful connection attempt
-- **drill-01.wav**: Used for annoying your users variation 1
-- **drill-02.wav**: Used for annoying your users variation 2
-- **chat-01.wav**: Used for incoming chat from models variation 1
-- **chat-02.wav**: Used for incoming chat from models variation 2
-- **chat-03.wav**: Used for incoming chat from models variation 3
-- **error-01.wav**: Distinctive sound for error conditions
-- **error-02.wav**: Distinctive sound for error conditions
-- **error-03.wav**: Distinctive sound for error conditions
-- **exit-01.wav**: Confirmation sound for application termination version 1
- **exit-02.wav**: Confirmation sound for application termination version 2
-  **exit-03.wav**: Confirmation sound for application termination version 3
-- **chainsaw-01.wav**: Unique beaver chainsaw effect for git operations version 1
-- **chainsaw-02.wav**: Unique beaver chainsaw effect for git operations version 2
-- **chainsaw-03.wav**: Unique beaver chainsaw effect for git operations version 3
-- **incoming-01.wav**: Unique way to show up to a party or chat
-**loading-01.wav**: Medium alert sound for slowed operations variation 1
-**loading-02.wav**: Medium alert sound for slowed operations variation 2
-- **oops-01.wav**: Distinctive sound for crapping your pants when trying to fart too hard
-- **question-01.wav**: Did someone say something? I couldn't hear you very well... variation 1
-- **question-02.wav**: Did someone say something? I couldn't hear you very well... variation 2
-- **reload-01.wav**: Did someone spray something? I could smell you from very far away...
-- **sub-01.wav**: When you need more bass than treble... variation 1
-- **sub-02.wav**: When you need more bass than treble... variation 2
-- **sub-03.wav**: When you need more bass than treble... variation 3
+Processed cues are 16-bit, 44.1 kHz WAV files. The filenames are intentionally
+semantic: code refers to an event name and the audio backend resolves it to the
+bundled filename.
 
+| File | Placement |
+| --- | --- |
+| `STARTUP-SONG-FLAT.wav` | Application startup. |
+| `INTRO-BOP-01-FLAT.wav` | Reserved for the animated-logo intro sequence. |
+| `BROKEN-FLAT.wav` | Failed shell command or unknown/janky failure. |
+| `QUICK-NOTIFY-01-FLAT.wav` | Prompt/command submission, generic confirmation, and File Finder open. |
+| `QUICK-NOTIFY-02-FLAT.wav` | Help toggle, lighter UI confirmations, and Create File open. |
+| `QUICK-NOTIFY-03-FLAT.wav` | Tab/focus changes and Web Browser open. |
+| `CONNECTION-ISSUE-FLAT.wav` | MCP/model disconnects and Ollama load failures. |
+| `MENU-OPEN-FLAT.wav` | Opening menus, dialogs, Finder, models, themes, NODE, and file picker. |
+| `MENU-CLOSE-FLAT.wav` | Closing the command menu. |
+| `CHAT-01-FLAT.wav` … `CHAT-04-FLAT.wav` | Randomized assistant/model response cues. |
+| `CHAT-OPEN-FLAT.wav` / `CHAT-CLOSE-FLAT.wav` | Opening sessions and selecting a session. |
+| `ERROR-01-FLAT.wav` … `ERROR-03-FLAT.wav` | Randomized application/agent error cues. |
+| `CHAINSAW-01-FLAT.wav` / `CHAINSAW-02-FLAT.wav` | Reserved for high-energy sync or git actions. |
+| `INCOMING-FLAT.wav` | Pending permission, question, or other request requiring attention. |
+| `LONG-LOAD-01-FLAT.wav` / `LONG-LOAD-02-FLAT.wav` | Ollama/model loading and longer asynchronous work. |
+| `LONG-UPLOADING-FLAT.wav` | Reserved for future upload/sync progress. |
+| `DENIED-FLAT.wav` | Permission denial. |
+| `WHAT-FLAT.wav` | User question/clarification cue. |
+| `RELOAD-FLAT.wav` | New session and reload/reset actions. |
 
-## Technical Specifications
+## Current creative placements
 
-### Format Requirements
-- **Primary Format**: WAV (uncompressed, high quality)
-- **Sample Rate**: 44.1kHz
-- **Bit Depth**: 16-bit
-- **Channels**: Mono for notifications, stereo for effects (COMING SOON)
-- **File Size**: Under 500KB per file 
-- **Duration**: 0.5-5 seconds based on usage 
+These are deliberately playful additions to the original event list:
 
-### Audio Properties
-| Sound File | Duration | Size | Sample Rate | Bit Depth | Channels |
-|------------|----------|------|-------------|-----------|----------|
-| notification-01.wav | 0.8s | 245KB | 44.1kHz | 16-bit | Mono |
-| startup-song-01.wav | 3.2s | 512KB | 44.1kHz | 16-bit | Stereo |
-| error-01.wav | 0.6s | 198KB | 44.1kHz | 16-bit | Mono |
-| question-01.wav | 1.2s | 312KB | 44.1kHz | 16-bit | Mono |
-| chainsaw-01.wav | 2.3s | 412KB | 44.1kHz | 16-bit | Stereo |
+- Prompt submission gets a short confirmation cue.
+- Tab and focus changes get a light navigation cue.
+- Permission and question requests get an incoming cue.
+- Denied tools get a distinct denial cue.
+- Failed shell commands get the broken cue.
+- Assistant responses randomly choose one of four chat cues.
+- Opening and closing menus use separate cues.
+- The homescreen File Finder, Create File, and Web Browser actions each have
+  their own quick-notify cue so the four launch buttons do not sound identical.
 
-## Usage Instructions
+## Legacy / not-yet-processed cues
 
-### Audio System Integration
-1. Place audio files in this directory
-2. Reference using relative paths
-3. Audio files are automatically loaded by the audio notification system
-4. System falls back to terminal bell if audio playback fails
+These remain embedded and available but are not part of the processed set:
 
-### File Permissions
-- All audio files should be readable by the application
-- No executable permissions required
-- Maintain proper directory structure for compatibility
+- `exit-01.wav`, `exit-02.wav`, `exit-03.wav`: exit confirmation variations.
+- `advert-01.wav`: future AFK/advertising cue.
+- `sub-01.wav`, `sub-02.wav`: future low-frequency transition cues.
+- `who-01.wav`: reserved for a future identity/attention cue.
 
-## Audio Source Information
+## Technical notes
 
-### Sound Acquisition
-- **Notification Sound**: Source from Freesound.org (CC BY 3.0)
-- **Startup Sound**: Source from Pixabay (Free for commercial use)
-- **Error Sound**: Source from CC Mixter (Creative Commons)
-- **Exit Sound**: Source from Pixabay (Free for commercial use)
-- **Chainsaw Sound**: Custom production for unique BVR branding
+- Native playback uses `afplay` on macOS, `paplay`/`aplay` on Linux, and
+  PowerShell `SoundPlayer` on Windows.
+- The audio package extracts embedded files to a temporary directory on first
+  use and cleans them up at process exit.
+- `high`, `low`, and `silent` volume modes are controlled from the Sounds menu
+  or `options.audio_volume`.
+- Long cues should not be assigned to high-frequency key events.
+- All files must remain readable by the application; executable permissions are
+  unnecessary.
 
-### Sound Licensing
-- All sounds are licensed for commercial use
-- No attribution required for usage in BVR-CLI
-- Files are self-contained with licensing information
+## Validation
 
-## Testing and Validation
-
-### Audio Testing
-1. Test on all target platforms (macOS, Windows, Linux)
-2. Verify audio playback compatibility
-3. Test fallback mechanisms when audio unavailable
-4. Performance testing for resource usage
-
-### Quality Assurance
-1. Verify all audio files play without errors
-2. Test audio synchronization with notifications
-3. Validate audio levels are consistent
-4. Ensure no audio artifacts or distortions
-
-## File Organization
-
-### Current Structure
-```
-audio/
-├── sounds/           # Audio files
-│   ├── advert-01.wav
-│   ├── broken-01.wav
-│   ├── chainsaw-01.wav
-│   ├── chainsaw-02.wav
-│   ├── chainsaw-03.wav
-│   ├── chat-01.wav
-│   ├── chat-02.wav
-│   ├── chat-03.wav
-│   ├── connected-01.wav
-│   ├── drill-01.wav
-│   ├── drill-02.wav
-│   ├── error-01.wav
-│   ├── error-02.wav
-│   ├── error-03.wav
-│   ├── exit-01.wav
-│   ├── exit-02.wav
-│   ├── exit-03.wav
-│   ├── incoming-01.wav
-│   ├── loading-01.wav
-│   ├── loading-02.wav
-│   ├── notification-01.wav
-│   ├── notification-02.wav
-│   ├── notification-03.wav
-│   ├── oops-01.wav
-│   ├── question-01.wav
-│   ├── question-02.wav
-│   ├── reload-01.wav
-│   ├── startup-song-01.wav
-│   ├── sub-01.wav
-│   ├── sub-02.wav
-│   └── sub-03.wav
-├── metadata/         # Sound specifications
-│   └── sound-index.json
-└── formats/          # Format documentation
-    └── audio-formats.md
-```
-
-### Sound Index
-```json
-{
-  "sounds": [
-    {
-      "name": "notification-01",
-      "file": "notification-01.wav",
-      "duration": 0.8,
-      "size": 245024,
-      "format": "WAV",
-      "sampleRate": 44100,
-      "bitDepth": 16,
-      "channels": "mono",
-      "description": "Short notification alert sound",
-      "usage": "General notifications and system events"
-    },
-    {
-      "name": "startup-song-01",
-      "file": "startup-song-01.wav",
-      "duration": 3.2,
-      "size": 524288,
-      "format": "WAV",
-      "sampleRate": 44100,
-      "bitDepth": 16,
-      "channels": "stereo",
-      "description": "Musical jingle for application startup",
-      "usage": "Application startup confirmation"
-    },
-    {
-      "name": "error-01",
-      "file": "error-01.wav",
-      "duration": 0.6,
-      "size": 202432,
-      "format": "WAV",
-      "sampleRate": 44100,
-      "bitDepth": 16,
-      "channels": "mono",
-      "description": "Distinctive alert sound for error conditions",
-      "usage": "Error notifications and failure confirmations"
-    },
-    {
-      "name": "question-01",
-      "file": "question-01.wav",
-      "duration": 1.2,
-      "size": 312000,
-      "format": "WAV",
-      "sampleRate": 44100,
-      "bitDepth": 16,
-      "channels": "mono",
-      "description": "Sound for when a model disconnects or a question mark is typed",
-      "usage": "Model disconnections or chat questions"
-    },
-    {
-      "name": "chainsaw-01",
-      "file": "chainsaw-01.wav",
-      "duration": 2.3,
-      "size": 422112,
-      "format": "WAV",
-      "sampleRate": 44100,
-      "bitDepth": 16,
-      "channels": "stereo",
-      "description": "Unique beaver chainsaw effect for git operations",
-      "usage": "Git uploads, pushes, and file synchronization events"
-    }
-  ]
-}
-```
+Before release, test native playback on macOS, Windows, and Linux; verify the
+silent mode; test missing-player fallback behavior; and confirm that sounds do
+not overlap excessively during rapid keyboard use.

@@ -6,8 +6,8 @@ BVR is a keyboard-first terminal AI workspace.
 
 - **Maintainer:** Richard Aizen Avery III
 - **Email:** averydevz@outlook.com
-- **GitHub:** https://github.com/richavery/bvr-cli-main
-- **Issues:** https://github.com/richavery/bvr-cli-main/issues
+- **GitHub:** https://github.com/rfaiii/BVR-CLI
+- **Issues:** https://github.com/rfaiii/BVR-CLI/issues
 
 ## Support
 

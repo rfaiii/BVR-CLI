@@ -5,7 +5,7 @@ import path from "node:path";
 import os from "node:os";
 import { execSync } from "node:child_process";
 
-const GITHUB_REPO = "richavery/bvr-cli-main";
+const GITHUB_REPO = "rfaiii/BVR-CLI";
 const VERSION = process.env.npm_package_version || "latest";
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || process.env.nPm_CONFIG_GITHUB_TOKEN || "";
 const HOME = os.homedir();

@@ -44,6 +44,7 @@ import (
 	"github.com/richavery/bvr-cli/internal/discover"
 	"github.com/richavery/bvr-cli/internal/event"
 	"github.com/richavery/bvr-cli/internal/fsext"
+	"github.com/richavery/bvr-cli/internal/ggwave"
 	"github.com/richavery/bvr-cli/internal/history"
 	"github.com/richavery/bvr-cli/internal/home"
 	"github.com/richavery/bvr-cli/internal/localmodel"
@@ -214,6 +215,8 @@ type UI struct {
 	width         int
 	height        int
 	bannerFrame   int
+	ggwaveFrame   uint64
+	ggwaveMode    ggwave.Mode
 	bannerAnim    *anim.Anim
 	versionBanner *versionBanner
 	// pendingClineKeyAdd marks an in-flight "ADD CLINE API KEY" flow in the
@@ -280,10 +283,10 @@ type UI struct {
 
 	// sendProgressBar instructs the TUI to send progress bar updates to the
 	// terminal.
-	sendProgressBar    bool
+	sendProgressBar bool
 
-	lastActivity time.Time
-	isAFK        bool
+	lastActivity       time.Time
+	isAFK              bool
 	progressBarEnabled bool
 
 	// caps hold different terminal capabilities that we query for.
@@ -606,6 +609,7 @@ func (m *UI) Init() tea.Cmd {
 	cmds = append(cmds, m.resourceMonitorCmd())
 	if model := m.selectedOllamaModel(); model != "" {
 		m.ollamaRuntime = common.ModelRuntimeLoading
+		cmds = append(cmds, m.playAudio("Ollama", "Loading model", "long-load"))
 		cmds = append(cmds, m.loadOllamaModelCmd(model))
 	}
 	return tea.Batch(cmds...)
@@ -835,7 +839,10 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.model == m.selectedOllamaModel() {
 			m.ollamaRuntime = msg.state
 			if msg.err != nil {
+				cmds = append(cmds, m.playAudio("Ollama", "Model failed to load", "connection-issue"))
 				cmds = append(cmds, util.ReportError(fmt.Errorf("load Ollama model %q: %w", msg.model, msg.err)))
+			} else if msg.state == common.ModelRuntimeReady {
+				cmds = append(cmds, m.playAudio("Ollama", "Model ready", "connected"))
 			}
 		}
 	case pubsub.Event[notify.Notification]:
@@ -965,7 +972,7 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Type == pubsub.DeletedEvent {
 			if m.session != nil && m.session.ID == msg.Payload.ID {
 				cmds = append(cmds, m.playAudio("Reload", "", "reload"))
-		if cmd := m.newSession(); cmd != nil {
+				if cmd := m.newSession(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 			}
@@ -1008,11 +1015,11 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case pubsub.CreatedEvent:
 			if string(msg.Payload.Role) == "assistant" {
-				sound := fmt.Sprintf("chat-%02d", rand.Intn(3)+1)
+				sound := fmt.Sprintf("chat-%02d", rand.Intn(4)+1)
 				cmds = append(cmds, m.playAudio("BVR-CLI", "Incoming message", sound))
 			} else if string(msg.Payload.Role) == "user" {
 				if strings.Contains(msg.Payload.Content().Text, "?") {
-					sound := fmt.Sprintf("question-%02d", rand.Intn(2)+1)
+					sound := "what"
 					cmds = append(cmds, m.playAudio("BVR-CLI", "Question asked", sound))
 				} else if strings.Contains(strings.ToUpper(msg.Payload.Content().Text), "EXTRA") {
 					cmds = append(cmds, m.playAudio("BVR-CLI", "EXTRA EXTRA", "chat-02"))
@@ -1065,8 +1072,7 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.loadMCPrompts,
 			}
 			if msg.Payload.State == mcp.StateDisabled || msg.Payload.State == mcp.StateError {
-				sound := fmt.Sprintf("question-%02d", rand.Intn(2)+1)
-				eventCmds = append(eventCmds, m.playAudio("BVR-CLI", "Model Disconnected", sound))
+				eventCmds = append(eventCmds, m.playAudio("BVR-CLI", "Model disconnected", "connection-issue"))
 			}
 			return m, tea.Batch(eventCmds...)
 		case mcp.EventPromptsListChanged:
@@ -1077,6 +1083,7 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, handleMCPResourcesEvent(m.com.Workspace, msg.Payload.Name)
 		}
 	case pubsub.Event[permission.PermissionRequest]:
+		cmds = append(cmds, m.playAudio("BVR-CLI", "Permission required", "incoming"))
 		if cmd := m.openPermissionsDialog(msg.Payload); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
@@ -1087,8 +1094,11 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 		}
 	case pubsub.Event[permission.PermissionNotification]:
-		m.handlePermissionNotification(msg.Payload)
+		if cmd := m.handlePermissionNotification(msg.Payload); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case pubsub.Event[question.Request]:
+		cmds = append(cmds, m.playAudio("BVR-CLI", "Question requested", "incoming"))
 		m.openBatchFormDialog(msg.Payload)
 		if cmd := m.chat.ScrollToBottomAndAnimate(); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -1167,12 +1177,14 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Batch(cmds...)
 			}
 			if image.Pt(msg.X, msg.Y).In(m.finderButtonRect) {
+				cmds = append(cmds, m.playAudio("File Finder", "Open file finder", "quick-notify-01"))
 				if cmd := m.openFileBrowserDialog(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 				return m, tea.Batch(cmds...)
 			}
 			if image.Pt(msg.X, msg.Y).In(m.createFileButtonRect) {
+				cmds = append(cmds, m.playAudio("Create File", "Open create file", "quick-notify-02"))
 				dlg, cmd := dialog.NewCreateFile(m.com, m.projectSource)
 				m.dialog.OpenDialog(dlg)
 				if cmd != nil {
@@ -1181,6 +1193,7 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Batch(cmds...)
 			}
 			if image.Pt(msg.X, msg.Y).In(m.browserButtonRect) {
+				cmds = append(cmds, m.playAudio("Web Browser", "Open web browser", "quick-notify-03"))
 				if cmd := m.openBrowserDialog(""); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
@@ -1382,11 +1395,15 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	case anim.StepMsg:
+		m.ggwaveFrame++
 		if m.bannerAnim != nil {
 			if cmd := m.bannerAnim.Animate(msg); cmd != nil {
 				m.bannerFrame++
 				cmds = append(cmds, cmd)
 			}
+		}
+		if m.state == uiChat && !m.isCompact && m.layout.sidebar.Dx() > 0 {
+			m.cacheSidebarLogo(m.layout.sidebar.Dx() - 2)
 		}
 		if m.state == uiChat {
 			if cmd := m.chat.Animate(msg); cmd != nil {
@@ -1517,6 +1534,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		cmds = append(cmds, m.loadPromptHistory())
+		if msg.ExitCode != 0 {
+			cmds = append(cmds, m.playAudio("BVR-CLI", "Command failed", "broken"))
+		}
 	case hyperRefreshDoneMsg:
 		if cmd := m.handleSelectModel(msg.action); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -1526,6 +1546,7 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case util.InfoMsg:
 		if msg.Type == util.InfoTypeError {
 			slog.Error("Error reported", "error", msg.Msg)
+			cmds = append(cmds, m.playAudio("BVR-CLI", msg.Msg, "error"))
 		}
 		m.status.SetInfoMsg(msg)
 		ttl := msg.TTL
@@ -2037,7 +2058,7 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 		}
 
 		if last := m.dialog.DialogLast(); last != nil && last.ID() == dialog.CommandsID {
-			cmds = append(cmds, m.playAudio("BVR-CLI", "Close Commands", "drill-02"))
+			cmds = append(cmds, m.playAudio("BVR-CLI", "Close Commands", "menu-close"))
 		}
 
 		m.dialog.CloseFrontDialog()
@@ -2066,13 +2087,12 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 	// Session dialog messages.
 	case dialog.ActionSelectSession:
 		m.dialog.CloseDialog(dialog.SessionsID)
-		cmds = append(cmds, m.playAudio("Sub", "", "sub"))
+		cmds = append(cmds, m.playAudio("Sessions", "Session selected", "chat-close"))
 		cmds = append(cmds, m.loadSession(msg.Session.ID))
 
 	// Open dialog message.
 	case dialog.ActionOpenDialog:
 		m.dialog.CloseDialog(dialog.CommandsID)
-		cmds = append(cmds, m.playAudio("Sub", "", "sub"))
 		if cmd := m.openDialog(msg.DialogID); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
@@ -2610,6 +2630,7 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 	handleGlobalKeys := func(msg tea.KeyPressMsg) bool {
 		switch {
 		case key.Matches(msg, m.keyMap.Help):
+			cmds = append(cmds, m.playAudio("Help", "Help toggled", "quick-notify-02"))
 			m.status.ToggleHelp()
 			m.updateLayoutAndSize()
 			return true
@@ -2620,20 +2641,26 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 			return true
 		case key.Matches(msg, m.keyMap.Finder):
 			if m.dialog.ContainsDialog(dialog.FileBrowserID) {
+				cmds = append(cmds, m.playAudio("File Finder", "Close file finder", "menu-close"))
 				m.dialog.CloseDialog(dialog.FileBrowserID)
 				if m.focus == uiFocusEditor {
 					cmds = append(cmds, m.textarea.Focus())
 				}
-			} else if cmd := m.openFileBrowserDialog(); cmd != nil {
-				cmds = append(cmds, cmd)
+			} else {
+				cmds = append(cmds, m.playAudio("File Finder", "Open file finder", "menu-open"))
+				if cmd := m.openFileBrowserDialog(); cmd != nil {
+					cmds = append(cmds, cmd)
+				}
 			}
 			return true
 		case key.Matches(msg, m.keyMap.NodeSettings):
+			cmds = append(cmds, m.playAudio("NODE", "Open connections", "menu-open"))
 			if cmd := m.openNodeSettingsDialog(); cmd != nil {
 				cmds = append(cmds, cmd)
 			}
 			return true
 		case key.Matches(msg, m.keyMap.Themes):
+			cmds = append(cmds, m.playAudio("Themes", "Open themes", "menu-open"))
 			m.dialog.OpenDialog(dialog.NewThemes(m.com, m.themeID))
 			return true
 		case key.Matches(msg, m.keyMap.ThemePrev):
@@ -2643,11 +2670,13 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 			m.cycleTheme(1)
 			return true
 		case key.Matches(msg, m.keyMap.Models):
+			cmds = append(cmds, m.playAudio("Models", "Open models", "menu-open"))
 			if cmd := m.openModelsDialog(); cmd != nil {
 				cmds = append(cmds, cmd)
 			}
 			return true
 		case key.Matches(msg, m.keyMap.Sessions):
+			cmds = append(cmds, m.playAudio("Sessions", "Open sessions", "chat-open"))
 			if cmd := m.openSessionsDialog(); cmd != nil {
 				cmds = append(cmds, cmd)
 			}
@@ -2722,6 +2751,7 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 	// an inline editor is active. This lets users collapse the
 	// question form to view chat.
 	if m.activeInline != nil && key.Matches(msg, m.keyMap.Tab) {
+		cmds = append(cmds, m.playAudio("BVR-CLI", "Focus changed", "quick-notify-03"))
 		if m.focus == uiFocusEditor {
 			m.focus = uiFocusMain
 			m.activeInline.SetFocused(false)
@@ -2848,7 +2878,7 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 					m.setEditorPrompt(m.beastmodeModeCached())
 					m.randomizePlaceholders()
 					m.historyReset()
-					return tea.Batch(m.runShellCommand(value))
+					return tea.Batch(m.playAudio("BVR-CLI", "Command submitted", "quick-notify-01"), m.runShellCommand(value))
 				}
 
 				attachments := m.attachments.List()
@@ -2860,7 +2890,11 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				m.randomizePlaceholders()
 				m.historyReset()
 
-				return tea.Batch(m.sendMessage(value, attachments...), m.loadPromptHistory())
+				return tea.Batch(
+					m.playAudio("BVR-CLI", "Prompt submitted", "quick-notify-01"),
+					m.sendMessage(value, attachments...),
+					m.loadPromptHistory(),
+				)
 			case key.Matches(msg, m.keyMap.Chat.NewSession):
 				if !m.hasSession() {
 					break
@@ -2870,11 +2904,12 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 					break
 				}
 				cmds = append(cmds, m.playAudio("Reload", "", "reload"))
-		if cmd := m.newSession(); cmd != nil {
+				if cmd := m.newSession(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 			case key.Matches(msg, m.keyMap.Tab):
 				if m.state != uiLanding {
+					cmds = append(cmds, m.playAudio("BVR-CLI", "Chat focus", "quick-notify-03"))
 					m.setState(m.state, uiFocusMain)
 					m.textarea.Blur()
 					m.chat.Focus()
@@ -3011,6 +3046,7 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 		case uiFocusMain:
 			switch {
 			case key.Matches(msg, m.keyMap.Tab):
+				cmds = append(cmds, m.playAudio("BVR-CLI", "Editor focus", "quick-notify-03"))
 				m.focus = uiFocusEditor
 				m.sidebarScrollbarVisible = false
 				cmds = append(cmds, m.textarea.Focus())
@@ -3030,7 +3066,7 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				}
 				m.focus = uiFocusEditor
 				cmds = append(cmds, m.playAudio("Reload", "", "reload"))
-		if cmd := m.newSession(); cmd != nil {
+				if cmd := m.newSession(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 			case key.Matches(msg, m.keyMap.Chat.Expand):
@@ -4402,7 +4438,12 @@ func (m *UI) renderEditorView(width int) string {
 
 // cacheSidebarLogo renders and caches the sidebar logo at the specified width.
 func (m *UI) cacheSidebarLogo(width int) {
-	m.sidebarLogo = renderLogo(m.com.Styles, true, m.com.IsHyper(), width, m.bannerFrame, m.bannerAnimation())
+	compactLogo := renderLogo(m.com.Styles, true, m.com.IsHyper(), width, m.bannerFrame, m.bannerAnimation())
+	m.sidebarLogo = lipgloss.JoinVertical(
+		lipgloss.Center,
+		anim.BeaverHeroFrame(m.bannerFrame, m.beaverErrored),
+		compactLogo,
+	)
 }
 
 // startOnboarding opens the onboarding dialog when requested.
@@ -4744,12 +4785,12 @@ func (m *UI) openDialog(id string) tea.Cmd {
 			cmds = append(cmds, cmd)
 		}
 	case dialog.ModelsID:
-		cmds = append(cmds, m.playAudio("Models", "", "sub"))
+		cmds = append(cmds, m.playAudio("Models", "Open models", "menu-open"))
 		if cmd := m.openModelsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
 	case dialog.CommandsID:
-		cmds = append(cmds, m.playAudio("Commands", "", "notification"))
+		cmds = append(cmds, m.playAudio("Commands", "Open commands", "menu-open"))
 		if cmd := m.openCommandsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
@@ -4762,17 +4803,19 @@ func (m *UI) openDialog(id string) tea.Cmd {
 			cmds = append(cmds, cmd)
 		}
 	case dialog.FilePickerID:
-		cmds = append(cmds, m.playAudio("File Picker", "", "incoming"))
+		cmds = append(cmds, m.playAudio("File Picker", "Open file picker", "menu-open"))
 		if cmd := m.openFilesDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
 	case dialog.CreateFileID:
+		cmds = append(cmds, m.playAudio("Create File", "Open create file", "quick-notify-02"))
 		dlg, cmd := dialog.NewCreateFile(m.com, m.projectSource)
 		m.dialog.OpenDialog(dlg)
 		if cmd != nil {
 			cmds = append(cmds, cmd)
 		}
 	case dialog.FileBrowserID:
+		cmds = append(cmds, m.playAudio("File Finder", "Open file finder", "quick-notify-01"))
 		if cmd := m.openFileBrowserDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
@@ -4797,6 +4840,7 @@ func (m *UI) openDialog(id string) tea.Cmd {
 			cmds = append(cmds, cmd)
 		}
 	case dialog.BrowserID:
+		cmds = append(cmds, m.playAudio("Web Browser", "Open web browser", "quick-notify-03"))
 		if cmd := m.openBrowserDialog(""); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
@@ -4870,7 +4914,7 @@ func (m *UI) openCommandsDialog() tea.Cmd {
 	if m.dialog.ContainsDialog(dialog.CommandsID) {
 		// Bring to front
 		m.dialog.BringToFront(dialog.CommandsID)
-		return m.playAudio("BVR-CLI", "Open Commands", "drill-01")
+		return m.playAudio("BVR-CLI", "Open Commands", "menu-open")
 	}
 
 	var sessionID string
@@ -4889,7 +4933,7 @@ func (m *UI) openCommandsDialog() tea.Cmd {
 	m.dialog.OpenDialog(commands)
 	return tea.Batch(
 		commands.InitialCmd(),
-		m.playAudio("BVR-CLI", "Open Commands", "drill-01"),
+		m.playAudio("BVR-CLI", "Open Commands", "menu-open"),
 	)
 }
 
@@ -5079,7 +5123,11 @@ func (m *UI) shouldCollapseQuestion(qf *dialog.QuestionForm) bool {
 }
 
 // handlePermissionNotification updates tool items when permission state changes.
-func (m *UI) handlePermissionNotification(notification permission.PermissionNotification) {
+func (m *UI) handlePermissionNotification(notification permission.PermissionNotification) tea.Cmd {
+	var cmd tea.Cmd
+	if notification.Denied {
+		cmd = m.playAudio("BVR-CLI", "Permission denied", "denied")
+	}
 	if toolItem := m.chat.MessageItem(notification.ToolCallID); toolItem != nil {
 		if permItem, ok := toolItem.(chat.ToolMessageItem); ok {
 			if notification.Granted {
@@ -5094,13 +5142,14 @@ func (m *UI) handlePermissionNotification(notification permission.PermissionNoti
 	// dismiss any open permissions dialog whose tool call ID matches. This
 	// covers the case where another client resolved the request remotely.
 	if !notification.Granted && !notification.Denied {
-		return
+		return cmd
 	}
 	if d := m.dialog.Dialog(dialog.PermissionsID); d != nil {
 		if perm, ok := d.(*dialog.Permissions); ok && perm.ToolCallID() == notification.ToolCallID {
 			m.dialog.CloseDialog(dialog.PermissionsID)
 		}
 	}
+	return cmd
 }
 
 // handleAgentNotification translates domain agent events into desktop
@@ -5120,6 +5169,7 @@ func (m *UI) handleAgentNotification(n notify.Notification) tea.Cmd {
 		}
 	case notify.TypeAgentError:
 		m.beaverErrored = true
+		cmds = append(cmds, m.playAudio("BVR-CLI", n.Message, "error"))
 		// Terminal edge like TypeAgentFinished; fall through to the
 		// busy/queue refresh below.
 	case notify.TypeReAuthenticate:

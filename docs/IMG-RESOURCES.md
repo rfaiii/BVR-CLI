@@ -45,41 +45,36 @@ and how to regenerate or replace them.
 
 ## Screenshots
 
-- `resources/screenshots/`
-  - Place terminal/app screenshots here for README and marketing.
-  - Suggested filenames:
-    - `bvr-cli-macos.png`
-    - `bvr-cli-windows.png`
-    - `bvr-cli-linux.png`
-    - `bvr-cli-onboarding.png`
+The current committed product screenshots are:
 
-## Animations
+- `resources/screenshots/BVR-CLI-HOME-MENU.png` - homescreen and launch actions.
+- `resources/screenshots/COMMAND-MENU.png` - command palette and navigation.
+- `resources/screenshots/HEADER.png` - header treatment.
+- `resources/screenshots/BVR-MASCOT.png` - Beaver branding reference.
+- `resources/screenshots/file-finder.png` - project file browser.
+- `resources/screenshots/CREATE-FILE.png` - new-file workflow.
+- `resources/screenshots/WEB-BROWSER.png` - embedded browser.
+- `resources/screenshots/MODEL-INFO.png` - model/provider information.
+- `resources/screenshots/NODE-INFO.png` - NODE status.
+- `resources/screenshots/SKILLS-INFO.png` - skills status.
+- `resources/screenshots/FOOTER.png` - footer/status treatment.
 
-Use GIF for short terminal animations only when the motion adds value.
-Keep these under 5 MB for GitHub rendering.
+Use the homescreen and command menu images in the root README. The remaining
+images are supporting references for feature and design documentation.
 
-| Filename | Purpose | Duration |
-| --- | --- | --- |
-| `resources/screenshots/bvr-cli-onboarding.gif` | Onboarding flow demo | 5–10s |
-| `resources/screenshots/bvr-cli-session.gif` | Live typing/response demo | 10–15s |
+## Future media
 
-## Video walkthroughs
-
-Use MP4 or WebM for external documentation and release pages.
-Do not rely on GitHub README for video playback.
-
-| Filename | Purpose | Notes |
-| --- | --- | --- |
-| `resources/videos/bvr-cli-onboarding.mp4` | Full onboarding walkthrough | 1080p, <2 min |
-| `resources/videos/bvr-cli-install-macos.mp4` | macOS install walkthrough | 1080p, <1 min |
-| `resources/videos/bvr-cli-install-windows.mp4` | Windows install walkthrough | 1080p, <1 min |
+Animations and walkthrough videos are intentionally not listed as committed
+assets until they exist in the repository. Keep future GIFs under 5 MB and use
+MP4/WebM for longer external walkthroughs rather than embedding them in the
+root README.
 
 ## Usage in README
 
-Reference images from this folder in the README with paths like:
+Reference images from this folder in documentation with paths like:
 
 ```md
-![BVR on macOS](resources/screenshots/bvr-cli-macos.png)
+![BVR-CLI home menu](../resources/screenshots/BVR-CLI-HOME-MENU.png)
 ```
 
 ## About / contact assets

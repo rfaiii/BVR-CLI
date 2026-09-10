@@ -3,6 +3,7 @@ package anim
 import (
 	"testing"
 
+	"charm.land/lipgloss/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -44,6 +45,18 @@ func TestStartSupersedesPreviousChain(t *testing.T) {
 	require.NotNil(t, next, "current-generation tick must schedule another step")
 	require.Equal(t, framesBefore+1, a.framesSinceStart.Load(),
 		"current-generation tick must advance the frame")
+}
+
+func TestBeaverHeroFrameKeepsStableWidthAndChangesPose(t *testing.T) {
+	t.Parallel()
+	a := BeaverHeroFrame(0, false)
+	b := BeaverHeroFrame(6, false)
+	if lipgloss.Width(a) != lipgloss.Width(b) {
+		t.Fatalf("hero frame width changed: %d vs %d", lipgloss.Width(a), lipgloss.Width(b))
+	}
+	if a == b {
+		t.Fatal("hero animation did not change pose")
+	}
 }
 
 // TestStopKillsChain verifies that Stop() bumps the generation so any

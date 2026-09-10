@@ -573,7 +573,7 @@ to Bash-based config.
 
 ```jsonc
 {
-  "$schema": "https://raw.githubusercontent.com/richavery/bvr-cli/main/schema.json",
+  "$schema": "https://raw.githubusercontent.com/rfaiii/BVR-CLI/main/schema.json",
   "providers": {
     "anthropic": { "api_key": "$ANTHROPIC_API_KEY" },
   },
@@ -610,7 +610,7 @@ find us on:
 
 Part of [BVR](https://bvr-cli.com).
 
-<a href="https://bvr-cli.com/"><img alt="The BVR logo" width="400" src="https://raw.githubusercontent.com/richavery/bvr-cli/main/docs/bvr-banner.png" /></a>
+<a href="https://bvr-cli.com/"><img alt="The BVR logo" width="400" src="https://raw.githubusercontent.com/rfaiii/BVR-CLI/main/docs/bvr-banner.png" /></a>
 
 <!--prettier-ignore-->
 BVR热爱开源 • BVR loves open source

@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.2.2
+
+### TUI branding and navigation
+
+- Added a larger fixed-width animated Beaver hero with idle, blink, working,
+  and glance poses.
+- Moved the hero into the upper landing experience and wide chat sidebar.
+- Kept homescreen button hitboxes aligned with the rendered hero height.
+- Added extra spacing between the Web Browser icon and its label.
+
+### Audio and GGWave
+
+- Replaced stale sound metadata with the current processed WAV inventory.
+- Added distinct quick-notify cues for File Finder, Create File, and Web
+  Browser launch actions while preserving existing interaction sounds.
+- Added a portable GGWave pairing envelope and animated `GGWAVE NODE LINK`
+  waveform surface without making the default CGO-free build depend on native
+  audio libraries.
+
+### Release and documentation
+
+- Bumped runtime, packaging, Winget, installer, and task metadata to `1.2.2`.
+- Reworked the root README around the actual product workflow and two primary
+  screenshots.
+- Updated audio, onboarding, features, image inventory, beta, and NODE/GGWave
+  documentation to match the current implementation.
+
 ## 1.1.9
 
 ### Stability & polish
