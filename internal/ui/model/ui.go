@@ -261,6 +261,11 @@ type UI struct {
 	imageButtonRect      image.Rectangle
 	sidebarBeaverRect    image.Rectangle
 
+	// imageLookupPending is set when the IMAGE RECOGNITION button on the
+	// landing page is clicked. It routes the next file-browser selection
+	// to the lookup-image command instead of attaching the file to chat.
+	imageLookupPending bool
+
 	// isCanceling tracks whether the user has pressed escape once to cancel.
 	isCanceling bool
 
@@ -1208,7 +1213,11 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if image.Pt(msg.X, msg.Y).In(m.imageButtonRect) {
 				cmds = append(cmds, m.playAudio("Image Recognition", "Open image recognition", "quick-notify-03"))
-				if cmd := m.openBrowserDialog(""); cmd != nil {
+				// Open the file browser so the user can pick an image to analyze.
+				// The selection is routed to the lookup-image command via the
+				// imageLookupPending flag (see ActionFileBrowserSelected).
+				m.imageLookupPending = true
+				if cmd := m.openFileBrowserDialog(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 				return m, tea.Batch(cmds...)
@@ -2111,9 +2120,11 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 	// Command dialog messages.
 	case dialog.ActionToggleBeastmodeMode:
 		m.toggleBeastmodeMode()
+		cmds = append(cmds, m.playAudio("Beastmode", "Toggle beastmode", "chainsaw"))
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionToggleCodeMode:
 		m.coderMode = !m.coderMode
+		cmds = append(cmds, m.playAudio("Code Mode", "Toggle code mode", "quick-notify-01"))
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionSetAudioVolume:
 		cfg := m.com.Config()
@@ -2139,6 +2150,7 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 			// Reinitialize notification backend with new style.
 			m.notifyBackend = selectNotificationBackend(m.caps, cfg)
 		}
+		cmds = append(cmds, m.playAudio("Sounds", "Set notification style", "menu-close"))
 		m.dialog.CloseDialog(dialog.NotificationsID)
 	case dialog.ActionNewSession:
 		if m.isAgentBusy() {
@@ -2155,6 +2167,7 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before summarizing session..."))
 			break
 		}
+		cmds = append(cmds, m.playAudio("Summarize", "Summarizing session", "long-load"))
 		cmds = append(cmds, func() tea.Msg {
 			err := m.com.Workspace.AgentSummarize(context.Background(), msg.SessionID)
 			if err != nil {
@@ -2165,6 +2178,7 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionToggleHelp:
 		m.status.ToggleHelp()
+		cmds = append(cmds, m.playAudio("Help", "Help toggled", "quick-notify-02"))
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionExternalEditor:
 		if m.isAgentBusy() {
@@ -2176,14 +2190,17 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 			editorValue = "!" + editorValue
 		}
 		cmds = append(cmds, m.openEditor(editorValue))
+		cmds = append(cmds, m.playAudio("Editor", "Open external editor", "quick-notify-03"))
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionToggleCompactMode:
 		cmds = append(cmds, m.toggleCompactMode())
+		cmds = append(cmds, m.playAudio("Layout", "Toggle compact mode", "quick-notify-01"))
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionTogglePills:
 		if cmd := m.togglePillsExpanded(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+		cmds = append(cmds, m.playAudio("Todos", "Toggle to-dos/queue", "quick-notify-02"))
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionToggleThinking:
 		cmds = append(cmds, func() tea.Msg {
@@ -2209,6 +2226,7 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 			}
 			return util.NewInfoMsg("Thinking mode " + status)
 		})
+		cmds = append(cmds, m.playAudio("Thinking", "Toggle thinking mode", "quick-notify-03"))
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionToggleTransparentBackground:
 		cmds = append(cmds, func() tea.Msg {
@@ -2230,13 +2248,17 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 			}
 			return util.NewInfoMsg("Transparent background " + status)
 		})
+		cmds = append(cmds, m.playAudio("Transparent", "Toggle transparent background", "quick-notify-01"))
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionQuit:
+		cmds = append(cmds, m.playAudio("Quit", "Quitting BVR-CLI", "exit"))
 		cmds = append(cmds, tea.Quit)
 	case dialog.ActionEnableDockerMCP:
+		cmds = append(cmds, m.playAudio("Docker MCP", "Enable Docker MCP catalog", "menu-open"))
 		m.dialog.CloseDialog(dialog.CommandsID)
 		cmds = append(cmds, m.enableDockerMCP)
 	case dialog.ActionDisableDockerMCP:
+		cmds = append(cmds, m.playAudio("Docker MCP", "Disable Docker MCP catalog", "menu-close"))
 		m.dialog.CloseDialog(dialog.CommandsID)
 		cmds = append(cmds, m.disableDockerMCP)
 	case dialog.ActionInitializeProject:
@@ -2244,6 +2266,7 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before summarizing session..."))
 			break
 		}
+		cmds = append(cmds, m.playAudio("Init", "Initialize project", "quick-notify-01"))
 		cmds = append(cmds, m.initializeProject())
 		m.dialog.CloseDialog(dialog.CommandsID)
 
@@ -2266,6 +2289,7 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 		// Open the API key input for Cline. The returned ActionSelectModel is
 		// consumed by the pendingClineKeyAdd branch above to refresh the
 		// catalog rather than selecting a model.
+		cmds = append(cmds, m.playAudio("Cline", "Add Cline API key", "quick-notify-01"))
 		m.pendingClineKeyAdd = true
 		m.dialog.CloseDialog(dialog.OtherModelsID)
 		if cmd := m.openAuthenticationDialog(
@@ -2310,16 +2334,20 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 			m.com.Workspace.UpdateAgentModel(context.TODO())
 			return util.NewInfoMsg("Reasoning effort set to " + msg.Effort)
 		})
+		cmds = append(cmds, m.playAudio("Reasoning", "Set reasoning effort", "menu-open"))
 		m.dialog.CloseDialog(dialog.ReasoningID)
 	case dialog.ActionPermissionResponse:
 		m.dialog.CloseDialog(dialog.PermissionsID)
 		switch msg.Action {
 		case dialog.PermissionAllow:
 			m.com.Workspace.PermissionGrant(msg.Permission)
+			cmds = append(cmds, m.playAudio("Permission", "Permission allowed", "quick-notify-01"))
 		case dialog.PermissionAllowForSession:
 			m.com.Workspace.PermissionGrantPersistent(msg.Permission)
+			cmds = append(cmds, m.playAudio("Permission", "Permission allowed for session", "quick-notify-02"))
 		case dialog.PermissionDeny:
 			m.com.Workspace.PermissionDeny(msg.Permission)
+			cmds = append(cmds, m.playAudio("Permission", "Permission denied", "denied"))
 		}
 
 	case dialog.ActionFilePickerSelected:
@@ -2336,11 +2364,21 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 		))
 
 	case dialog.ActionFileBrowserSelected:
-		if msg.Path != "" {
-			cmds = append(cmds, m.attachFileFromPath(msg.Path))
+		if m.imageLookupPending {
+			// IMAGE RECOGNITION button was clicked: run the lookup-image
+			// command against the selected image path via a shell session.
+			m.imageLookupPending = false
+			m.dialog.CloseDialog(dialog.FileBrowserID)
+			if msg.Path != "" {
+				cmds = append(cmds, m.runShellCommand("bvr lookup-image "+msg.Path))
+			}
+		} else {
+			if msg.Path != "" {
+				cmds = append(cmds, m.attachFileFromPath(msg.Path))
+			}
+			m.dialog.CloseDialog(dialog.FileBrowserID)
+			cmds = append(cmds, m.textarea.Focus())
 		}
-		m.dialog.CloseDialog(dialog.FileBrowserID)
-		cmds = append(cmds, m.textarea.Focus())
 
 	case dialog.ActionFileBrowserOpenExternal:
 		if msg.Path != "" {
@@ -2349,6 +2387,7 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 		m.dialog.CloseDialog(dialog.FileBrowserID)
 		m.dialog.CloseDialog(dialog.CreateFileID)
 	case dialog.ActionChangeProject:
+		cmds = append(cmds, m.playAudio("Project", "Change project: "+msg.Path, "quick-notify-02"))
 		m.projectSource = msg.Path
 		m.dialog.CloseDialog(dialog.FileBrowserID)
 		cmd, err := os.Executable()
@@ -2386,10 +2425,12 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 			content = msg.Skill.FormatInvocation()
 		}
 		cmds = append(cmds, m.sendMessage(content))
+		cmds = append(cmds, m.playAudio("Command", "Custom command submitted", "quick-notify-01"))
 		m.dialog.CloseFrontDialog()
 	case dialog.ActionAttachSkill:
 		m.dialog.CloseFrontDialog()
 		cmds = append(cmds, m.attachSkill(msg.ID, msg.Name))
+		cmds = append(cmds, m.playAudio("Skill", "Attach skill: "+msg.Name, "quick-notify-02"))
 	case dialog.ActionRunMCPPrompt:
 		if len(msg.Arguments) > 0 && msg.Args == nil {
 			m.dialog.CloseFrontDialog()
@@ -2405,6 +2446,7 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 			break
 		}
 		cmds = append(cmds, m.runMCPPrompt(msg.ClientID, msg.PromptID, msg.Args))
+		cmds = append(cmds, m.playAudio("MCP Prompt", "Run MCP prompt: "+msg.PromptID, "quick-notify-03"))
 	default:
 		cmds = append(cmds, util.CmdHandler(msg))
 	}
@@ -2662,6 +2704,15 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				}
 			}
 			return true
+		case key.Matches(msg, m.keyMap.Browser):
+			if m.state == uiLanding && !m.imageLookupPending {
+				cmds = append(cmds, m.playAudio("Image Recognition", "Open image recognition", "quick-notify-03"))
+				m.imageLookupPending = true
+				if cmd := m.openFileBrowserDialog(); cmd != nil {
+					cmds = append(cmds, cmd)
+				}
+				return true
+			}
 		case key.Matches(msg, m.keyMap.NodeSettings):
 			cmds = append(cmds, m.playAudio("NODE", "Open connections", "menu-open"))
 			if cmd := m.openNodeSettingsDialog(); cmd != nil {
@@ -3549,6 +3600,9 @@ func (m *UI) ShortHelp() []key.Binding {
 			k.Models,
 			k.Editor.Newline,
 		)
+		if m.state == uiLanding {
+			binds = append(binds, k.Finder, k.Browser)
+		}
 	}
 
 	binds = append(
@@ -3691,6 +3745,9 @@ func (m *UI) FullHelp() [][]key.Binding {
 					k.ToggleBeastmode,
 				},
 			)
+			if m.state == uiLanding {
+				binds = append(binds, []key.Binding{k.Finder, k.Browser})
+			}
 			editorBinds := []key.Binding{
 				k.Editor.Newline,
 				k.Editor.MentionFile,
@@ -4827,10 +4884,12 @@ func (m *UI) openDialog(id string) tea.Cmd {
 			cmds = append(cmds, cmd)
 		}
 	case dialog.ReasoningID:
+		cmds = append(cmds, m.playAudio("Reasoning", "Open reasoning", "menu-open"))
 		if cmd := m.openReasoningDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
 	case dialog.NotificationsID:
+		cmds = append(cmds, m.playAudio("Notifications", "Open notifications", "menu-open"))
 		if cmd := m.openNotificationsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
@@ -4852,22 +4911,28 @@ func (m *UI) openDialog(id string) tea.Cmd {
 			cmds = append(cmds, cmd)
 		}
 	case dialog.NodeSettingsID:
+		cmds = append(cmds, m.playAudio("NODE", "Open NODE connections", "menu-open"))
 		if cmd := m.openNodeSettingsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
 	case dialog.OllamaHowToID:
+		cmds = append(cmds, m.playAudio("Ollama", "Open Ollama how-to", "menu-open"))
 		m.dialog.OpenDialog(dialog.NewOllamaHowTo(m.com))
 	case dialog.ThemesID:
+		cmds = append(cmds, m.playAudio("Themes", "Open themes", "menu-open"))
 		m.dialog.OpenDialog(dialog.NewThemes(m.com, m.themeID))
 	case dialog.SoundsID:
+		cmds = append(cmds, m.playAudio("Sounds", "Open sounds", "menu-open"))
 		var currentVolume string
 		if cfg := m.com.Config(); cfg != nil && cfg.Options != nil {
 			currentVolume = cfg.Options.AudioVolume
 		}
 		m.dialog.OpenDialog(dialog.NewSounds(m.com, currentVolume))
 	case dialog.OtherModelsID:
+		cmds = append(cmds, m.playAudio("Models", "Open other models", "menu-open"))
 		m.dialog.OpenDialog(dialog.NewOtherModels(m.com))
 	case dialog.QuitID:
+		cmds = append(cmds, m.playAudio("Quit", "Open quit dialog", "quick-notify-01"))
 		if cmd := m.openQuitDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}

@@ -167,8 +167,10 @@ tool names to specific types:
 
 #### Web Browser dialog (`dialog/browser.go`)
 
-- `BrowserID = "browser"` — opened via `ctrl+b`, landing screen browser icon,
-  or `ActionOpenDialog{DialogID: BrowserID}` from the File Finder's `b` key.
+- `BrowserID = "browser"` — opened via the command palette "Open Website"
+  entry, `ActionOpenDialog{DialogID: BrowserID}`, or the File Finder's `b`
+  key. (Note: `ctrl+b` was rebound to Image Recognition on the landing
+  screen; the browser dialog still uses `ctrl+b` for "back" while open.)
 - Fetches HTML from any URL using `http.Get` + `codebergreadability.FromReader`
   (bypasses strict content-type checking in `FromURL`).
 - User-Agent header and HTTP status code check included.

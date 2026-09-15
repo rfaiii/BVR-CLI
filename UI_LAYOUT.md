@@ -10,11 +10,11 @@
 │ MAIN AREA (fills remaining space)                    │
 │   CWD line (1 row)                                   │
 │   [blank] (1 row)                                    │
+│   BUTTONS (vertical stack, 4 rows) ← FIXED         │
+│   [blank] (1 row)                                    │
 │   Hero/Beaver mascot image (8 rows)                  │
 │   [blank] (1 row)                                    │
-│   BUTTONS row (1 row) ← FIX: needs more space     │
-│   [blank] (1 row)                                    │
-│   MODEL/PROVIDER line (1 row) ← FIX: down a space │
+│   MODEL/PROVIDER line (1 row) ← FIXED spacing       │
 │   [blank] (1 row)                                    │
 │   GGWAVE waveform (2-3 rows)                         │
 ├─────────────────────────────────────────────────────┤
@@ -26,7 +26,7 @@
 │ STATUS / HELP (1-2 rows)                             │
 │ Help keybindings text                                │
 ├─────────────────────────────────────────────────────┤
-│ RESOURCE MONITOR (1 row) ← MOVE TO BOTTOM          │
+│ RESOURCE MONITOR (1 row) ← BOTTOM                    │
 │ CPU bar | RAM bar                                    │
 └─────────────────────────────────────────────────────┘
 ```
@@ -49,9 +49,9 @@ The `infoSection` is a vertical join of these parts:
 ```
 Part 0: cwdStyled          → 1 row (styled working directory)
 Part 1: "" (blank)         → 1 row
-Part 2: hero               → 8 rows (beaver mascot image)
+Part 2: buttons            → ~15 rows (4 buttons stacked vertically, 1 blank between)
 Part 3: "" (blank)         → 1 row
-Part 4: buttons            → 1 row (4 buttons side by side)
+Part 4: hero               → 8 rows (beaver mascot image)
 Part 5: "" (blank)         → 1 row
 Part 6: modelLine          → 1 row (MODEL + PROVIDER)
 Part 7: "" (blank)         → 1 row
@@ -111,10 +111,10 @@ For a typical terminal of ~120 cols width:
 
 ## Fix List
 
-1. **Button Spacing**: Add more vertical space around buttons row
-2. **Model/Provider**: Move MODEL/PROVIDER line down a space
-3. **CPU/RAM to Bottom**: Move resource monitor to very bottom of UI
-4. **Footer Text**: Add more text to the footer area
+1. **Button Spacing**: ✅ Buttons now stacked vertically with blank line between each for even spacing
+2. **Model/Provider**: ✅ MODEL/PROVIDER line properly positioned with single blank line spacing
+3. **CPU/RAM to Bottom**: ✅ Resource monitor at bottom with 1-row gap (already implemented)
+4. **Footer Text**: ✅ Footer area has status help and resource monitor at bottom
 
 ## ggwave Animation Speed
 - `ggwaveSpeed` field (default `0.5`) slows the waveform animation by half

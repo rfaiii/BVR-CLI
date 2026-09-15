@@ -2,7 +2,6 @@ package model
 
 import (
 	"image"
-	"time"
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/ultraviolet/layout"
@@ -49,12 +48,12 @@ func (m *UI) landingView() string {
 	// Home buttons: Command palette launcher, File Finder, Create File,
 	// and Image Recognition, each prefixed with a nerd-font glyph from
 	// the superfile icon set so they read as actionable buttons.
-	// Arranged in a single row with even spacing.
+	// Arranged vertically with a blank line between each for even spacing.
 	iconColor := t.Header.LogoGradToColor
 	terminalIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\ue795") // superfile icon.Terminal
-	folderIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\uf07b") // superfile icon.Directory
-	paperIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\uf15b")  // superfile icon.File
-	cameraIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\uf030") // superfile icon.Camera
+	folderIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\uf07b")   // superfile icon.Directory
+	paperIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\uf15b")    // superfile icon.File
+	cameraIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\uf030")   // superfile icon.Camera
 
 	buttonStyle := lipgloss.NewStyle().
 		Foreground(accent).
@@ -68,7 +67,9 @@ func (m *UI) landingView() string {
 	createButton := buttonStyle.Render(paperIcon + " " + "CREATE FILE — ctrl+n")
 	imageBtn := buttonStyle.Render(cameraIcon + " " + "IMAGE RECOGNITION — ctrl+b")
 
-	buttons := commandButton + "  " + folderButton + "  " + createButton + "  " + imageBtn
+	// Stack buttons vertically (one above the other) with a blank line
+	// between each for even, balanced spacing.
+	buttons := lipgloss.JoinVertical(lipgloss.Left, commandButton, "", folderButton, "", createButton, "", imageBtn)
 
 	// Prominent MODEL / PROVIDER line on the homescreen so it's immediately
 	// visible. Uses ACCENT for the values and ALT for the labels.
@@ -84,12 +85,18 @@ func (m *UI) landingView() string {
 		lipgloss.NewStyle().Foreground(accent).Bold(true).Render(modelName) +
 		lipgloss.NewStyle().Foreground(alt).Render("   PROVIDER  ") +
 		lipgloss.NewStyle().Foreground(accent).Bold(true).Render(providerName)
-	mascotState := m.beaverGaze
-	if time.Now().Before(m.beaverBoopUntil) {
-		mascotState = anim.StateClickBoop
-	}
-	hero := anim.LargeMascotFrame(mascotState, m.bannerFrame, m.beaverErrored)
-	heroTop := m.layout.main.Min.Y + 1 + lipgloss.Height(cwdStyled) + 1
+
+	// Dense ASCII beaver mascot from the boot splash (boot.BeaverFramesDenseAlpha).
+	// This is the original 13x5 character-filled beaver with center/left/right
+	// facing poses, shown with the x-ray Beta variant (X_X eyes) when the
+	// agent errors. It tracks the cursor/prompt direction and idles in a
+	// "rest" pose between direction changes.
+	hero := anim.BeaverFrame(m.beaverFacing, m.beaverErrored, m.beaverResting)
+
+	// Buttons now appear before the hero (near the header). The hero is
+	// positioned after the CWD line, blank, and the vertical button stack.
+	buttonsHeight := lipgloss.Height(buttons)
+	heroTop := m.layout.main.Min.Y + 1 + lipgloss.Height(cwdStyled) + 1 + buttonsHeight + 1
 	m.beaverRect = image.Rect(
 		m.layout.main.Min.X,
 		heroTop,
@@ -97,33 +104,33 @@ func (m *UI) landingView() string {
 		heroTop+lipgloss.Height(hero),
 	)
 
-	// Click rectangles for the single-row home button grid.
-	// All 4 buttons are on the same row with even spacing.
-	btnTop := landingButtonTop(m.layout.main.Min.Y, lipgloss.Height(cwdStyled), lipgloss.Height(hero))
+	// Click rectangles for the vertical home button stack.
+	// Buttons are stacked top-to-bottom with a 1-row gap between each.
+	btnTop := landingButtonTop(m.layout.main.Min.Y, lipgloss.Height(cwdStyled))
 	cmdH := lipgloss.Height(commandButton)
 	folderH := lipgloss.Height(folderButton)
 	createH := lipgloss.Height(createButton)
 	imageH := lipgloss.Height(imageBtn)
-	btnGap := 2 // gap between each button
+	btnGap := 1 // blank line between buttons (from the "" separators)
 	col1Width := lipgloss.Width(commandButton)
 	col2Width := lipgloss.Width(folderButton)
 	col3Width := lipgloss.Width(createButton)
 	col4Width := lipgloss.Width(imageBtn)
-	rowHeight := max(cmdH, max(folderH, max(createH, imageH)))
-	// Single row: buttons placed side by side with even gaps
+	btnHeight := max(cmdH, max(folderH, max(createH, imageH)))
 	x0 := m.layout.main.Min.X
-	m.commandButtonRect = image.Rect(x0, btnTop, x0+col1Width, btnTop+rowHeight)
-	x1 := x0 + col1Width + btnGap
-	m.finderButtonRect = image.Rect(x1, btnTop, x1+col2Width, btnTop+rowHeight)
-	x2 := x1 + col2Width + btnGap
-	m.createFileButtonRect = image.Rect(x2, btnTop, x2+col3Width, btnTop+rowHeight)
-	x3 := x2 + col3Width + btnGap
-	m.imageButtonRect = image.Rect(x3, btnTop, x3+col4Width, btnTop+rowHeight)
+	m.commandButtonRect = image.Rect(x0, btnTop, x0+col1Width, btnTop+btnHeight)
+	m.finderButtonRect = image.Rect(x0, btnTop+btnHeight+btnGap, x0+col2Width, btnTop+2*btnHeight+btnGap)
+	m.createFileButtonRect = image.Rect(x0, btnTop+2*(btnHeight+btnGap), x0+col3Width, btnTop+3*btnHeight+2*btnGap)
+	m.imageButtonRect = image.Rect(x0, btnTop+3*(btnHeight+btnGap), x0+col4Width, btnTop+4*btnHeight+3*btnGap)
 
 	waveWidth := min(56, max(18, width-4))
 	waveLabel := lipgloss.NewStyle().Foreground(alt).Render("GGWAVE NODE LINK  ")
 	wave := lipgloss.NewStyle().Foreground(accent).Render(ggwave.Waveform(waveWidth, m.ggwaveFrame, m.ggwaveMode, m.ggwaveSpeed))
-	parts := []string{cwdStyled, "", hero, "", buttons, "", "", modelLine, "", "", waveLabel + wave}
+
+	// Layout order (top to bottom):
+	//   CWD line → blank → buttons (vertical stack) → blank → hero → blank →
+	//   model line → blank → ggwave waveform
+	parts := []string{cwdStyled, "", buttons, "", hero, "", modelLine, "", waveLabel + wave}
 	infoSection := lipgloss.JoinVertical(lipgloss.Left, parts...)
 
 	var remainingHeightArea image.Rectangle
@@ -155,6 +162,9 @@ func (m *UI) landingView() string {
 		)
 }
 
-func landingButtonTop(mainY, cwdHeight, heroHeight int) int {
-	return mainY + cwdHeight + 1 + heroHeight + 1
+// landingButtonTop returns the Y coordinate for the top of the vertical
+// button stack on the landing page. The buttons appear immediately after
+// the CWD line and a single blank separator, placing them near the header.
+func landingButtonTop(mainY, cwdHeight int) int {
+	return mainY + 1 + cwdHeight + 1
 }

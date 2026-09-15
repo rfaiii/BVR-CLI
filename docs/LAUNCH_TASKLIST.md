@@ -10,7 +10,7 @@ Before launching, run through this manual checklist on your primary machine (mac
 - [x] **Action Sounds:** Map distinct sounds to prompt submission, menus, launch buttons, permissions, and errors.
 - [x] **Safe Audio Default:** Start new installs at 25% with 50/75/100% and Silent choices.
 - [x] **Animations:** Add and test the fixed-width Beaver hero poses and GGWave waveform surface.
-- [ ] **Resource Bars:** Verify the CPU/RAM gradient bars animate smoothly and accurately reflect system load.
+- [x] **Resource Bars:** Verify the CPU/RAM gradient bars animate smoothly and accurately reflect system load.
 
 ### Core Workflows
 - [ ] **Authentication:** Test `/login` or `bvr auth` workflow and ensure the key is saved correctly.

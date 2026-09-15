@@ -70,6 +70,7 @@ type KeyMap struct {
 	ToggleBeastmode key.Binding
 	ToggleCodeMode  key.Binding
 	Finder          key.Binding
+	Browser         key.Binding
 	NodeSettings    key.Binding
 	Themes          key.Binding
 	ThemePrev       key.Binding
@@ -117,6 +118,10 @@ func DefaultKeyMap() KeyMap {
 		Finder: key.NewBinding(
 			key.WithKeys("ctrl+o"),
 			key.WithHelp("ctrl+o", "file finder"),
+		),
+		Browser: key.NewBinding(
+			key.WithKeys("ctrl+b"),
+			key.WithHelp("ctrl+b", "image recognition"),
 		),
 		NodeSettings: key.NewBinding(
 			key.WithKeys("ctrl+shift+n"),
