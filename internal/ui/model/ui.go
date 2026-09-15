@@ -257,7 +257,7 @@ type UI struct {
 	finderButtonRect     image.Rectangle
 	commandButtonRect    image.Rectangle
 	createFileButtonRect image.Rectangle
-	browserButtonRect    image.Rectangle
+	imageButtonRect      image.Rectangle
 	sidebarBeaverRect    image.Rectangle
 
 	// isCanceling tracks whether the user has pressed escape once to cancel.
@@ -1204,8 +1204,8 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, tea.Batch(cmds...)
 			}
-			if image.Pt(msg.X, msg.Y).In(m.browserButtonRect) {
-				cmds = append(cmds, m.playAudio("Web Browser", "Open web browser", "quick-notify-03"))
+			if image.Pt(msg.X, msg.Y).In(m.imageButtonRect) {
+				cmds = append(cmds, m.playAudio("Image Recognition", "Open image recognition", "quick-notify-03"))
 				if cmd := m.openBrowserDialog(""); cmd != nil {
 					cmds = append(cmds, cmd)
 				}

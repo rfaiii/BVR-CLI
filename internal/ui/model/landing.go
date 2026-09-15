@@ -48,14 +48,12 @@ func (m *UI) landingView() string {
 
 	// Home buttons: Command palette launcher (top) and File Finder (bottom),
 	// each prefixed with a nerd-font glyph from the superfile icon set so
-	// they read as actionable buttons. They are stacked vertically with a
-	// blank line between them for cushioning, left-aligned one above the
-	// other.
+	// they read as actionable buttons. Arranged in a 2-column grid (2 rows).
 	iconColor := t.Header.LogoGradToColor
-	terminalIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\ue795")    // superfile icon.Terminal
-	folderIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\uf07b")      // superfile icon.Directory
-	paperIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\uf15b")       // superfile icon.File
-	browserIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\U000f0208") // superfile icon.Browser
+	terminalIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\ue795") // superfile icon.Terminal
+	folderIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\uf07b") // superfile icon.Directory
+	paperIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\uf15b")  // superfile icon.File
+	cameraIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\uf030") // superfile icon.Camera
 
 	buttonStyle := lipgloss.NewStyle().
 		Foreground(accent).
@@ -67,8 +65,8 @@ func (m *UI) landingView() string {
 	commandButton := buttonStyle.Render(terminalIcon + " " + "OPEN COMMANDS — ctrl+p")
 	folderButton := buttonStyle.Render(folderIcon + " " + "OPEN FILE FINDER — ctrl+shift+f")
 	createButton := buttonStyle.Render(paperIcon + " " + "CREATE FILE — ctrl+n")
-	browserBtn := buttonStyle.Render(browserIcon + "  " + "WEB BROWSER — ctrl+b")
-	buttons := commandButton + "\n\n" + folderButton + "\n\n" + createButton + "\n\n" + browserBtn
+	imageBtn := buttonStyle.Render(cameraIcon + "  " + "IMAGE RECOGNITION — ctrl+b")
+	buttons := commandButton + "  " + folderButton + "\n\n" + createButton + "  " + imageBtn
 
 	// Prominent MODEL / PROVIDER line on the homescreen so it's immediately
 	// visible. Uses ACCENT for the values and ALT for the labels.
@@ -97,32 +95,38 @@ func (m *UI) landingView() string {
 		heroTop+lipgloss.Height(hero),
 	)
 
-	// Click rectangles for the stacked home buttons (Command on top,
-	// File Finder below, CREATE FILE at the bottom). All start at the
-	// left edge; each subsequent rectangle is pushed down past the
-	// previous button plus the gap line.
-	// Keep hitboxes aligned with the rendered stack: the landing view has one
-	// line of top padding, then CWD, a gap, the hero, and a gap before buttons.
+	// Click rectangles for the 2-column home button grid.
+	// Row 1: Command (left), File Finder (right).
+	// Row 2: Create File (left), Image Recognition (right).
+	// All start at the left edge; columns are separated by a gap,
+	// rows are separated by a blank line.
 	btnTop := landingButtonTop(m.layout.main.Min.Y, lipgloss.Height(cwdStyled), lipgloss.Height(hero))
 	cmdH := lipgloss.Height(commandButton)
 	folderH := lipgloss.Height(folderButton)
 	createH := lipgloss.Height(createButton)
-	browserH := lipgloss.Height(browserBtn)
+	imageH := lipgloss.Height(imageBtn)
+	btnGap := 2 // horizontal gap between columns
+	rowGap := 2 // vertical gap between rows (from the "\n\n" separators)
+	col1Width := lipgloss.Width(commandButton)
+	col2Width := lipgloss.Width(folderButton)
+	// Use the wider of the two columns for alignment
+	rowWidth := max(col1Width, col2Width)
+
 	m.commandButtonRect = image.Rect(
 		m.layout.main.Min.X, btnTop,
-		m.layout.main.Min.X+lipgloss.Width(commandButton), btnTop+cmdH,
+		m.layout.main.Min.X+rowWidth, btnTop+cmdH,
 	)
 	m.finderButtonRect = image.Rect(
-		m.layout.main.Min.X, btnTop+cmdH+1,
-		m.layout.main.Min.X+lipgloss.Width(folderButton), btnTop+cmdH+1+folderH,
+		m.layout.main.Min.X+col2Width+btnGap, btnTop,
+		m.layout.main.Min.X+col2Width+btnGap+rowWidth, btnTop+folderH,
 	)
 	m.createFileButtonRect = image.Rect(
-		m.layout.main.Min.X, btnTop+cmdH+1+folderH+1,
-		m.layout.main.Min.X+lipgloss.Width(createButton), btnTop+cmdH+1+folderH+1+createH,
+		m.layout.main.Min.X, btnTop+cmdH+rowGap,
+		m.layout.main.Min.X+rowWidth, btnTop+cmdH+rowGap+createH,
 	)
-	m.browserButtonRect = image.Rect(
-		m.layout.main.Min.X, btnTop+cmdH+1+folderH+1+createH+1,
-		m.layout.main.Min.X+lipgloss.Width(browserBtn), btnTop+cmdH+1+folderH+1+createH+1+browserH,
+	m.imageButtonRect = image.Rect(
+		m.layout.main.Min.X+col2Width+btnGap, btnTop+cmdH+rowGap,
+		m.layout.main.Min.X+col2Width+btnGap+rowWidth, btnTop+cmdH+rowGap+imageH,
 	)
 	waveWidth := min(56, max(18, width-4))
 	waveLabel := lipgloss.NewStyle().Foreground(alt).Render("GGWAVE NODE LINK  ")
@@ -153,13 +157,12 @@ func (m *UI) landingView() string {
 
 	return lipgloss.NewStyle().
 		Width(width).
-		Height(m.layout.main.Dy() - 1).
-		PaddingTop(1).
+		Height(m.layout.main.Dy()).
 		Render(
 			lipgloss.JoinVertical(lipgloss.Left, infoSection, "", content),
 		)
 }
 
 func landingButtonTop(mainY, cwdHeight, heroHeight int) int {
-	return mainY + 1 + cwdHeight + 1 + heroHeight + 1
+	return mainY + cwdHeight + 1 + heroHeight + 1
 }
