@@ -7,6 +7,27 @@
 - Added `internal/cmd/lookup-image` command for identifying handbags, purses, sunglasses, and accessories from photos using local Ollama vision models and a local product catalog.
 - Added `internal/imagelookup/` package with vision service, search, rendering, reranking, resizing, validation, and prompt modules (`ollama.go`, `search.go`, `render.go`, `rerank.go`, `resize.go`, `validate.go`, `prompt.go`, `types.go`, `service.go`, and their tests).
 
+### Fixes
+
+- **Restored dense beaver logo on homescreen.** Switched the homescreen mascot
+  back from `LargeMascotFrame` (8-row "stupid face") to the original
+  `BeaverFrame` (13×5 dense ASCII beaver from `boot.BeaverFramesDenseAlpha`),
+  matching the v1.1.8–v1.2.1 era look. Beaver boop SFX and click detection
+  preserved; the dense beaver renders from `beaverFacing`/`beaverErrored`/
+  `beaverResting` and has no separate boop frame.
+- **Wired IMAGE RECOGNITION button.** The button on the landing page was
+  opening the web browser (`openBrowserDialog`) instead of performing image
+  recognition. It now opens the file browser with an `imageLookupPending` flag;
+  selecting a file runs `bvr lookup-image <path>` via a shell session. Added
+  `ctrl+b` keybinding (was only a label on the button before).
+- **Added SFX to all command palette items.** Every menu item and dialog
+  open/close that was missing audio now has a distinct sound cue: Toggle Beast
+  Mode (`chainsaw`), Code Mode, Help, External Editor, Compact Mode, Pills,
+  Thinking, Transparent BG, Quit (`exit`), Docker MCP, Initialize, Cline Key,
+  Reasoning Effort, Permission Response, Summarize, and all `openDialog`
+  cases (Reasoning, Notifications, NODE, Ollama How-To, Themes, Sounds, Other
+  Models, Quit).
+
 ## 1.2.3
 
 ## 1.2.3

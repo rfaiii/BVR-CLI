@@ -1,8 +1,13 @@
-# CLINE_FEATURE — Integrating Cline as a First-Class Coding Assistant
+# CLINE_FEATURE (deprecated — see docs/CLINE_PROVIDER.md)
 
-This document tracks the work to make Cline a permanent, model-independent
-coding assistant inside BVR-CLI. It is the companion spec to
-`internal/skills/builtin/cline/SKILL.md`.
+> **This document is archived.** The canonical Cline provider documentation is
+> now [`docs/CLINE_PROVIDER.md`](CLINE_PROVIDER.md). This file is retained for
+> historical context (status-by-capability tracking, small-model failure modes,
+> and planned features such as plan/act mode and direct Cline invocation) but is
+> no longer the primary reference. Prefer `CLINE_PROVIDER.md` for setup, usage,
+> and implementation details.
+
+This document tracks the work to make Cline a permanent,<details><summary><em>(rest of original content unchanged)</em></summary>
 
 ## Goal
 

@@ -80,17 +80,15 @@ Beta testers are tracked in this file. Each entry includes:
 
 ### Current Beta Testers
 
-| Name | Platform | Terminal | Focus | Status |
-|------|----------|----------|-------|--------|
-| Richard Avery | macOS | Ghostty | Full suite | Active |
-| [Add testers here] | | | | |
+Beta participants are tracked privately outside the repository. This document
+records only the release process and testing checklist.
 
 ### Invite Workflow
 
-1. **Add to list:** Update this file with new tester info
+1. **Add to list:** Record new tester info (platform, terminal, focus)
 2. **Send invite:** Share DMG link or install instructions
 3. **Track status:** Mark as pending → active → completed
-4. **Collect feedback:** Use GitHub Issues or dedicated feedback form
+4. **Collect feedback:** Use GitHub Issues
 
 ---
 
@@ -210,9 +208,8 @@ Verify:
 
 ### Feedback Form (Optional)
 
-For testers without GitHub, use this form:
-- Email: averydevz@outlook.com
-- Subject: `[BVR Beta] Feedback - v1.2.4-beta.X`
+For testers without GitHub, open a discussion thread on the repository or
+reach out to the maintainer through the project site.
 
 ---
 
@@ -341,7 +338,5 @@ Maintain `CHANGELOG.md` with:
 
 ## Resources
 
-- **Beta Issues:** https://github.com/rfaiii/BVR-CLI/issues
-- **Email:** averydevz@outlook.com
-- **Discord/Slack:** [Add if applicable]
+- **Beta Issues:** https://github.com/richavery/bvr-cli/issues
 - **Documentation:** See `docs/` directory

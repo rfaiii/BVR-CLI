@@ -30,7 +30,7 @@ shortcuts and escape hatches experienced developers expect.
 Build and run the current checkout:
 
 ```sh
-git clone https://github.com/rfaiii/BVR-CLI.git
+git clone https://github.com/richavery/bvr-cli.git
 cd BVR-CLI
 go run .
 ```
@@ -102,12 +102,14 @@ See [`docs/NODE_TRANSPORTS.md`](docs/NODE_TRANSPORTS.md),
 | Action | Shortcut |
 | --- | --- |
 | Command menu | `Ctrl+P` |
-| File Finder | `Ctrl+Shift+F` |
+| File Finder | `Ctrl+O` |
+| Image Recognition | `Ctrl+B` |
 | Models | `Ctrl+L` |
 | Sessions | `Ctrl+S` |
-| NODE settings | `Ctrl+N` |
-| Themes | `Ctrl+T` |
-| Help | `Ctrl+/` |
+| NODE settings | `Ctrl+Shift+N` |
+| Themes | `Ctrl+Shift+T` |
+| Beast Mode | `Ctrl+Y` |
+| Help | `Ctrl+G` |
 | Cancel/close | `Esc` |
 
 The exact keymap is configurable and the command menu is the best place to
@@ -138,6 +140,7 @@ Package the supported targets with:
 | [`docs/installation.md`](docs/installation.md) | Installation and troubleshooting |
 | [`docs/ONBOARDING.md`](docs/ONBOARDING.md) | First-run setup and dependencies |
 | [`docs/FEATURES-OVERVIEW.md`](docs/FEATURES-OVERVIEW.md) | Full feature inventory |
+| [`docs/COMMAND-MENU.md`](docs/COMMAND-MENU.md) | Command palette items, SFX, and architecture |
 | [`docs/LAUNCH_TASKLIST.md`](docs/LAUNCH_TASKLIST.md) | Release readiness and beta work |
 | [`docs/BETA.md`](docs/BETA.md) | Beta testing and release process |
 | [`docs/GGWAVE.md`](docs/GGWAVE.md) | GGWave pairing architecture |
@@ -146,7 +149,9 @@ Package the supported targets with:
 | [`docs/FILE_FINDER.md`](docs/FILE_FINDER.md) | File Finder behavior |
 | [`docs/OLLAMA_HOW_TO.md`](docs/OLLAMA_HOW_TO.md) | Local Ollama setup |
 | [`docs/SKILLS.md`](docs/SKILLS.md) | Agent Skills discovery and syncing |
+| [`docs/CLINE_PROVIDER.md`](docs/CLINE_PROVIDER.md) | Cline provider integration |
 | [`docs/UI_BRANDING.md`](docs/UI_BRANDING.md) | Visual identity and TUI branding |
+| [`docs/PACKAGING.md`](docs/PACKAGING.md) | Installer and distribution reference |
 
 ## Beta feedback
 
@@ -159,7 +164,7 @@ When reporting an issue, include:
 5. Provider/model configuration, if relevant
 6. Reproduction steps and terminal output
 
-Open an issue at [github.com/rfaiii/BVR-CLI](https://github.com/rfaiii/BVR-CLI).
+Open an issue at [github.com/richavery/bvr-cli](https://github.com/richavery/bvr-cli).
 
 ## License
 
