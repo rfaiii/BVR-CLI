@@ -1,4 +1,4 @@
-# BVR-CLI 1.2.4
+# BVR-CLI 1.2.5
 
 **A keyboard-first AI workspace for the terminal.**
 
@@ -130,7 +130,7 @@ go build ./...
 Package the supported targets with:
 
 ```sh
-./scripts/package/build-all.sh 1.2.4
+./scripts/package/build-all.sh 1.2.5
 ```
 
 ## Documentation

@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const defaultVersion = "1.2.4"
+const defaultVersion = "1.2.5"
 
 var (
 	Version = defaultVersion
