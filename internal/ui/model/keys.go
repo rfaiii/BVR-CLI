@@ -115,8 +115,8 @@ func DefaultKeyMap() KeyMap {
 			key.WithHelp("ctrl+shift+c", "toggle code mode"),
 		),
 		Finder: key.NewBinding(
-			key.WithKeys("ctrl+shift+f"),
-			key.WithHelp("ctrl+shift+f", "file finder"),
+			key.WithKeys("ctrl+o"),
+			key.WithHelp("ctrl+o", "file finder"),
 		),
 		NodeSettings: key.NewBinding(
 			key.WithKeys("ctrl+shift+n"),

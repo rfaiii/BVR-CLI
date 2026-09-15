@@ -63,10 +63,10 @@ func (m *UI) landingView() string {
 		Padding(0, 1)
 
 	commandButton := buttonStyle.Render(terminalIcon + " " + "OPEN COMMANDS — ctrl+p")
-	folderButton := buttonStyle.Render(folderIcon + " " + "OPEN FILE FINDER — ctrl+shift+f")
+	folderButton := buttonStyle.Render(folderIcon + " " + "OPEN FILE FINDER — ctrl+o")
 	createButton := buttonStyle.Render(paperIcon + " " + "CREATE FILE — ctrl+n")
-	imageBtn := buttonStyle.Render(cameraIcon + "  " + "IMAGE RECOGNITION — ctrl+b")
-	buttons := commandButton + "  " + folderButton + "\n\n" + createButton + "  " + imageBtn
+	imageBtn := buttonStyle.Render(cameraIcon + " " + "IMAGE RECOGNITION — ctrl+b")
+	buttons := commandButton + "   " + folderButton + "\n\n" + createButton + "   " + imageBtn
 
 	// Prominent MODEL / PROVIDER line on the homescreen so it's immediately
 	// visible. Uses ACCENT for the values and ALT for the labels.

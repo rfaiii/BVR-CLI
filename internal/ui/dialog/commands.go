@@ -495,7 +495,7 @@ func (c *Commands) defaultCommands() []*CommandItem {
 		NewCommandItem(c.com.Styles, "new_session", "New Session", "ctrl+n", ActionNewSession{}),
 		NewCommandItem(c.com.Styles, "switch_session", "Sessions", "ctrl+s", ActionOpenDialog{SessionsID}),
 		NewCommandItem(c.com.Styles, "switch_model", "Switch Model", "ctrl+l", ActionOpenDialog{ModelsID}),
-		NewCommandItem(c.com.Styles, "file_browser", "Open File Finder", "ctrl+shift+f", ActionOpenDialog{FileBrowserID}).WithAliases("finder", "/finder"),
+		NewCommandItem(c.com.Styles, "file_browser", "Open File Finder", "ctrl+o", ActionOpenDialog{FileBrowserID}).WithAliases("finder", "/finder"),
 		NewCommandItem(c.com.Styles, "change_project", "Change Project", "", ActionOpenDialog{FileBrowserID}).WithAliases("cd", "/cd", "project"),
 		NewCommandItem(c.com.Styles, "node_settings", "NODE Connections", "ctrl+shift+n", ActionOpenDialog{NodeSettingsID}).WithAliases("node", "/node"),
 		NewCommandItem(c.com.Styles, "ollama_models", "Ollama Models", "", ActionOpenDialog{ModelsID}).WithAliases("ollama", "/ollama"),
@@ -503,6 +503,7 @@ func (c *Commands) defaultCommands() []*CommandItem {
 		NewCommandItem(c.com.Styles, "ollama_how_to", "Ollama How To", "", ActionOpenDialog{OllamaHowToID}),
 		NewCommandItem(c.com.Styles, "themes", "Themes", "ctrl+shift+t", ActionOpenDialog{ThemesID}).WithAliases("themes", "/themes"),
 		NewCommandItem(c.com.Styles, "sounds", "Sounds", "", ActionOpenDialog{SoundsID}).WithAliases("sounds", "/sounds", "volume", "audio"),
+		NewCommandItem(c.com.Styles, "open_website", "Open Website", "", ActionOpenDialog{BrowserID}),
 	}
 
 	// Only show compact command if there's an active session
