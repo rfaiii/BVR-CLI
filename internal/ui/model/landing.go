@@ -46,9 +46,10 @@ func (m *UI) landingView() string {
 		Underline(true).
 		Render(cwd)
 
-	// Home buttons: Command palette launcher (top) and File Finder (bottom),
-	// each prefixed with a nerd-font glyph from the superfile icon set so
-	// they read as actionable buttons. Arranged in a 2-column grid (2 rows).
+	// Home buttons: Command palette launcher, File Finder, Create File,
+	// and Image Recognition, each prefixed with a nerd-font glyph from
+	// the superfile icon set so they read as actionable buttons.
+	// Arranged in a single row with even spacing.
 	iconColor := t.Header.LogoGradToColor
 	terminalIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\ue795") // superfile icon.Terminal
 	folderIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\uf07b") // superfile icon.Directory
@@ -66,7 +67,8 @@ func (m *UI) landingView() string {
 	folderButton := buttonStyle.Render(folderIcon + " " + "OPEN FILE FINDER — ctrl+o")
 	createButton := buttonStyle.Render(paperIcon + " " + "CREATE FILE — ctrl+n")
 	imageBtn := buttonStyle.Render(cameraIcon + " " + "IMAGE RECOGNITION — ctrl+b")
-	buttons := commandButton + "   " + folderButton + "\n\n" + createButton + "   " + imageBtn
+
+	buttons := commandButton + "  " + folderButton + "  " + createButton + "  " + imageBtn
 
 	// Prominent MODEL / PROVIDER line on the homescreen so it's immediately
 	// visible. Uses ACCENT for the values and ALT for the labels.
@@ -95,42 +97,32 @@ func (m *UI) landingView() string {
 		heroTop+lipgloss.Height(hero),
 	)
 
-	// Click rectangles for the 2-column home button grid.
-	// Row 1: Command (left), File Finder (right).
-	// Row 2: Create File (left), Image Recognition (right).
-	// All start at the left edge; columns are separated by a gap,
-	// rows are separated by a blank line.
+	// Click rectangles for the single-row home button grid.
+	// All 4 buttons are on the same row with even spacing.
 	btnTop := landingButtonTop(m.layout.main.Min.Y, lipgloss.Height(cwdStyled), lipgloss.Height(hero))
 	cmdH := lipgloss.Height(commandButton)
 	folderH := lipgloss.Height(folderButton)
 	createH := lipgloss.Height(createButton)
 	imageH := lipgloss.Height(imageBtn)
-	btnGap := 2 // horizontal gap between columns
-	rowGap := 2 // vertical gap between rows (from the "\n\n" separators)
+	btnGap := 2 // gap between each button
 	col1Width := lipgloss.Width(commandButton)
 	col2Width := lipgloss.Width(folderButton)
-	// Use the wider of the two columns for alignment
-	rowWidth := max(col1Width, col2Width)
+	col3Width := lipgloss.Width(createButton)
+	col4Width := lipgloss.Width(imageBtn)
+	rowHeight := max(cmdH, max(folderH, max(createH, imageH)))
+	// Single row: buttons placed side by side with even gaps
+	x0 := m.layout.main.Min.X
+	m.commandButtonRect = image.Rect(x0, btnTop, x0+col1Width, btnTop+rowHeight)
+	x1 := x0 + col1Width + btnGap
+	m.finderButtonRect = image.Rect(x1, btnTop, x1+col2Width, btnTop+rowHeight)
+	x2 := x1 + col2Width + btnGap
+	m.createFileButtonRect = image.Rect(x2, btnTop, x2+col3Width, btnTop+rowHeight)
+	x3 := x2 + col3Width + btnGap
+	m.imageButtonRect = image.Rect(x3, btnTop, x3+col4Width, btnTop+rowHeight)
 
-	m.commandButtonRect = image.Rect(
-		m.layout.main.Min.X, btnTop,
-		m.layout.main.Min.X+rowWidth, btnTop+cmdH,
-	)
-	m.finderButtonRect = image.Rect(
-		m.layout.main.Min.X+col2Width+btnGap, btnTop,
-		m.layout.main.Min.X+col2Width+btnGap+rowWidth, btnTop+folderH,
-	)
-	m.createFileButtonRect = image.Rect(
-		m.layout.main.Min.X, btnTop+cmdH+rowGap,
-		m.layout.main.Min.X+rowWidth, btnTop+cmdH+rowGap+createH,
-	)
-	m.imageButtonRect = image.Rect(
-		m.layout.main.Min.X+col2Width+btnGap, btnTop+cmdH+rowGap,
-		m.layout.main.Min.X+col2Width+btnGap+rowWidth, btnTop+cmdH+rowGap+imageH,
-	)
 	waveWidth := min(56, max(18, width-4))
 	waveLabel := lipgloss.NewStyle().Foreground(alt).Render("GGWAVE NODE LINK  ")
-	wave := lipgloss.NewStyle().Foreground(accent).Render(ggwave.Waveform(waveWidth, m.ggwaveFrame, m.ggwaveMode))
+	wave := lipgloss.NewStyle().Foreground(accent).Render(ggwave.Waveform(waveWidth, m.ggwaveFrame, m.ggwaveMode, m.ggwaveSpeed))
 	parts := []string{cwdStyled, "", hero, "", buttons, "", modelLine, "", waveLabel + wave}
 	infoSection := lipgloss.JoinVertical(lipgloss.Left, parts...)
 

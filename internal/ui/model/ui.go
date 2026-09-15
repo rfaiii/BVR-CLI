@@ -217,6 +217,7 @@ type UI struct {
 	bannerFrame   int
 	ggwaveFrame   uint64
 	ggwaveMode    ggwave.Mode
+	ggwaveSpeed   float64
 	bannerAnim    *anim.Anim
 	versionBanner *versionBanner
 	// pendingClineKeyAdd marks an in-flight "ADD CLINE API KEY" flow in the
@@ -546,6 +547,7 @@ func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 	ui.setState(desiredState, desiredFocus)
 
 	opts := com.Config().Options
+	ui.ggwaveSpeed = 0.5 // slow down ggwave animation to normal perceived speed
 
 	// disable indeterminate progress bar
 	ui.progressBarEnabled = opts.Progress == nil || *opts.Progress
