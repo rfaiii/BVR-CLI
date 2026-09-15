@@ -123,7 +123,7 @@ func (m *UI) landingView() string {
 	waveWidth := min(56, max(18, width-4))
 	waveLabel := lipgloss.NewStyle().Foreground(alt).Render("GGWAVE NODE LINK  ")
 	wave := lipgloss.NewStyle().Foreground(accent).Render(ggwave.Waveform(waveWidth, m.ggwaveFrame, m.ggwaveMode, m.ggwaveSpeed))
-	parts := []string{cwdStyled, "", hero, "", buttons, "", modelLine, "", waveLabel + wave}
+	parts := []string{cwdStyled, "", hero, "", buttons, "", "", modelLine, "", "", waveLabel + wave}
 	infoSection := lipgloss.JoinVertical(lipgloss.Left, parts...)
 
 	var remainingHeightArea image.Rectangle

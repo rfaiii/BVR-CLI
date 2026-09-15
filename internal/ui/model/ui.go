@@ -3878,6 +3878,12 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 		}
 	}
 
+	// Reserve space at the very bottom for the CPU/RAM resource monitor
+	// with a 1-row gap above it between the help text and the resource bars.
+	const resourceHeight = 1 // 1 row for CPU/RAM bars
+	const resourceGap = 1    // 1 blank row gap between help and resource
+	helpHeight += resourceHeight + resourceGap
+
 	// Add app margins
 	var appRect, helpRect image.Rectangle
 	layout.Vertical(
@@ -3896,11 +3902,16 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 		appRect.Max.X -= 1
 	}
 
+	// Split helpRect into statusRect (help text) and resourceRect (CPU/RAM at bottom).
+	// Status text occupies most of helpRect; resource monitor sits at the very
+	// bottom row with a blank gap row above it.
+	statusRect := helpRect
+	statusRect.Max.Y -= resourceHeight + resourceGap
 	resourceRect := helpRect
-	resourceRect.Min.Y++
+	resourceRect.Min.Y = helpRect.Max.Y - resourceHeight
 	uiLayout := uiLayout{
 		area:     area,
-		status:   helpRect,
+		status:   statusRect,
 		resource: resourceRect,
 	}
 
