@@ -2,7 +2,7 @@ class BvrCli < Formula
   desc "BVR is a keyboard-first terminal AI workspace"
   homepage "https://bvr-cli.com"
   url "https://github.com/rfaiii/BVR-CLI/archive/refs/tags/v#{version}.tar.gz"
-  version "1.2.3"
+  version "1.2.4"
   license "FSL-1.1-MIT"
 
   depends_on "go" => :build

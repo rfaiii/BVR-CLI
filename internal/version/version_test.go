@@ -8,7 +8,7 @@ func TestShortVersion(t *testing.T) {
 		expected string
 	}{
 		{"devel", "devel"},
-		{"v1.2.3", "v1.2.3"},
+		{"v1.2.4", "v1.2.4"},
 		{"v0.87.1-0.20260731174531-4d...", "v0.87.1"},
 		{"v1.0.0-alpha.1", "v1.0.0-alpha.1"},
 		{"", ""},

@@ -1,4 +1,4 @@
-# v1.2.3 Launch Tasklist
+# v1.2.4 Launch Tasklist
 
 This document tracks our progress towards launching BVR-CLI, covering essential testing phases and marketplace distribution accounts.
 
@@ -37,4 +37,4 @@ To sell and distribute BVR-CLI effectively, sign up for or configure the followi
 - [ ] **Product Hunt:** Draft the upcoming product page, tag makers, and prep the launch day assets.
 - [ ] **Hacker News (Show HN):** Draft the introductory post explaining the "keyboard-first AI workspace" pitch.
 - [x] Finish the processed SOUNDFX inventory and update `audio/metadata/sound-index.json`.
-- [x] Update release-facing documentation and version metadata to `v1.2.3`.
+- [x] Update release-facing documentation and version metadata to `v1.2.4`.

@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "1.2.3",
+    [string]$Version = "1.2.4",
     [string]$Arch = "amd64",
     [string]$Root = "."
 )

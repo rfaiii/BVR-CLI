@@ -43,7 +43,7 @@ Each package should include:
 ## Notes
 
 - Signed/notarized DMG/EXE/MSI packaging is not yet implemented.
-- Run `./scripts/package/build-beta-packages.sh 1.2.3` to create six local
+- Run `./scripts/package/build-beta-packages.sh 1.2.4` to create six local
   archives under `dist/packages/` for smoke testing on the target machines.
 - The GoReleaser configuration produces Linux `deb`, `rpm`, `apk`, and
   ArchLinux packages, plus release archives for the same six targets.

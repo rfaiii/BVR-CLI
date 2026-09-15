@@ -1,4 +1,13 @@
 # Changelog
+## 1.2.4
+
+### Image lookup and product catalog
+
+- Added `internal/catalog/` package for local product catalog with SQLite FTS5 search and embedding similarity matching (`embedding.go`, `repository.go`, `repository_test.go`, `schema.sql`).
+- Added `internal/cmd/lookup-image` command for identifying handbags, purses, sunglasses, and accessories from photos using local Ollama vision models and a local product catalog.
+- Added `internal/imagelookup/` package with vision service, search, rendering, reranking, resizing, validation, and prompt modules (`ollama.go`, `search.go`, `render.go`, `rerank.go`, `resize.go`, `validate.go`, `prompt.go`, `types.go`, `service.go`, and their tests).
+
+## 1.2.3
 
 ## 1.2.3
 

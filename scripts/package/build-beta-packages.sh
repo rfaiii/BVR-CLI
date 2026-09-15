@@ -4,7 +4,7 @@ set -eu
 # Build locally testable beta artifacts for every currently supported
 # OS/architecture pair. GoReleaser remains the release/signing path.
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-VERSION=1.2.3
+VERSION=1.2.4
 [ "$#" -ge 1 ] && VERSION=$1
 OUT="$ROOT/dist/packages"
 STAGING="$OUT/.staging"

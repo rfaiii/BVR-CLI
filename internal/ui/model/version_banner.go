@@ -21,7 +21,7 @@ import (
 // seconds, then advancing to the next:
 //
 //	1. "BVR"
-//	2. "v1.2.3-beta.1"   (the app version)
+//	2. "v1.2.4-beta.1"   (the app version)
 //	3. "OH BEAV!"
 //	4. "created by RICHARD AIZEN AVERY III"
 //

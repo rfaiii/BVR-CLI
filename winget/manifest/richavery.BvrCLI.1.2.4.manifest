@@ -1,7 +1,7 @@
 {
   "$schema": "https://aka.ms/winget-packages.schema.2.0.0.json",
   "PackageIdentifier": "richavery.BvrCLI",
-  "PackageVersion": "1.2.3",
+  "PackageVersion": "1.2.4",
   "Moniker": "bvr-cli",
   "Publisher": "richavery",
   "PublisherUrl": "https://github.com/rfaiii/BVR-CLI",
@@ -11,7 +11,7 @@
     {
       "Architecture": "x64",
       "InstallerType": "exe",
-      "Url": "https://github.com/rfaiii/BVR-CLI/releases/download/v1.2.3/bvr-cli_1.2.3_windows_amd64.exe",
+      "Url": "https://github.com/rfaiii/BVR-CLI/releases/download/v1.2.4/bvr-cli_1.2.4_windows_amd64.exe",
       "InstallationMetadata": {
         "InstallLocation": "$LOCALAPPDATA\\Programs\\bvr-cli"
       },

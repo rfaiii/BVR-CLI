@@ -61,7 +61,7 @@ bvr-cli.exe --help
 For local beta package generation across all six targets:
 
 ```sh
-./scripts/package/build-beta-packages.sh 1.2.3
+./scripts/package/build-beta-packages.sh 1.2.4
 ```
 
 ## Build from source

@@ -51,7 +51,7 @@ fi
 
 echo "📦 Found version ${VERSION}"
 
-# Match Goreleaser naming format: bvr-cli_1.2.3_Darwin_x86_64.tar.gz
+# Match Goreleaser naming format: bvr-cli_1.2.4_Darwin_x86_64.tar.gz
 # goreleaser drops the 'v' from version in the archive name
 VERSION_CLEAN=${VERSION#v}
 ARCHIVE_NAME="${BINARY_NAME}_${VERSION_CLEAN}_${OS_NAME}_${ARCH_NAME}.${EXT}"

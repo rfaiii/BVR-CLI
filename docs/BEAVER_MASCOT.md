@@ -1,4 +1,4 @@
-# BVR Beaver Mascot (v1.2.3)
+# BVR Beaver Mascot (v1.2.4)
 
 The Beaver is a terminal-native mascot system designed around fixed-width
 frames, so animation never moves the surrounding TUI.
