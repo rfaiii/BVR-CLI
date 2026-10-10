@@ -6,7 +6,7 @@ frames, so animation never moves the surrounding TUI.
 ## Render sizes
 
 - **Hero (homescreen):** 13×5 cells — the dense plain-ASCII beaver from
-  `boot.BeaverFramesDenseAlpha` / `boot.BeaverFramesDenseBeta`, with 8 frame
+  `boot.BeaverFramesDenseAlpha` / `boot.BeaverFramesDenseBeta`, with 6 frame
   keys: `center` (resting), `left-dir`, `right-dir` (driven by mouse gaze OR
   keys/selected text left/right of center), `what` (beaver clicked), `error`
   (agent error), and `confused` (agent loading/thinking).

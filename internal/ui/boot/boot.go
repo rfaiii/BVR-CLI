@@ -19,39 +19,39 @@ import (
 //   - right-dir: keys or selected text are to the RIGHT of center.
 //   - what: the user clicked the beaver mascot.
 var BeaverFramesDenseAlpha = map[string]string{
-	"center": `  (\.---./)  
- / 0_0   \   
+	"center": `  (\.-./)  
+ /   0_0   \ 
 |   -(v)-   |
-\   [=]     /
- '-------'   `,
-	"left-dir": `  (\.---./)  
- / X_X    \  
-| \(v)/   |  
-\ [X]     /  
- '-------'   `,
-	"right-dir": `  (\.---./)  
- /    X_X \  
-|      \(v)/|
-\     [X]  / 
- '-------'   `,
-	"what": `  (\.---./)  
+ \   [=]   / 
+  '-------'  `,
+	"left-dir": `  (\.-./)  
+ / X_X     \ 
+| \X(v)/    |
+ \ [X]     / 
+  '-------'  `,
+	"right-dir": `  (\.-./)  
+ /     X_X \ 
+|     \X(v)/|
+ \     [X] / 
+  '-------'  `,
+	"what": `  (\.-./)  
  /  -0_0-  \ 
-|  \(o)//   |
-\  ((0))    /
- '-------'   `,
+|  \\(o)//  |
+ \  ((0))   /
+  '-------'  `,
 }
 
 var BeaverFramesDenseBeta = map[string]string{
-	"error": `  (\.---./)  
+	"error": `  (\.-./)  
  /   X_X   \ 
-|   \(v)/   |
-\   [=]     /
- '-------'   `,
-	"confused": `  (\.---./)  
+|   \X(v)/  |
+ \   [=]   / 
+  '-------'  `,
+	"confused": `  (\.-./)  
  /  -9_g-  \ 
 |   >(%)<   |
-\   [*}     /
- '-------'   `,
+ \   [*}   / 
+  '-------'  `,
 }
 
 // BootSequence is the frame order for the intro animation.

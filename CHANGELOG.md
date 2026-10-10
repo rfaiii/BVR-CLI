@@ -15,6 +15,9 @@
 ### Fixed
 
 - Fixed mascot frame priority so the mouse direction takes precedence over the rest/idle pose, resolving cases where the beaver ignored cursor movement.
+- Rebuilt the dense 13×5 beaver frames with uniform padding so the boot splash
+  and homescreen hero no longer wobble between expressions; every row is now
+  padded to exactly 13 cells and each pose is internally aligned.
 
 ### Testing
 
