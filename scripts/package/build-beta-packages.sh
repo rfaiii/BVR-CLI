@@ -31,7 +31,7 @@ package_target() {
 	[ "$os" = "windows" ] && binary="bvr-cli.exe"
 
 	mkdir -p "$stage"
-	GOWORK=off CGO_ENABLED=0 GOEXPERIMENT=greenteagc GOOS="$os" GOARCH="$arch" \
+	GOWORK=off CGO_ENABLED=0 GOEXPERIMENT=greenteagc GOGC=20 GOOS="$os" GOARCH="$arch" \
 		go build -trimpath \
 		-ldflags="-s -w -X github.com/richavery/bvr-cli/internal/version.Version=$VERSION" \
 		-o "$stage/$binary" "$ROOT"
