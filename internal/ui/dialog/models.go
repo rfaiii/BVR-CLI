@@ -152,9 +152,9 @@ func NewModels(com *common.Common, isOnboarding bool) (*Models, error) {
 		key.WithHelp("↑", "previous item"),
 	)
 	m.keyMap.Close = CloseKey
-	m.keyMap.Refresh = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "refresh local models"))
-	m.keyMap.Pull = key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "pull selected model"))
-	m.keyMap.Start = key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "start Ollama"))
+	m.keyMap.Refresh = key.NewBinding(key.WithKeys("ctrl+r"), key.WithHelp("ctrl+r", "refresh local models"))
+	m.keyMap.Pull = key.NewBinding(key.WithKeys("ctrl+p"), key.WithHelp("ctrl+p", "pull selected model"))
+	m.keyMap.Start = key.NewBinding(key.WithKeys("ctrl+s"), key.WithHelp("ctrl+s", "start Ollama"))
 
 	var err error
 	m.providers, err = config.Providers(m.com.Config())
@@ -208,7 +208,7 @@ func (m *Models) HandleMsg(msg tea.Msg) Action {
 			return ActionCmd{Cmd: m.LocalModelsCmd()}
 		case key.Matches(msg, m.keyMap.Start):
 			return ActionCmd{Cmd: startOllamaCmd()}
-		case key.Matches(msg, key.NewBinding(key.WithKeys("c"))):
+		case key.Matches(msg, key.NewBinding(key.WithKeys("ctrl+c"))):
 			if m.pulling && m.pullCancel != nil {
 				m.pullCancel()
 				m.pullCancel = nil
@@ -432,7 +432,7 @@ func (m *Models) ShortHelp() []key.Binding {
 	h = append(h, m.keyMap.Close)
 	h = append(h, m.keyMap.Refresh, m.keyMap.Pull, m.keyMap.Start)
 	if m.pulling {
-		h = append(h, key.NewBinding(key.WithKeys("c"), key.WithHelp("c", "cancel pull")))
+		h = append(h, key.NewBinding(key.WithKeys("ctrl+c"), key.WithHelp("ctrl+c", "cancel pull")))
 	}
 	return h
 }

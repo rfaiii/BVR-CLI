@@ -42,11 +42,17 @@ Each package should include:
 
 ## Notes
 
-- Signed/notarized DMG/EXE/MSI packaging is not yet implemented.
-- Run `./scripts/package/build-beta-packages.sh 1.2.4` to create six local
+- Signed/notarized DMG packaging is available (`scripts/package/macos-dmg.sh`);
+  the Windows EXE installer is built with `scripts/package/windows-msi.ps1`
+  (WiX Toolset required); deb/rpm/archlinux packages are produced by the
+  GoReleaser nfpm pipeline.
+- Run `./scripts/package/build-beta-packages.sh 1.2.6` to create six local
   archives under `dist/packages/` for smoke testing on the target machines.
 - The GoReleaser configuration produces Linux `deb`, `rpm`, `apk`, and
-  ArchLinux packages, plus release archives for the same six targets.
+  ArchLinux packages (`archlinux` nfpm format, `.pkg.tar.zst`), plus the Arch
+  User Repository packages `bvr-cli` (source) and `bvr-cli-bin` (prebuilt
+  binaries) and macOS DMG for local testing; on Arch and Manjaro install with
+  `yay -S bvr-cli` (or `bvr-cli-bin` for the binary variant).
 - The current `.goreleaser.yml` targets cross-platform archives and tap/scoop/npm manifests.
 - Windows MSI generation is available through
   `scripts/package/windows-msi.ps1` when WiX Toolset is installed.

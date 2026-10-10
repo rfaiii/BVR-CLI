@@ -354,35 +354,73 @@ func normalizeHeroFrame(pose string) string {
 // identical to the intro.
 var mascotStyle = lipgloss.NewStyle().Foreground(boot.MascotColor).Bold(true)
 
-// BeaverFrame returns the homescreen beaver mascot, facing the given direction.
+// beaverFrameKey selects the dense beaver pose to render.
 //
-// facing: -1 = look left, 0 = center (resting), +1 = look right.
-// errored: render the x-ray Beta variant (X_X eyes) when the agent has errored.
-// resting: render the neutral center-facing "rest" pose between direction changes.
-func BeaverFrame(facing int, errored, resting bool) string {
-	frames := boot.BeaverFramesDenseAlpha
-	if errored {
-		frames = boot.BeaverFramesDenseBeta
-	}
+//   - "center": resting, neutral 0_0 face.
+//   - "left-dir": keys or selected text are to the LEFT of center.
+//   - "right-dir": keys or selected text are to the RIGHT of center.
+//   - "what": the user clicked the beaver mascot.
+//   - "error": the agent errored (X_X x-ray eyes).
+//   - "confused": the agent is loading or thinking.
+type BeaverFrameKey string
 
-	if resting {
-		return mascotStyle.Render(frames["center"])
-	}
+const (
+	FrameCenter   BeaverFrameKey = "center"
+	FrameLeftDir  BeaverFrameKey = "left-dir"
+	FrameRightDir BeaverFrameKey = "right-dir"
+	FrameWhat     BeaverFrameKey = "what"
+	FrameError    BeaverFrameKey = "error"
+	FrameConfused BeaverFrameKey = "confused"
+)
 
-	// Face the cursor/prompt based on the debounced facing direction.
-	// -1 = left, 0 = center, +1 = right.
-	facingStr := "right"
-	switch facing {
+// FrameFromDir maps a horizontal direction into a dense mascot frame key: -1
+// for left-dir, 1 for right-dir, and center otherwise.
+func FrameFromDir(dir int) BeaverFrameKey {
+	switch dir {
 	case -1:
-		facingStr = "left"
-	case 0:
-		facingStr = "center"
+		return FrameLeftDir
 	case 1:
-		facingStr = "right"
+		return FrameRightDir
+	default:
+		return FrameCenter
 	}
-	frame, ok := frames[facingStr]
-	if !ok {
-		frame = frames["center"]
+}
+
+// BeaverFrame returns the homescreen beaver mascot for the given frame key.
+//
+// key: the expression to show (see beaverFrameKey constants).
+// errored: when true, the key is looked up in the Beta (x-ray) map instead of
+// the Alpha (normal) map; unknown keys fall back to the Alpha "center" pose.
+func BeaverFrame(key BeaverFrameKey, errored bool) string {
+	var frame string
+	if errored {
+		frame = boot.BeaverFramesDenseBeta[string(key)]
+	} else {
+		frame = boot.BeaverFramesDenseAlpha[string(key)]
 	}
-	return mascotStyle.Render(frame)
+	if frame == "" {
+		frame = boot.BeaverFramesDenseAlpha[string(FrameCenter)]
+	}
+	return mascotStyle.Render(normalizeDenseFrame(frame))
+}
+
+// normalizeDenseFrame pads every row of a dense beaver frame to the 13-cell
+// monospaced grid so the rendered mascot footprint is always 13x5 regardless
+// of the exact spacing in the source strings. The stable footprint keeps the
+// surrounding TUI layout (click hitbox, hero position) unchanged across poses.
+//
+// Every frame in BeaverFramesDenseAlpha/Beta is designed so no row exceeds 13
+// cells; rows shorter than 13 are right-padded with spaces.
+func normalizeDenseFrame(frame string) string {
+	const width = 13
+	lines := strings.Split(frame, "\n")
+	out := make([]string, 0, len(lines))
+	for _, l := range lines {
+		lw := lipgloss.Width(l)
+		if lw < width {
+			l = l + strings.Repeat(" ", width-lw)
+		}
+		out = append(out, l)
+	}
+	return strings.Join(out, "\n")
 }

@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/richavery/bvr-cli/internal/ui/boot"
+
 	"charm.land/lipgloss/v2"
 	"github.com/stretchr/testify/require"
 )
@@ -297,4 +299,96 @@ func TestAnimateWithoutStart(t *testing.T) {
 	msg := StepMsg{ID: "test", Gen: 0}
 	next := a.Animate(msg)
 	require.NotNil(t, next, "matching gen-0 tick must advance a fresh Anim")
+}
+
+// TestDenseBeaverFramesKeepCanonicalFootprint verifies that every dense beaver
+// frame (all keys in both Alpha and Beta) renders at exactly 13x5 cells so the
+// homescreen hero and its click hitbox never jump between poses.
+func TestDenseBeaverFramesKeepCanonicalFootprint(t *testing.T) {
+	t.Parallel()
+
+	t.Run("alpha keys", func(t *testing.T) {
+		t.Parallel()
+		for key := range boot.BeaverFramesDenseAlpha {
+			rendered := BeaverFrame(BeaverFrameKey(key), false)
+			if got := lipgloss.Width(rendered); got != 13 {
+				t.Errorf("frame %q width = %d, want 13", key, got)
+			}
+			if got := lipgloss.Height(rendered); got != 5 {
+				t.Errorf("frame %q height = %d, want 5", key, got)
+			}
+		}
+	})
+
+	t.Run("beta keys", func(t *testing.T) {
+		t.Parallel()
+		for key := range boot.BeaverFramesDenseBeta {
+			rendered := BeaverFrame(BeaverFrameKey(key), true)
+			if got := lipgloss.Width(rendered); got != 13 {
+				t.Errorf("frame %q width = %d, want 13", key, got)
+			}
+			if got := lipgloss.Height(rendered); got != 5 {
+				t.Errorf("frame %q height = %d, want 5", key, got)
+			}
+		}
+	})
+
+	// BootSequence only references keys that actually exist.
+	for _, key := range boot.BootSequence {
+		if _, ok := boot.BeaverFramesDenseAlpha[key]; !ok {
+			t.Errorf("BootSequence references unknown key %q", key)
+		}
+	}
+}
+
+// TestBeaverFrameKeySelection verifies key lookup in the correct map and the
+// unknown-key fallback.
+func TestBeaverFrameKeySelection(t *testing.T) {
+	t.Parallel()
+
+	// Alpha: normal-expression frames render without the errored flag.
+	for _, key := range []string{
+		string(BeaverFrameKey("center")), string(BeaverFrameKey("left-dir")),
+		string(BeaverFrameKey("right-dir")), string(BeaverFrameKey("what")),
+	} {
+		rendered := BeaverFrame(BeaverFrameKey(key), false)
+		if got := lipgloss.Width(rendered); got != 13 {
+			t.Errorf("Alpha key %q width = %d, want 13", key, got)
+		}
+		if rendered == "" {
+			t.Errorf("Alpha key %q rendered empty", key)
+		}
+	}
+
+	// Beta: x-ray frames only render with the errored flag.
+	for _, key := range []string{
+		string(BeaverFrameKey("error")), string(BeaverFrameKey("confused")),
+	} {
+		rendered := BeaverFrame(BeaverFrameKey(key), true)
+		if got := lipgloss.Width(rendered); got != 13 {
+			t.Errorf("Beta key %q width = %d, want 13", key, got)
+		}
+		if rendered == "" {
+			t.Errorf("Beta key %q rendered empty", key)
+		}
+	}
+
+	// Unknown keys fall back to the Alpha "center" pose.
+	fallback := BeaverFrame(BeaverFrameKey("nonexistent"), false)
+	want := BeaverFrame(BeaverFrameKey("center"), false)
+	if fallback != want {
+		t.Errorf("unknown key fell back to %q, want %q", fallback, want)
+	}
+}
+
+// TestFrameFromDir verifies the horizontal-direction helper used to select
+// homescreen beaver direction frames from a -1/0/+1 direction value.
+func TestFrameFromDir(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, FrameLeftDir, FrameFromDir(-1))
+	require.Equal(t, FrameRightDir, FrameFromDir(1))
+	require.Equal(t, FrameCenter, FrameFromDir(0))
+	require.Equal(t, FrameCenter, FrameFromDir(2))
+	require.Equal(t, FrameCenter, FrameFromDir(-42))
 }

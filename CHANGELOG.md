@@ -1,4 +1,22 @@
 # Changelog
+## 1.2.6
+
+### New!
+
+- **Dense mascot follows the mouse.** The 13×5 homescreen beaver now tracks your cursor: the pointer left of it makes it look left, right of it makes it look right, and directly over it returns to the idle "rest" pose.
+- **"What?" reaction on click.** Left-clicking the beaver plays a random Beaver sound cue and flashes its `what` expression for 650 ms; the sidebar mascot simultaneously switches to its click-boop expression.
+- **Keyboard direction follows all cursor keys.** The beaver now turns for any key that moves the cursor (typed text, arrows, Home/End, page navigation), not just printable keys.
+- **Model switch search no longer swallows keys.** `r`, `p`, `s`, and `c` now work as `ctrl+r` (refresh), `ctrl+p` (pull), `ctrl+s` (start Ollama), and `ctrl+c` (cancel pull), leaving the model-search box free for normal typing.
+- **New installers for package testing.** Batch of macOS DMG, Windows EXE, and Linux packages (`deb`, `rpm`, `archlinux`) plus Arch/Manjaro AUR packages built for distribution.
+
+### Fixed
+
+- Fixed mascot frame priority so the mouse direction takes precedence over the rest/idle pose, resolving cases where the beaver ignored cursor movement.
+
+### Testing
+
+- Added `TestBeaverClickBoop`, `TestBeaverMouseDir`, `TestBeaverMouseGazeFromMotion` (ui/model), `TestFrameFromDir` (ui/anim) covering the click reaction, gaze mapping, mouse motion, and frame selection.
+
 ## 1.2.5
 
 ### Fixes

@@ -61,7 +61,35 @@ bvr-cli.exe --help
 For local beta package generation across all six targets:
 
 ```sh
-./scripts/package/build-beta-packages.sh 1.2.4
+./scripts/package/build-beta-packages.sh 1.2.6
+```
+
+### Arch Linux / Manjaro Linux
+
+BVR ships official Arch User Repository (AUR) packages built by the release
+pipeline, so installation on Arch Linux and Manjaro is a single command:
+
+```sh
+yay -S bvr-cli
+# or, for the prebuilt binary variant:
+yay -S bvr-cli-bin
+```
+
+Manjaro uses the same AUR, so the same command works there. The `bvr-cli`
+source package builds from the tagged release; `bvr-cli-bin` installs the
+prebuilt `linux_amd64`/`linux_arm64` binaries. After install:
+
+```sh
+bvr-cli --version
+bvr-cli --help
+```
+
+To build a local installable Arch package (`.pkg.tar.zst`) for testing, run
+Goreleaser and install the `archlinux` format artifact with `pacman -U`:
+
+```sh
+goreleaser release --snapshot
+sudo pacman -U ./dist/bvr-cli_1.2.6-1_x86_64.pkg.tar.zst
 ```
 
 ## Build from source

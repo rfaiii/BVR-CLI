@@ -1,74 +1,74 @@
-# BVR Beaver Mascot (v1.2.4)
+# BVR Beaver Mascot (v1.2.6)
 
 The Beaver is a terminal-native mascot system designed around fixed-width
 frames, so animation never moves the surrounding TUI.
 
 ## Render sizes
 
-- **Hero (homescreen):** 13×5 cells — the dense character-filled ASCII beaver
-  from `boot.BeaverFramesDenseAlpha`, with center/left/right facing poses.
+- **Hero (homescreen):** 13×5 cells — the dense plain-ASCII beaver from
+  `boot.BeaverFramesDenseAlpha` / `boot.BeaverFramesDenseBeta`, with 8 frame
+  keys: `center` (resting), `left-dir`, `right-dir` (driven by mouse gaze OR
+  keys/selected text left/right of center), `what` (beaver clicked), `error`
+  (agent error), and `confused` (agent loading/thinking).
 - **Mini (sidebar):** 12×7 cells for the persistent chat/sidebar identity
   (`MiniMascotFrame`).
 
-The homescreen hero uses the **dense** beaver (`anim.BeaverFrame`) — a
-compact 13-wide × 5-tall frame textured with `A, V, @@, H, AW, WX` fillers
-and a `0_0` Alpha face. An x-ray `X_X` **Beta** variant is shown when the
-agent errors (`beaverErrored` flag), returning to the normal Alpha variant
-on completion.
+The homescreen hero uses the **dense** beaver (`anim.BeaverFrame`) — a compact
+13-wide × 5-tall plain-ASCII frame in the v1.1.8–v1.2.1 "donk" style. The
+Alpha map holds the normal-expression frames (center, left-dir, right-dir,
+what); the Beta map holds the x-ray expressions (error, confused).
 
-The sidebar (chat view) continues to use the larger `MiniMascotFrame`
-which includes idle, blink, and working poses.
+The sidebar (chat view) continues to use the larger `MiniMascotFrame`, whose
+12 expression variants (center, look-left/right/up/down, laugh, shocked,
+dance, chomp, click-boop, music) ride on the same `beaverGaze` state and also
+show the X_X x-ray eyes when `beaverErrored` is true.
 
 ## Behavior
 
 Mouse motion maps to five gaze buckets: center, left, right, up, and down. A
-dead zone around the face prevents twitching. Clicking the hero's fixed hitbox
+dead zone around the face prevents twitching. When the pointer is clearly
+left or right of the mascot, the hero looks left/right to follow it; over the
+mascot it returns to the idle "rest" pose. Clicking the hero's fixed hitbox
 randomly plays one of six Beaver cues (`WHAT-FLAT.wav` or
-`OH-BEAV-01.wav` through `OH-BEAV-05.wav`) and briefly switches to the
-click expression before the current gaze returns. The same interaction is
-available on the chat sidebar's mini Beaver.
+`OH-BEAV-01.wav` through `OH-BEAV-05.wav`), briefly shows the `what` reaction
+on the hero, and switches the mini mascot to its `StateClickBoop` expression.
 
-The `beaverFacing` field (-1/0/+1) tracks the last applied direction and is
-debounced through a `hoverSettleMsg` so the mascot does not flip on every
-micro mouse movement (4s pulse + 400ms hover debounce).
+Keys and selected text still drive direction too: text typed left/right of the
+prompt center makes the beaver look left/right, and any cursor-moving key
+(arrow keys, Home/End, typing) updates the direction.
 
-State fields on the `UI` struct:
+## The eight frame functions
 
-| Field             | Type                | Purpose                                      |
-|-------------------|---------------------|----------------------------------------------|
-| `beaverFacing`    | `int`               | 0=center, -1=left, +1=right                   |
-| `beaverErrored`   | `bool`              | Show x-ray Beta variant when agent errors     |
-| `beaverResting`   | `bool`              | Idle "rest" (center) pose between direction changes |
-| `beaverGaze`      | `anim.MascotState`  | Gaze direction for the sidebar mini beaver    |
-| `beaverRect`      | `image.Rectangle`   | Click hitbox for the homescreen hero          |
-| `beaverBoopUntil` | `time.Time`         | Boop cooldown timer (650ms)                   |
+| Frame key  | Shown when...                                                    |
+|------------|------------------------------------------------------------------|
+| `center`   | Resting — the neutral idle pose.                                   |
+| `left-dir` | Mouse or text is to the LEFT of center (mouse follows; typing, arrows, Home/End). |
+| `right-dir`| Mouse or text is to the RIGHT of center (mouse follows; typing, arrows, Home/End). |
+| `what`     | The user clicked the beaver mascot (650 ms reaction + SFX).      |
+| `error`    | The agent errored (`notify.TypeAgentError`).                     |
+| `confused` | The agent is loading or thinking (`isAgentBusy()`).              |
 
-The dense beaver (`BeaverFrame`) ignores `beaverBoopUntil` and `beaverGaze` —
-it renders purely from `beaverFacing`, `beaverErrored`, and `beaverResting`.
-The boop SFX still plays on click; the dense beaver has no separate boop
-frame, so it stays in its current facing pose during the 650ms cooldown.
-
-The state vocabulary already includes laugh, shocked, dance, chomp, music, and
-boop expressions. Transient expressions are rendered independently from the
-passive gaze state so future audio and event triggers do not need to mutate the
-frame renderer.
-
-## Terminal safety
-
-Every state is normalized to its canonical footprint. Frames are rendered row
-by row to keep ANSI styling from collapsing multiline art in screen buffers.
-The renderer is ASCII-first and does not depend on emoji or a particular font.
+Priority order on the hero: error > what (recent click) > confused (thinking)
+> mouse-dir (pointer clearly left/right of mascot) > resting (idle pulse) >
+keyboard-dir (text/cursor left/right of center) > center.
 
 ## Implementation
 
-- `internal/ui/anim/beaver.go` — `BeaverFrame()` (dense hero) +
-  `MiniMascotFrame()` (sidebar) + `LargeMascotFrame()` (legacy, still used
-  by `anim_test.go` footprint validation and the `version_banner.go`
-  `--version` mascot).
-- `internal/ui/boot/boot.go` — `BeaverFramesDenseAlpha` (normal `0_0`
-  faces) and `BeaverFramesDenseBeta` (x-ray `X_X` faces), each with
-  center/left/right poses.
-- `internal/ui/model/landing.go` — homescreen rendering using
-  `BeaverFrame(m.beaverFacing, m.beaverErrored, m.beaverResting)`.
+- `internal/ui/anim/beaver.go` — `BeaverFrame(key, errored)` (dense hero,
+  `normalizeDenseFrame` keeps every pose at 13×5),
+  `MiniMascotFrame()` (sidebar) + `LargeMascotFrame()` (legacy, still used by
+  the `anim_test.go` footprint validation and the `version_banner.go`
+  `--version` mascot), plus `FrameFromDir(dir int) BeaverFrameKey` for
+  mouse/keyboard direction frames.
+- `internal/ui/boot/boot.go` — `BeaverFramesDenseAlpha` (normal expressions:
+  center, left-dir, right-dir, what) and `BeaverFramesDenseBeta` (x-ray
+  expressions: error, confused), plus the intro `BootSequence`.
+- `internal/ui/model/landing.go` — homescreen rendering: maps `beaverErrored`,
+  `beaverBoopUntil`, `isAgentBusy()`, `beaverMouseDir()`, `beaverResting`, and
+  `beaverFacing` to a frame key, then calls `anim.BeaverFrame(key,
+  m.beaverErrored)`.
 - `internal/ui/model/ui.go` — beaver state fields, click detection via
-  `beaverRect`, `triggerBeaverBoop()` SFX, and `sidebarBeaverRect`.
+  `beaverRect`, `triggerBeaverBoop()` SFX, `beaverMouseDir()` mapping mouse
+  gaze to direction, `handleAgentNotification` (sets `beaverErrored` on
+  `TypeAgentError`, clears it on `TypeAgentFinished`), and `sidebarBeaverRect`.
+  `sidebarBeaverRect`.

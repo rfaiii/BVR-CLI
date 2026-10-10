@@ -3867,8 +3867,12 @@ func (m *UI) updateTextareaWithPrevHeight(msg tea.Msg, prevHeight int) tea.Cmd {
 	ta, cmd := m.textarea.Update(msg)
 	m.textarea = ta
 
-	// Update mascot facing based on keyboard cursor position
-	if _, isKey := msg.(tea.KeyPressMsg); isKey {
+	// Update mascot facing based on keyboard cursor position. The beaver looks
+	// left when the cursor is in the left half of the prompt and right when it's
+	// in the right half, mirroring the agent's gaze. Any key that moves the
+	// cursor updates the facing.
+	_, isKeyMsg := msg.(tea.KeyMsg)
+	if isKeyMsg {
 		if m.textarea.Column() < m.textarea.Width()/2 {
 			m.beaverFacing = -1
 		} else {
@@ -4533,6 +4537,21 @@ func (m *UI) triggerBeaverBoop() tea.Cmd {
 		m.cacheSidebarLogo(m.sidebarContentWidth)
 	}
 	return m.playAudio("Beaver", "Beaver logo interaction", "beaver")
+}
+
+// beaverMouseDir returns -1 (left), 0 (center), or 1 (right) based on the
+// current mouse gaze relative to the mascot's center. It reflects beaverGaze,
+// which is updated on mouse moves whenever the mascot rect is visible on the
+// homescreen, so the dense mascot can follow the pointer left/right of itself.
+func (m *UI) beaverMouseDir() int {
+	switch m.beaverGaze {
+	case anim.StateLookLeft:
+		return -1
+	case anim.StateLookRight:
+		return 1
+	default:
+		return 0
+	}
 }
 
 // startOnboarding opens the onboarding dialog when requested.

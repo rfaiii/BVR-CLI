@@ -12,7 +12,7 @@
 │   [blank] (1 row)                                    │
 │   BUTTONS (vertical stack, 4 rows) ← FIXED         │
 │   [blank] (1 row)                                    │
-│   Hero/Beaver mascot image (8 rows)                  │
+│   Hero/Beaver mascot (5 rows; follows mouse + typing)│
 │   [blank] (1 row)                                    │
 │   MODEL/PROVIDER line (1 row) ← FIXED spacing       │
 │   [blank] (1 row)                                    │
@@ -51,12 +51,29 @@ Part 0: cwdStyled          → 1 row (styled working directory)
 Part 1: "" (blank)         → 1 row
 Part 2: buttons            → ~15 rows (4 buttons stacked vertically, 1 blank between)
 Part 3: "" (blank)         → 1 row
-Part 4: hero               → 8 rows (beaver mascot image)
+Part 4: hero               → 5 rows (beaver, follows mouse + typing position)
 Part 5: "" (blank)         → 1 row
 Part 6: modelLine          → 1 row (MODEL + PROVIDER)
 Part 7: "" (blank)         → 1 row
 Part 8: waveLabel + wave   → 2-3 rows (ggwave waveform)
 ```
+
+## Mascot Behavior (Homescreen Hero)
+
+The 13×5 dense beaver occupies 5 rows and never changes width, so the layout
+stays stable. It maps to frame keys in this priority order:
+
+1. `error` — agent error (x-ray eyes).
+2. `what` — clicked within the last 650 ms (reaction + sound cue).
+3. `confused` — agent is loading/thinking (`isAgentBusy()`).
+4. `left-dir` / `right-dir` — mouse pointer clearly left/right of the mascot
+   (beaver follows the pointer).
+5. `center` — resting / idle pulse.
+6. `left-dir` / `right-dir` — keyboard cursor or selected text left/right of
+   center (any key that moves the cursor updates the direction).
+
+The beaver therefore tracks both mouse position and typing position; the last
+one that changes wins until a higher-priority state takes over.
 
 ## Footer Area (Bottom of Screen)
 

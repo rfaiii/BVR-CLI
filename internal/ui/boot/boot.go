@@ -9,54 +9,54 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// BeaverFramesDenseAlpha are the dense, character-filled mascot frames for the
-// normal (0_0 eyes) state. Filler characters (A, V, @@, H, AW, WX) shift behind
-// the facial features to keep the 13-cell monospaced bounding box stable across
-// frames while the mascot rotates.
+// BeaverFramesDenseAlpha are the dense mascot frames for the normal state
+// (0_0 / -0_0- eyes), reused by the boot splash and the homescreen hero. Each
+// frame is exactly 13 cells wide and 5 rows tall so the terminal grid never
+// collapses while the mascot reacts:
+//
+//   - center: resting, neutral 0_0 face.
+//   - left-dir: keys or selected text are to the LEFT of center.
+//   - right-dir: keys or selected text are to the RIGHT of center.
+//   - what: the user clicked the beaver mascot.
 var BeaverFramesDenseAlpha = map[string]string{
 	"center": `  (\.---./)  
- /A  0_0  V\ 
-| @@-(v)- H |
- \AW [=] WX/ 
-  '-------'  `,
-	"left": `  (\.---./)  
- / 0_0  A V\ 
-| -(v)- @@H |
- \ [=] AWWX/ 
-  '-------'  `,
-	"right": `  (\.---./)  
- /A V  0_0 \ 
-| @@H -(v)- |
- \AWWX [=] / 
-  '-------'  `,
+ / 0_0   \   
+|   -(v)-   |
+\   [=]     /
+ '-------'   `,
+	"left-dir": `  (\.---./)  
+ / X_X    \  
+| \(v)/   |  
+\ [X]     /  
+ '-------'   `,
+	"right-dir": `  (\.---./)  
+ /    X_X \  
+|      \(v)/|
+\     [X]  / 
+ '-------'   `,
+	"what": `  (\.---./)  
+ /  -0_0-  \ 
+|  \(o)//   |
+\  ((0))    /
+ '-------'   `,
 }
 
-// BeaverFramesDenseBeta is the x-ray ("dead") mascot variant (X_X eyes), shown
-// when the agent errors. Same 13x5 bounding box; only the fillers change (to
-// @R/JU/HI/YH) so the face stays textured.
 var BeaverFramesDenseBeta = map[string]string{
-	"center": `  (\.---./)  
- /A  X_X AX\ 
-| @R-(v)-JU |
- \HI [=] YH/ 
-  '-------'  `,
-	"left": `  (\.---./)  
- / X_X A AX\ 
-| -(v)-@RJU |
- \ [=] HIYH/ 
-  '-------'  `,
-	"right": `  (\.---./)  
- /A AX X_X \ 
-| @RJU-(v)- |
- \HIYH [=] / 
-  '-------'  `,
+	"error": `  (\.---./)  
+ /   X_X   \ 
+|   \(v)/   |
+\   [=]     /
+ '-------'   `,
+	"confused": `  (\.---./)  
+ /  -9_g-  \ 
+|   >(%)<   |
+\   [*}     /
+ '-------'   `,
 }
 
 // BootSequence is the frame order for the intro animation.
-var BootSequence = []string{"center", "left", "center", "right", "center"}
+var BootSequence = []string{"center", "left-dir", "center", "right-dir", "center"}
 
-// MascotColor is the BVR neon green (#39f66b) used for the beaver so it pops
-// vibrantly against the dark terminal background.
 var MascotColor = lipgloss.Color("#39f66b")
 
 // LoadingColor is a secondary accent used for the loading line beneath the

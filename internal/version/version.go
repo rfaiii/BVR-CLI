@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const defaultVersion = "1.2.5"
+const defaultVersion = "1.2.6"
 
 var (
 	Version = defaultVersion
@@ -25,8 +25,10 @@ var (
 // is only set for `go install` and not for `go build`).
 func init() {
 	// If Version was explicitly overridden via ldflags, keep that value.
-	// Otherwise, try to use the Go module version from build info.
-	if Version == defaultVersion {
+	// Otherwise, try to use the Go module version from build info (e.g. when
+	// installed with `go install github.com/richavery/bvr-cli@latest` without
+	// -ldflags).
+	if Version == "" {
 		info, ok := debug.ReadBuildInfo()
 		if ok {
 			mainVersion := info.Main.Version
@@ -49,6 +51,12 @@ func init() {
 	// info (e.g. "v1.1.6+dirty") so a dev build always identifies itself
 	// with its explicit test tag.
 	if defaultVersion != "" && strings.Contains(defaultVersion, ":") && !strings.Contains(Version, ":") {
+		Version = defaultVersion
+	}
+
+	// If no ldflags was passed and no build info was available, fall back to
+	// the canonical default version.
+	if Version == "" {
 		Version = defaultVersion
 	}
 

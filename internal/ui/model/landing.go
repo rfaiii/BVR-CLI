@@ -2,6 +2,7 @@ package model
 
 import (
 	"image"
+	"time"
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/ultraviolet/layout"
@@ -87,11 +88,31 @@ func (m *UI) landingView() string {
 		lipgloss.NewStyle().Foreground(accent).Bold(true).Render(providerName)
 
 	// Dense ASCII beaver mascot from the boot splash (boot.BeaverFramesDenseAlpha).
-	// This is the original 13x5 character-filled beaver with center/left/right
-	// facing poses, shown with the x-ray Beta variant (X_X eyes) when the
-	// agent errors. It tracks the cursor/prompt direction and idles in a
-	// "rest" pose between direction changes.
-	hero := anim.BeaverFrame(m.beaverFacing, m.beaverErrored, m.beaverResting)
+	// It maps the current UI state to a frame key: the agent error (x-ray
+	// Beta) takes priority, then a recent click plays the "what" reaction, then
+	// the loading/thinking state shows "confused", then the slow "rest" pulse,
+	// and finally the cursor position (left/right of center) drives the
+	// direction faces. The beaver is never wider than 13 cells, so the layout
+	// and click hitbox stay stable.
+	var frameKey anim.BeaverFrameKey
+	if m.beaverErrored {
+		frameKey = anim.FrameError
+	} else if time.Now().Before(m.beaverBoopUntil) {
+		frameKey = anim.FrameWhat
+	} else if m.isAgentBusy() {
+		frameKey = anim.FrameConfused
+	} else if m.beaverMouseDir() != 0 {
+		// Mouse is clearly left or right of the mascot: follow the pointer.
+		frameKey = anim.FrameFromDir(m.beaverMouseDir())
+	} else if m.beaverResting {
+		frameKey = anim.FrameCenter
+	} else if m.beaverFacing != 0 {
+		// Text (or selected text) is left/right of center on the keyboard.
+		frameKey = anim.FrameFromDir(m.beaverFacing)
+	} else {
+		frameKey = anim.FrameCenter
+	}
+	hero := anim.BeaverFrame(frameKey, m.beaverErrored)
 
 	// Buttons now appear before the hero (near the header). The hero is
 	// positioned after the CWD line, blank, and the vertical button stack.
@@ -106,6 +127,7 @@ func (m *UI) landingView() string {
 
 	// Click rectangles for the vertical home button stack.
 	// Buttons are stacked top-to-bottom with a 1-row gap between each.
+	// Use each button's actual rendered height for accurate hit detection.
 	btnTop := landingButtonTop(m.layout.main.Min.Y, lipgloss.Height(cwdStyled))
 	cmdH := lipgloss.Height(commandButton)
 	folderH := lipgloss.Height(folderButton)
@@ -116,12 +138,16 @@ func (m *UI) landingView() string {
 	col2Width := lipgloss.Width(folderButton)
 	col3Width := lipgloss.Width(createButton)
 	col4Width := lipgloss.Width(imageBtn)
-	btnHeight := max(cmdH, max(folderH, max(createH, imageH)))
 	x0 := m.layout.main.Min.X
-	m.commandButtonRect = image.Rect(x0, btnTop, x0+col1Width, btnTop+btnHeight)
-	m.finderButtonRect = image.Rect(x0, btnTop+btnHeight+btnGap, x0+col2Width, btnTop+2*btnHeight+btnGap)
-	m.createFileButtonRect = image.Rect(x0, btnTop+2*(btnHeight+btnGap), x0+col3Width, btnTop+3*btnHeight+2*btnGap)
-	m.imageButtonRect = image.Rect(x0, btnTop+3*(btnHeight+btnGap), x0+col4Width, btnTop+4*btnHeight+3*btnGap)
+
+	y := btnTop
+	m.commandButtonRect = image.Rect(x0, y, x0+col1Width, y+cmdH)
+	y += cmdH + btnGap
+	m.finderButtonRect = image.Rect(x0, y, x0+col2Width, y+folderH)
+	y += folderH + btnGap
+	m.createFileButtonRect = image.Rect(x0, y, x0+col3Width, y+createH)
+	y += createH + btnGap
+	m.imageButtonRect = image.Rect(x0, y, x0+col4Width, y+imageH)
 
 	waveWidth := min(56, max(18, width-4))
 	waveLabel := lipgloss.NewStyle().Foreground(alt).Render("GGWAVE NODE LINK  ")
@@ -163,8 +189,8 @@ func (m *UI) landingView() string {
 }
 
 // landingButtonTop returns the Y coordinate for the top of the vertical
-// button stack on the landing page. The buttons appear immediately after
-// the CWD line and a single blank separator, placing them near the header.
+// button stack on the landing page. Buttons appear after the CWD line and
+// a single blank separator line.
 func landingButtonTop(mainY, cwdHeight int) int {
-	return mainY + 1 + cwdHeight + 1
+	return mainY + 1 + cwdHeight
 }

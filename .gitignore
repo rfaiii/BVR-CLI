@@ -68,3 +68,4 @@ mcp-server/src/mcp_server/__pycache__/
 docs/TASKLIST.md
 CONTEXT.md
 docs/REMOVAL.md
+*.asd
