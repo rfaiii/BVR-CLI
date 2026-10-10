@@ -20,37 +20,37 @@ import (
 //   - what: the user clicked the beaver mascot.
 var BeaverFramesDenseAlpha = map[string]string{
 	"center": `  (\.-./)  
- /   0_0   \ 
-|   -(v)-   |
- \   [=]   / 
+ /   0_0  \
+|   -(v)-  |
+ \   [=]  /
   '-------'  `,
 	"left-dir": `  (\.-./)  
- / X_X     \ 
-| \X(v)/    |
- \ [X]     / 
+ / X_X    \
+| \X(v)/   |
+ \ [X]    /
   '-------'  `,
 	"right-dir": `  (\.-./)  
- /     X_X \ 
-|     \X(v)/|
- \     [X] / 
+ /     X_X\
+|    \X(v)/|
+ \     [X]/
   '-------'  `,
 	"what": `  (\.-./)  
- /  -0_0-  \ 
-|  \\(o)//  |
- \  ((0))   /
+ /  -0_0- \
+|  \X(o)// |
+ \  ((0))  /
   '-------'  `,
 }
 
 var BeaverFramesDenseBeta = map[string]string{
 	"error": `  (\.-./)  
- /   X_X   \ 
-|   \X(v)/  |
- \   [=]   / 
+ /   X_X  \
+|   \X(v)/ |
+ \   [=]  /
   '-------'  `,
 	"confused": `  (\.-./)  
- /  -9_g-  \ 
-|   >(%)<   |
- \   [*}   / 
+ /  -9_g- \
+|   >(%)<  |
+ \   [*}  /
   '-------'  `,
 }
 
