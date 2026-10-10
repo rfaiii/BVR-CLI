@@ -17,6 +17,8 @@ The homescreen hero uses the **dense** beaver (`anim.BeaverFrame`) — a compact
 13-wide × 5-tall plain-ASCII frame in the v1.1.8–v1.2.1 "donk" style. The
 Alpha map holds the normal-expression frames (center, left-dir, right-dir,
 what); the Beta map holds the x-ray expressions (error, confused).
+The boot demo (`boot.Run`) now cycles through the full frame set, so every
+expression is shown during startup.
 
 The sidebar (chat view) continues to use the larger `MiniMascotFrame`, whose
 12 expression variants (center, look-left/right/up/down, laugh, shocked,

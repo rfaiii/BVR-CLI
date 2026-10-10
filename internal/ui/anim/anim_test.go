@@ -333,10 +333,12 @@ func TestDenseBeaverFramesKeepCanonicalFootprint(t *testing.T) {
 		}
 	})
 
-	// BootSequence only references keys that actually exist.
+	// BootSequence only references keys that actually exist (either map).
 	for _, key := range boot.BootSequence {
 		if _, ok := boot.BeaverFramesDenseAlpha[key]; !ok {
-			t.Errorf("BootSequence references unknown key %q", key)
+			if _, ok := boot.BeaverFramesDenseBeta[key]; !ok {
+				t.Errorf("BootSequence references unknown key %q", key)
+			}
 		}
 	}
 }

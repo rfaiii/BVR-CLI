@@ -54,8 +54,14 @@ var BeaverFramesDenseBeta = map[string]string{
   '-------'  `,
 }
 
-// BootSequence is the frame order for the intro animation.
-var BootSequence = []string{"center", "left-dir", "center", "right-dir", "center"}
+// BootSequence is the frame order for the intro animation. It cycles through
+// the directional faces first (center / left-dir / right-dir), then the
+// reaction and exception expressions so the boot demo demonstrates every pose
+// (error, left-dir, right-dir, what, confused).
+var BootSequence = []string{
+	"center", "left-dir", "center", "right-dir", "center",
+	"error", "left-dir", "right-dir", "what", "confused",
+}
 
 var MascotColor = lipgloss.Color("#39f66b")
 
@@ -65,6 +71,15 @@ var LoadingColor = lipgloss.Color("#b972ff")
 
 var mascotStyle = lipgloss.NewStyle().Foreground(MascotColor).Bold(true)
 var loadingStyle = lipgloss.NewStyle().Foreground(LoadingColor)
+
+// renderFrame renders a dense beaver frame, using the x-ray Beta map for
+// exception states (error, confused) and the Alpha map for normal expressions.
+func renderFrame(frame string) string {
+	if _, ok := BeaverFramesDenseBeta[frame]; ok {
+		return mascotStyle.Render(BeaverFramesDenseBeta[frame])
+	}
+	return mascotStyle.Render(BeaverFramesDenseAlpha[frame])
+}
 
 // Run plays the beaver boot animation. It clears the terminal first, renders
 // each mascot frame in neon green with a secondary-accent loading line beneath,
@@ -77,7 +92,7 @@ func Run() {
 	fmt.Print("\033[H\033[2J")
 	for _, frame := range BootSequence {
 		fmt.Print("\033[0;0H") // cursor to top-left
-		fmt.Println(mascotStyle.Render(BeaverFramesDenseAlpha[frame]))
+		fmt.Println(renderFrame(frame))
 		fmt.Println()
 		fmt.Println(loadingStyle.Render("Initializing bvr-cli components..."))
 		time.Sleep(400 * time.Millisecond)
