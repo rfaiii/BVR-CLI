@@ -41,8 +41,7 @@ and selection when closed and reopened.
 
 The selected file uses a light-pink highlight for visibility. The file list and
 preview are separated by a divider, and the footer uses distinct colors for
-metadata, clipboard state, and keyboard instructions. Work is tracked
-in `docs/TASKLIST.md`.
+metadata, clipboard state, and keyboard instructions.
 
 ## Layout and clipping contract
 

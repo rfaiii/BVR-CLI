@@ -46,7 +46,7 @@ Each package should include:
   the Windows EXE installer is built with `scripts/package/windows-msi.ps1`
   (WiX Toolset required); deb/rpm/archlinux packages are produced by the
   GoReleaser nfpm pipeline.
-- Run `./scripts/package/build-beta-packages.sh 1.2.6` to create six local
+- Run `./scripts/package/build-beta-packages.sh 1.2.7` to create six local
   archives under `dist/packages/` for smoke testing on the target machines.
 - The GoReleaser configuration produces Linux `deb`, `rpm`, `apk`, and
   ArchLinux packages (`archlinux` nfpm format, `.pkg.tar.zst`), plus the Arch

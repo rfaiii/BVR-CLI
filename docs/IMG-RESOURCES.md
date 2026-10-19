@@ -45,19 +45,27 @@ and how to regenerate or replace them.
 
 ## Screenshots
 
-The current committed product screenshots are:
+The committed product screenshots are:
 
-- `resources/screenshots/BVR-CLI-HOME-MENU.png` - homescreen and launch actions.
-- `resources/screenshots/COMMAND-MENU.png` - command palette and navigation.
-- `resources/screenshots/HEADER.png` - header treatment.
-- `resources/screenshots/BVR-MASCOT.png` - Beaver branding reference.
-- `resources/screenshots/file-finder.png` - project file browser.
-- `resources/screenshots/CREATE-FILE.png` - new-file workflow.
-- `resources/screenshots/WEB-BROWSER.png` - embedded browser.
-- `resources/screenshots/MODEL-INFO.png` - model/provider information.
-- `resources/screenshots/NODE-INFO.png` - NODE status.
-- `resources/screenshots/SKILLS-INFO.png` - skills status.
-- `resources/screenshots/FOOTER.png` - footer/status treatment.
+| File | Subject |
+| --- | --- |
+| `resources/screenshots/BVR-CLI-HOME-MENU.png` | Homescreen and launch actions. |
+| `resources/screenshots/BVR-CLI.png` | Full working screen: chat, editor, and sidebar. |
+| `resources/screenshots/COMMAND-MENU.png` | Command palette and navigation. |
+| `resources/screenshots/COMMAND.png` | Command palette detail. |
+| `resources/screenshots/HEADER.png` | Header treatment. |
+| `resources/screenshots/FILE-FINDER.png` | Project file browser. |
+| `resources/screenshots/CREATE_FILE.png` | New-file workflow. |
+| `resources/screenshots/IMAGE_RECOGNITION.png` | Image recognition / lookup flow. |
+| `resources/screenshots/BACKGROUND.png` | Terminal background treatment. |
+
+The older per-panel screenshots (`BVR-MASCOT`, `MODEL-INFO`, `NODE-INFO`,
+`PROJECT-TEXT`, `SKILLS-INFO`, `FOOTER`, `WEB-BROWSER`) were removed in 1.2.7;
+their content is now covered by the full working-screen and sidebar captures.
+`CREATE-FILE.png` was renamed to `CREATE_FILE.png` and `file-finder.png` to
+`FILE-FINDER.png` so every screenshot follows one `UPPER_SNAKE_CASE`
+convention. On case-sensitive filesystems (Linux CI, release packaging) the
+old lowercase name would not have resolved.
 
 Use the homescreen and command menu images in the root README. The remaining
 images are supporting references for feature and design documentation.

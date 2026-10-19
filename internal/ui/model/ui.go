@@ -2125,6 +2125,25 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 		if cmd := m.openDialog(msg.DialogID); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	case dialog.PairingConfirmMsg:
+		if msg.Accepted && msg.Envelope != nil {
+			// Register the paired node
+			e := msg.Envelope
+			device := node.Device{
+				ID:             e.NodeID,
+				Name:           e.NodeID,
+				Nickname:       "GGWave Node",
+				ConnectionType: "ggwave",
+				Address:        e.Endpoint,
+				Status:         node.DeviceStatusOnline,
+				TransportURL:   e.Endpoint,
+				LastSeen:       time.Now(),
+			}
+			node.UpsertDevice(device)
+			cmds = append(cmds, util.CmdHandler(util.NewInfoMsg(fmt.Sprintf("Node paired via GGWave: %s", e.NodeID))))
+			m.playAudio("Notification", "Node paired via GGWave", "notification")
+		}
+		m.dialog.CloseDialog("ggwave-pairing-confirm")
 	case dialog.ActionSelectTheme:
 		cmds = append(cmds, m.playAudio("Sub", "", "sub"))
 		m.setTheme(msg.ID)

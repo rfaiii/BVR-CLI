@@ -1,29 +1,32 @@
-# BVR-CLI 1.2.6
+# BVR-CLI 1.2.7
+![HEADER](resources/screenshots/HEADER.png)
+an APP BY RICHARD AIZEN AVERY III.
 
-**A keyboard-first AI workspace for the terminal.**
 
-BVR-CLI brings conversations, project files, local models, tools, permissions,
-skills, LSP, MCP, audio feedback, and multi-device NODE work into one fast
-CLI/TUI cockpit.
+**BVR-CLI is a KEYBOARD-FIRST AI workspace for the terminal.**
+
+**This app is for those who want total control over their CLI app of choice; with lots of menu options and plenty of themes for those who like to customize their setups!
+
+BVR-CLI brings conversations, project files, local models, tools, permissions, skills, LSP, MCP, audio feedback, and multi-device NODE work into one fast CLI/TUI cockpit.
 
 ![BVR-CLI home menu](resources/screenshots/BVR-CLI-HOME-MENU.png)
 
-![BVR-CLI command menu](resources/screenshots/COMMAND-MENU.png)
-
 ## Why BVR-CLI?
 
-AI development usually means bouncing between a terminal, model picker, file
-browser, editor, browser, notification system, and a pile of helper scripts.
+AI development usually means bouncing between a terminal, model picker, file browser, editor, browser, notification system, and a pile of helper scripts.
 BVR-CLI is designed to make that whole loop feel like one application:
 
 1. Open a project.
+![FILE FINDER](resources/screenshots/FILE-FINDER.png)
 2. Choose a provider or local model.
 3. Ask for work in the chat editor.
 4. Review tool calls, permissions, files, and output in one place.
 5. Continue from another device through the NODE architecture.
+![COMMAND-PALLETE](resources/screenshots/COMMAND.png)
 
 It is friendly enough for someone new to AI tools, while keeping the keyboard
 shortcuts and escape hatches experienced developers expect.
+
 
 ## Quick start
 
@@ -99,6 +102,8 @@ See [`docs/NODE_TRANSPORTS.md`](docs/NODE_TRANSPORTS.md),
 
 ## Useful controls
 
+![BVR-CLI command menu](resources/screenshots/COMMAND-MENU.png)
+
 | Action | Shortcut |
 | --- | --- |
 | Command menu | `Ctrl+P` |
@@ -130,7 +135,7 @@ go build ./...
 Package the supported targets with:
 
 ```sh
-./scripts/package/build-all.sh 1.2.6
+./scripts/package/build-all.sh 1.2.7
 ```
 
 ## Documentation
@@ -141,7 +146,6 @@ Package the supported targets with:
 | [`docs/ONBOARDING.md`](docs/ONBOARDING.md) | First-run setup and dependencies |
 | [`docs/FEATURES-OVERVIEW.md`](docs/FEATURES-OVERVIEW.md) | Full feature inventory |
 | [`docs/COMMAND-MENU.md`](docs/COMMAND-MENU.md) | Command palette items, SFX, and architecture |
-| [`docs/LAUNCH_TASKLIST.md`](docs/LAUNCH_TASKLIST.md) | Release readiness and beta work |
 | [`docs/BETA.md`](docs/BETA.md) | Beta testing and release process |
 | [`docs/GGWAVE.md`](docs/GGWAVE.md) | GGWave pairing architecture |
 | [`docs/BEAVER_MASCOT.md`](docs/BEAVER_MASCOT.md) | Animated Beaver states and layout contract |
@@ -152,6 +156,8 @@ Package the supported targets with:
 | [`docs/CLINE_PROVIDER.md`](docs/CLINE_PROVIDER.md) | Cline provider integration |
 | [`docs/UI_BRANDING.md`](docs/UI_BRANDING.md) | Visual identity and TUI branding |
 | [`docs/PACKAGING.md`](docs/PACKAGING.md) | Installer and distribution reference |
+
+![PINK THEME](resources/screenshots/PINK-THEME-MODELS.png)
 
 ## Beta feedback
 

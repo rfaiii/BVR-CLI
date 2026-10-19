@@ -1,4 +1,88 @@
 # Changelog
+## 1.2.7
+
+### New!
+
+- **The same animated BVR now appears on the working screen.** The sidebar used
+  to render a separate 12×7 "mini" mascot with a reduced expression set while the
+  homescreen used the dense 13×5 hero. Both screens now render the identical
+  dense beaver and resolve their pose through one shared
+  `(*UI).beaverFrameKey()`, so the two can never drift apart.
+  `TestBeaverFrameSharedAcrossScreens` asserts byte-identical output across every
+  frame key.
+- **GGWave proximity node pairing.** New `ggwave://` transport for audio-based
+  device bootstrap: pairing envelope, confirmation dialog, and node
+  registration. See `docs/GGWAVE.md` and `docs/NODE_TRANSPORTS.md`.
+- **Refreshed screenshots.** New full working-screen, command palette, file
+  finder, create-file, image recognition, and header captures. Every screenshot
+  now uses one `UPPER_SNAKE_CASE` naming convention.
+
+### Fixed
+
+- **The agent-busy "confused" mascot expression never actually rendered.**
+  `confused` and `error` live only in the Beta (x-ray) frame map, but
+  `BeaverFrame` searched a single map chosen by the `errored` flag. With
+  `errored` false — which is the case while the agent is simply thinking — both
+  keys missed and silently fell back to the resting face. Both maps are now
+  consulted with an `errored` priority order.
+- **Mouse gaze only tracked the homescreen.** Gaze tracking was gated on
+  `state == uiLanding`, so the sidebar mascot could not follow the pointer. Gaze
+  and click hit-testing now resolve through `visibleBeaverRect()`, which picks
+  whichever mascot is actually on screen.
+- **Clicks in the short-sidebar layout booped an invisible mascot.** When the
+  sidebar is below the height breakpoint the mascot is not drawn, but a hitbox
+  was still built. The hitbox is now cleared, and it is sized from the exact
+  frame string composed into the logo instead of a re-render that could drift
+  from the drawn art.
+- **`CGO_ENABLED=0` builds were broken by the GGWave audio work.** The PortAudio
+  backend had no build tag, so it imported PortAudio unconditionally and every
+  CGO-free build failed. Gating it exposed a second failure — the audio transport
+  had no stub backend — which is now added. All four build combinations compile:
+  `CGO_ENABLED` 0/1, with and without `-tags=ggwave`.
+- **The GGWave stub and native adapters had diverged.** The stub declared
+  `Encode`/`Decode` over `[]float32` while the native adapter used `[]int16`, so
+  any caller written against the stub would fail to build with the native backend
+  compiled in. Signatures are now aligned and the float32 helpers mirror
+  `EncodeFloat32`/`DecodeFloat32`.
+- **PortAudio was initialized in an `init()` function**, which cannot report an
+  error and fired on package import even when no audio was requested.
+  Initialization is now lazy and memoized, surfacing failures as a normal error
+  from `NewTransport`.
+- **Repaired the `internal/catalog` FTS index, which was permanently empty.**
+  Two bugs were masked by a discarded error (`_, _ =`): the insert statement
+  declared 9 placeholders for 10 columns, and `ON CONFLICT ... DO UPDATE` is not
+  implemented for FTS5 virtual tables. A third surfaced once those were fixed:
+  the FTS query combined terms with implicit `AND`, collapsing recall to near
+  zero, so ordinary multi-signal searches matched nothing. Now an explicit
+  transactional delete+insert, `OR` semantics, and quoted terms.
+
+### Testing
+
+- `TestBeaverFrameEveryKeyResolves`, `TestBeaverFrameConfusedRendersWhenNotErrored`,
+  `TestBeaverFrameErrorTakesPriorityWhenErrored`, `TestBeaverFrameKeepsDenseFootprint`
+  (ui/anim) covering frame resolution across both frame maps and the dense grid.
+- `TestBeaverFrameSharedAcrossScreens`, `TestSidebarBeaverFrameUsesDenseMascot`,
+  `TestVisibleBeaverRectFollowsState` (ui/model) covering cross-screen parity and
+  hitbox behavior.
+- `TestInsertProduct_PopulatesFTSIndex`, `TestInsertProduct_ReplacesFTSRow`,
+  `TestFTSQuery_CombinesTermsWithOr`, `TestFTSQuery_QuotesTermsWithPunctuation`,
+  `TestFTSQuery_EscapesEmbeddedQuotes`, `TestFTSQuery_HandlesBareTerms`
+  (catalog) covering the FTS write path and query construction.
+
+### Documentation
+
+- Consolidated every ignored markdown document into `docs/ignore/`, which carries
+  a README explaining the convention and how to promote a document back into the
+  published set. `CONTEXT.md`, `docs/REMOVAL.md`, `docs/LAUNCH_TASKLIST.md`,
+  `docs/ASSET_REQUIREMENTS.md`, `antigravity/rules.md`, the Crush/Cline roadmap,
+  the Phase 0 audit, and ADR 0001 moved there.
+- `docs/IMG-RESOURCES.md` now matches the committed screenshots, including the new
+  captures and the removals.
+- `docs/BEAVER_MASCOT.md` rewritten for the single shared mascot, the Alpha/Beta
+  frame-map lookup, and the click/gaze contract.
+- `docs/GGWAVE.md` documents the full build matrix, why both stubs are required,
+  and the stub/native API parity rule.
+
 ## 1.2.6
 
 ### New!

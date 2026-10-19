@@ -61,11 +61,21 @@ completions/bvr-cli.*sh
 node_modules/
 
 # Local/experimental files
-antigravity/rules.md
 mcp-server/src/mcp_server/__pycache__/
 
-# Private/internal notes (kept on disk, not broadcast to GitHub)
-docs/TASKLIST.md
+# Internal working documents that are not published to GitHub.
+# Everything that is ignored-and-markdown lives under docs/ignore/; see the
+# README in that folder before promoting a document back into the published
+# docs set. docs/TASKLIST.md, docs/REMOVAL.md, antigravity/rules.md and the
+# root CONTEXT.md were consolidated there in 1.2.7.
+docs/ignore/
 CONTEXT.md
-docs/REMOVAL.md
 *.asd
+
+# GGWave native build artifacts and the vendored upstream checkout.
+# The upstream repo is a nested git clone (116M) and must never be committed;
+# scripts/build_ggwave.sh recreates it plus these outputs.
+internal/ggwave/ggwave/
+internal/ggwave/include/
+internal/ggwave/build/
+*.a

@@ -4,6 +4,10 @@ This document is the source of truth for BVR's theming system. It describes
 the current color roles, markdown rendering tokens, layout primitives, and the
 steps for adding a complete theme.
 
+First off, these themes are dope. All of them. I modeled them after what looks really good at night and has a "NEON" glow from close up, and really far away from the monitor. The colors are also named after people that inspired the app; so if you have a suggestion and want your own color scheme, email me and I will send you over the code to update your own theme/scheme. 
+
+I spent a lot of time and had multiple variations of the same theme, so if you like what I have done with this style of app, reach out and send some love!
+
 ## Current theme structure
 
 A BVR theme is built from two parts:
