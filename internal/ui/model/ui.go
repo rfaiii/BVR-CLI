@@ -259,7 +259,16 @@ type UI struct {
 	commandButtonRect    image.Rectangle
 	createFileButtonRect image.Rectangle
 	imageButtonRect      image.Rectangle
-	sidebarBeaverRect    image.Rectangle
+
+	// sidebarBeaverFrame is the exact mascot string that was composed into
+	// sidebarLogo by the last cacheSidebarLogo call. drawSidebar measures this
+	// to build sidebarBeaverRect so the click hitbox always matches the art.
+	sidebarBeaverFrame string
+	sidebarBeaverRect  image.Rectangle
+
+	// sidebarShowsMascot is false when the sidebar is too short for the full
+	// logo block and only the compact logo is drawn.
+	sidebarShowsMascot bool
 
 	// imageLookupPending is set when the IMAGE RECOGNITION button on the
 	// landing page is clicked. It routes the next file-browser selection
@@ -1181,11 +1190,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(cmds...)
 		}
 		if msg.Button == uv.MouseLeft {
-			if m.state == uiLanding && image.Pt(msg.X, msg.Y).In(m.beaverRect) {
-				cmds = append(cmds, m.triggerBeaverBoop())
-				return m, tea.Batch(cmds...)
-			}
-			if m.state == uiChat && image.Pt(msg.X, msg.Y).In(m.sidebarBeaverRect) {
+			// The BVR mascot is clickable on both the homescreen and the
+			// working-screen sidebar.
+			if image.Pt(msg.X, msg.Y).In(m.visibleBeaverRect()) {
 				cmds = append(cmds, m.triggerBeaverBoop())
 				return m, tea.Batch(cmds...)
 			}
@@ -1278,15 +1285,19 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(cmds...)
 		}
 
-		// Track hover position for inline editors and the homescreen mascot.
+		// Track hover position for inline editors and the BVR mascot. The
+		// mascot lives on the homescreen and in the working-screen sidebar, so
+		// the gaze follows whichever one is currently drawn.
 		if m.hoverX != msg.X || m.hoverY != msg.Y {
 			m.hoverX = msg.X
 			m.hoverY = msg.Y
 
-			if m.activeInline == nil && m.state == uiLanding && !m.beaverRect.Empty() {
-				centerX := m.beaverRect.Min.X + m.beaverRect.Dx()/2
-				centerY := m.beaverRect.Min.Y + m.beaverRect.Dy()/2
-				m.beaverGaze = anim.EyeDirection(msg.X-centerX, msg.Y-centerY)
+			if m.activeInline == nil {
+				if rect := m.visibleBeaverRect(); !rect.Empty() {
+					centerX := rect.Min.X + rect.Dx()/2
+					centerY := rect.Min.Y + rect.Dy()/2
+					m.beaverGaze = anim.EyeDirection(msg.X-centerX, msg.Y-centerY)
+				}
 			}
 
 			if m.activeInline != nil {
@@ -4518,15 +4529,17 @@ func (m *UI) renderEditorView(width int) string {
 }
 
 // cacheSidebarLogo renders and caches the sidebar logo at the specified width.
+//
+// The mascot is the same dense BVR used on the homescreen and is resolved
+// through beaverFrameKey, so both screens share one animation model. The
+// rendered frame is cached alongside the logo so drawSidebar can size its
+// click hitbox from exactly the art that was drawn.
 func (m *UI) cacheSidebarLogo(width int) {
 	compactLogo := renderLogo(m.com.Styles, true, m.com.IsHyper(), width, m.bannerFrame, m.bannerAnimation())
-	mascotState := m.beaverGaze
-	if time.Now().Before(m.beaverBoopUntil) {
-		mascotState = anim.StateClickBoop
-	}
+	m.sidebarBeaverFrame = m.beaverFrame()
 	m.sidebarLogo = lipgloss.JoinVertical(
 		lipgloss.Center,
-		anim.MiniMascotFrame(mascotState, m.bannerFrame, m.beaverErrored),
+		m.sidebarBeaverFrame,
 		compactLogo,
 	)
 }
@@ -4539,10 +4552,63 @@ func (m *UI) triggerBeaverBoop() tea.Cmd {
 	return m.playAudio("Beaver", "Beaver logo interaction", "beaver")
 }
 
+// beaverFrameKey resolves the current BVR mascot pose from UI state.
+//
+// Both the homescreen and the working-screen sidebar render the same mascot
+// through this single resolver, so the animation behaviour, priority order and
+// layout settings stay identical on both screens. Order matters:
+//
+//  1. errored      -> x-ray "Beta" face
+//  2. boop         -> "what" reaction after a click
+//  3. agent busy   -> "confused" while the agent is thinking
+//  4. mouse offset -> follows the pointer left/right of the mascot
+//  5. resting      -> slow "rest" (center) pose between direction changes
+//  6. text facing  -> follows selected text left/right of center on the keyboard
+//  7. fallback     -> center
+func (m *UI) beaverFrameKey() anim.BeaverFrameKey {
+	if m.beaverErrored {
+		return anim.FrameError
+	}
+	if time.Now().Before(m.beaverBoopUntil) {
+		return anim.FrameWhat
+	}
+	if m.isAgentBusy() {
+		return anim.FrameConfused
+	}
+	if dir := m.beaverMouseDir(); dir != 0 {
+		// Mouse is clearly left or right of the mascot: follow the pointer.
+		return anim.FrameFromDir(dir)
+	}
+	if m.beaverResting {
+		return anim.FrameCenter
+	}
+	if m.beaverFacing != 0 {
+		// Text (or selected text) is left/right of center on the keyboard.
+		return anim.FrameFromDir(m.beaverFacing)
+	}
+	return anim.FrameCenter
+}
+
+// beaverFrame renders the shared dense BVR mascot for the current state.
+func (m *UI) beaverFrame() string {
+	return anim.BeaverFrame(m.beaverFrameKey(), m.beaverErrored)
+}
+
+// visibleBeaverRect returns the hitbox and gaze center of the mascot that is
+// currently on screen, or a zero rectangle when no mascot is being drawn.
+// The homescreen draws it in the main column; the working screen draws it in
+// the sidebar logo block.
+func (m *UI) visibleBeaverRect() image.Rectangle {
+	if m.state == uiChat {
+		return m.sidebarBeaverRect
+	}
+	return m.beaverRect
+}
+
 // beaverMouseDir returns -1 (left), 0 (center), or 1 (right) based on the
 // current mouse gaze relative to the mascot's center. It reflects beaverGaze,
-// which is updated on mouse moves whenever the mascot rect is visible on the
-// homescreen, so the dense mascot can follow the pointer left/right of itself.
+// which is updated on mouse moves whenever the mascot rect is visible, so the
+// dense mascot can follow the pointer left/right of itself.
 func (m *UI) beaverMouseDir() int {
 	switch m.beaverGaze {
 	case anim.StateLookLeft:

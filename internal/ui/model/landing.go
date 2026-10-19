@@ -2,13 +2,11 @@ package model
 
 import (
 	"image"
-	"time"
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/ultraviolet/layout"
 	"github.com/richavery/bvr-cli/internal/ggwave"
 	"github.com/richavery/bvr-cli/internal/home"
-	"github.com/richavery/bvr-cli/internal/ui/anim"
 	"github.com/richavery/bvr-cli/internal/workspace"
 )
 
@@ -87,32 +85,11 @@ func (m *UI) landingView() string {
 		lipgloss.NewStyle().Foreground(alt).Render("   PROVIDER  ") +
 		lipgloss.NewStyle().Foreground(accent).Bold(true).Render(providerName)
 
-	// Dense ASCII beaver mascot from the boot splash (boot.BeaverFramesDenseAlpha).
-	// It maps the current UI state to a frame key: the agent error (x-ray
-	// Beta) takes priority, then a recent click plays the "what" reaction, then
-	// the loading/thinking state shows "confused", then the slow "rest" pulse,
-	// and finally the cursor position (left/right of center) drives the
-	// direction faces. The beaver is never wider than 13 cells, so the layout
-	// and click hitbox stay stable.
-	var frameKey anim.BeaverFrameKey
-	if m.beaverErrored {
-		frameKey = anim.FrameError
-	} else if time.Now().Before(m.beaverBoopUntil) {
-		frameKey = anim.FrameWhat
-	} else if m.isAgentBusy() {
-		frameKey = anim.FrameConfused
-	} else if m.beaverMouseDir() != 0 {
-		// Mouse is clearly left or right of the mascot: follow the pointer.
-		frameKey = anim.FrameFromDir(m.beaverMouseDir())
-	} else if m.beaverResting {
-		frameKey = anim.FrameCenter
-	} else if m.beaverFacing != 0 {
-		// Text (or selected text) is left/right of center on the keyboard.
-		frameKey = anim.FrameFromDir(m.beaverFacing)
-	} else {
-		frameKey = anim.FrameCenter
-	}
-	hero := anim.BeaverFrame(frameKey, m.beaverErrored)
+	// Dense ASCII BVR mascot from the boot splash (boot.BeaverFramesDenseAlpha).
+	// The pose is resolved by beaverFrameKey so the homescreen and the
+	// working-screen sidebar animate identically. The mascot is never wider
+	// than 13 cells, so the layout and click hitbox stay stable.
+	hero := m.beaverFrame()
 
 	// Buttons now appear before the hero (near the header). The hero is
 	// positioned after the CWD line, blank, and the vertical button stack.

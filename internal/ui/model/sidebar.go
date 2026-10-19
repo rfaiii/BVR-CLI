@@ -13,7 +13,6 @@ import (
 	mcp "github.com/richavery/bvr-cli/internal/agent/tools/mcp"
 	"github.com/richavery/bvr-cli/internal/config"
 	"github.com/richavery/bvr-cli/internal/localmodel"
-	"github.com/richavery/bvr-cli/internal/ui/anim"
 	"github.com/richavery/bvr-cli/internal/ui/common"
 	"github.com/richavery/bvr-cli/internal/ui/logo"
 )
@@ -103,7 +102,12 @@ func (m *UI) updateSidebarScrollState() {
 	title := t.Sidebar.SessionTitle.Width(contentWidth).MaxHeight(2).Render(m.session.Title)
 	cwd := common.PrettyPath(t, m.com.Workspace.WorkingDir(), contentWidth)
 	sidebarLogo := m.sidebarLogo
+	showsMascot := true
 	if height < logoHeightBreakpoint {
+		// Short sidebar: show the compact logo alone, no mascot. Record this so
+		// drawSidebar does not build a hitbox around a mascot that was never
+		// drawn (which would make clicks in empty space play the boop).
+		showsMascot = false
 		sidebarLogo = lipgloss.JoinVertical(lipgloss.Left, logo.SmallRender(m.com.Styles, contentWidth, logo.Opts{
 			Hyper: m.com.IsHyper(),
 		}), "")
@@ -147,6 +151,7 @@ func (m *UI) updateSidebarScrollState() {
 	m.sidebarContentWidth = contentWidth
 	m.sidebarContentHeight = contentHeight
 	m.sidebarDrawLogo = sidebarLogo
+	m.sidebarShowsMascot = showsMascot
 	m.sidebarScrollable = totalLines > contentHeight
 	m.sidebarMaxOffsetVal = max(0, totalLines-contentHeight)
 
@@ -181,15 +186,27 @@ func (m *UI) drawSidebar(scr uv.Screen, area uv.Rectangle) {
 		layout.Len(lipgloss.Height(sidebarLogo)),
 		layout.Fill(1),
 	).Split(area).Assign(&logoRect, &contentRect)
-	mascot := anim.MiniMascotFrame(m.beaverGaze, m.bannerFrame, m.beaverErrored)
-	mascotWidth := lipgloss.Width(mascot)
-	mascotHeight := lipgloss.Height(mascot)
-	m.sidebarBeaverRect = image.Rect(
-		logoRect.Min.X+(logoRect.Dx()-mascotWidth)/2,
-		logoRect.Min.Y,
-		logoRect.Min.X+(logoRect.Dx()-mascotWidth)/2+mascotWidth,
-		logoRect.Min.Y+mascotHeight,
-	)
+	// Size the mascot hitbox from the exact frame that was composed into the
+	// logo, and only when the mascot was actually included in the block. The
+	// mascot is vertically centered within logoRect because cacheSidebarLogo
+	// joins it with the compact logo using lipgloss.Center.
+	mascot := m.sidebarBeaverFrame
+	if !m.sidebarShowsMascot || mascot == "" {
+		m.sidebarBeaverRect = image.Rectangle{}
+	} else {
+		mascotWidth := lipgloss.Width(mascot)
+		mascotHeight := lipgloss.Height(mascot)
+		// lipgloss.Center pads the shorter side within the block width; the
+		// mascot sits at the top of the block, above the compact logo.
+		mascotTop := logoRect.Min.Y
+		mascotLeft := logoRect.Min.X + (logoRect.Dx()-mascotWidth)/2
+		m.sidebarBeaverRect = image.Rect(
+			mascotLeft,
+			mascotTop,
+			mascotLeft+mascotWidth,
+			mascotTop+mascotHeight,
+		)
+	}
 
 	// Slice visible lines.
 	end := min(m.sidebarOffset+contentHeight, totalLines)

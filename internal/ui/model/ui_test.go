@@ -7,6 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/catwalk/pkg/catwalk"
+	"charm.land/lipgloss/v2"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/richavery/bvr-cli/internal/config"
 	"github.com/richavery/bvr-cli/internal/csync"
@@ -220,4 +221,95 @@ func TestBeaverMouseGazeFromMotion(t *testing.T) {
 	})
 	um = m.(*UI)
 	require.Equal(t, anim.StateCenter, um.beaverGaze, "motion over mascot center must stay centered")
+}
+
+// TestBeaverFrameSharedAcrossScreens verifies the homescreen and the
+// working-screen sidebar render the exact same BVR mascot. Both must resolve
+// through beaverFrameKey, so any state must produce identical frames.
+func TestBeaverFrameSharedAcrossScreens(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name  string
+		setup func(*UI)
+	}{
+		{"default", func(*UI) {}},
+		{"errored", func(m *UI) { m.beaverErrored = true }},
+		{"boop", func(m *UI) { m.beaverBoopUntil = time.Now().Add(time.Minute) }},
+		{"busy", func(m *UI) { m.bangCancel = func() {} }},
+		{"look left", func(m *UI) { m.beaverGaze = anim.StateLookLeft }},
+		{"look right", func(m *UI) { m.beaverGaze = anim.StateLookRight }},
+		{"facing left", func(m *UI) { m.beaverFacing = -1 }},
+		{"facing right", func(m *UI) { m.beaverFacing = 1 }},
+		{"resting", func(m *UI) { m.beaverResting = true }},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			// The homescreen hero is built by drawLanding.
+			home := newTestUIForBeaver(t, uiLanding, uiFocusEditor)
+			tc.setup(home)
+			homeHero := stripANSI(home.beaverFrame())
+
+			// The sidebar mascot is built by cacheSidebarLogo.
+			work := newTestUIForBeaver(t, uiChat, uiFocusEditor)
+			tc.setup(work)
+			work.cacheSidebarLogo(24)
+
+			require.Equal(t, homeHero, stripANSI(work.sidebarBeaverFrame),
+				"homescreen and working screen must show the same mascot for state %q", tc.name)
+			require.NotEmpty(t, homeHero, "mascot must not be empty")
+		})
+	}
+}
+
+// TestSidebarBeaverFrameUsesDenseMascot guards the migration off the old
+// 12x7 mini mascot. The sidebar must render the same dense 13x5 frame as the
+// homescreen hero.
+func TestSidebarBeaverFrameUsesDenseMascot(t *testing.T) {
+	t.Parallel()
+
+	u := newTestUIForBeaver(t, uiChat, uiFocusEditor)
+	u.cacheSidebarLogo(24)
+
+	frame := stripANSI(u.sidebarBeaverFrame)
+	require.Equal(t, 5, lipgloss.Height(frame),
+		"sidebar mascot must be the dense 5-row frame, not the 7-row mini mascot")
+	require.Equal(t, 13, lipgloss.Width(frame),
+		"sidebar mascot must be the dense 13-cell frame, not the 12-cell mini mascot")
+
+	// The homescreen hero and the sidebar frame must be byte-identical.
+	require.Equal(t, stripANSI(u.beaverFrame()), frame,
+		"sidebar mascot must be identical to the homescreen hero")
+}
+
+// TestVisibleBeaverRectFollowsState verifies mouse gaze and clicks resolve to
+// the mascot actually on screen: the landing rect on the homescreen and the
+// sidebar rect on the working screen.
+func TestVisibleBeaverRectFollowsState(t *testing.T) {
+	t.Parallel()
+
+	home := newTestUIForBeaver(t, uiLanding, uiFocusEditor)
+	require.Equal(t, home.beaverRect, home.visibleBeaverRect(), "homescreen must use the landing rect")
+	require.False(t, home.visibleBeaverRect().Empty(), "homescreen rect must be non-empty")
+
+	work := newTestUIForBeaver(t, uiChat, uiFocusEditor)
+	work.sidebarBeaverRect = image.Rect(40, 2, 53, 7)
+	require.Equal(t, work.sidebarBeaverRect, work.visibleBeaverRect(), "working screen must use the sidebar rect")
+
+	// A click inside the sidebar rect boops the mascot on the working screen.
+	// chat is populated because a miss would fall through to the chat handler.
+	boops := newTestUIForBeaver(t, uiChat, uiFocusEditor)
+	boops.chat = NewChat(boops.com, config.ScrollbarDefault)
+	boops.sidebarBeaverRect = image.Rect(40, 2, 53, 7)
+	m, _ := boops.Update(tea.MouseClickMsg{Button: uv.MouseLeft, X: 45, Y: 4})
+	require.True(t, time.Now().Before(m.(*UI).beaverBoopUntil), "sidebar click must boop the mascot")
+
+	// When the sidebar mascot is not drawn the hitbox is empty, so clicks in
+	// the empty logo area cannot boop an invisible mascot.
+	hidden := newTestUIForBeaver(t, uiChat, uiFocusEditor)
+	require.True(t, hidden.visibleBeaverRect().Empty(), "hidden mascot must expose an empty hitbox")
+	require.False(t, image.Pt(45, 4).In(hidden.visibleBeaverRect()), "empty hitbox must not contain any point")
 }

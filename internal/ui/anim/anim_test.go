@@ -7,6 +7,7 @@ import (
 	"github.com/richavery/bvr-cli/internal/ui/boot"
 
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/stretchr/testify/require"
 )
 
@@ -48,6 +49,84 @@ func TestStartSupersedesPreviousChain(t *testing.T) {
 	require.NotNil(t, next, "current-generation tick must schedule another step")
 	require.Equal(t, framesBefore+1, a.framesSinceStart.Load(),
 		"current-generation tick must advance the frame")
+}
+
+// TestBeaverFrameEveryKeyResolves guards against a pose key that silently
+// falls back to the resting face. The Alpha and Beta frame maps hold disjoint
+// poses (Alpha: center/left-dir/right-dir/what; Beta: error/confused), so
+// looking in only one map made "confused" unreachable unless errored was also
+// set, and the agent-busy expression never rendered.
+func TestBeaverFrameEveryKeyResolves(t *testing.T) {
+	t.Parallel()
+
+	all := []BeaverFrameKey{
+		FrameCenter, FrameLeftDir, FrameRightDir,
+		FrameWhat, FrameError, FrameConfused,
+	}
+
+	for _, key := range all {
+		for _, errored := range []bool{false, true} {
+			got := stripANSI(BeaverFrame(key, errored))
+			want := stripANSI(BeaverFrame(FrameCenter, false))
+			if got == want && key != FrameCenter {
+				t.Errorf("%q (errored=%v) fell back to the resting pose", key, errored)
+			}
+			if lipgloss.Width(stripANSI(BeaverFrame(key, errored))) != DenseFrameWidth {
+				t.Errorf("%q width = %d, want %d",
+					key, lipgloss.Width(stripANSI(BeaverFrame(key, errored))), DenseFrameWidth)
+			}
+		}
+	}
+}
+
+// TestBeaverFrameConfusedRendersWhenNotErrored pins the specific regression:
+// the agent-busy pose must render without the error flag set.
+func TestBeaverFrameConfusedRendersWhenNotErrored(t *testing.T) {
+	t.Parallel()
+
+	confused := stripANSI(BeaverFrame(FrameConfused, false))
+	center := stripANSI(BeaverFrame(FrameCenter, false))
+	if confused == center {
+		t.Fatal("confused pose must differ from the resting pose when errored is false")
+	}
+	if !strings.Contains(confused, "9_g") {
+		t.Errorf("confused pose did not render the Beta expression, got:\n%s", confused)
+	}
+}
+
+// TestBeaverFrameErrorTakesPriorityWhenErrored verifies the x-ray map wins
+// while the error state is active.
+func TestBeaverFrameErrorTakesPriorityWhenErrored(t *testing.T) {
+	t.Parallel()
+
+	got := stripANSI(BeaverFrame(FrameError, true))
+	if got == stripANSI(BeaverFrame(FrameCenter, true)) {
+		t.Fatal("error pose must differ from the resting pose when errored is true")
+	}
+}
+
+// TestBeaverFrameKeepsDenseFootprint verifies every pose keeps the 13x5 grid so
+// the layout and click hitbox never shift between frames.
+func TestBeaverFrameKeepsDenseFootprint(t *testing.T) {
+	t.Parallel()
+
+	for _, key := range []BeaverFrameKey{
+		FrameCenter, FrameLeftDir, FrameRightDir, FrameWhat, FrameError, FrameConfused,
+	} {
+		for _, errored := range []bool{false, true} {
+			frame := stripANSI(BeaverFrame(key, errored))
+			if got := lipgloss.Width(frame); got != DenseFrameWidth {
+				t.Errorf("%q width = %d, want %d", key, got, DenseFrameWidth)
+			}
+			if got := lipgloss.Height(frame); got != DenseFrameHeight {
+				t.Errorf("%q height = %d, want %d", key, got, DenseFrameHeight)
+			}
+		}
+	}
+}
+
+func stripANSI(s string) string {
+	return ansi.Strip(s)
 }
 
 func TestBeaverHeroFrameKeepsStableWidthAndChangesPose(t *testing.T) {

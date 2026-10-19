@@ -377,6 +377,14 @@ const (
 	FrameConfused BeaverFrameKey = "confused"
 )
 
+// The dense BVR mascot is a fixed 13x5 grid: a 5-cell head, 13-wide body rows,
+// and a 5-row base. Every pose is padded to this footprint so the layout and
+// the click hitbox stay identical across the whole animation.
+const (
+	DenseFrameWidth  = 13
+	DenseFrameHeight = 5
+)
+
 // FrameFromDir maps a horizontal direction into a dense mascot frame key: -1
 // for left-dir, 1 for right-dir, and center otherwise.
 func FrameFromDir(dir int) BeaverFrameKey {
@@ -390,22 +398,39 @@ func FrameFromDir(dir int) BeaverFrameKey {
 	}
 }
 
-// BeaverFrame returns the homescreen beaver mascot for the given frame key.
+// BeaverFrame returns the BVR mascot for the given frame key.
 //
 // key: the expression to show (see beaverFrameKey constants).
-// errored: when true, the key is looked up in the Beta (x-ray) map instead of
-// the Alpha (normal) map; unknown keys fall back to the Alpha "center" pose.
+// errored: when true, the Beta (x-ray) map is preferred so error and confused
+// poses win; otherwise the Alpha (normal) map is preferred.
+//
+// The two maps hold different poses: Alpha carries center/left-dir/right-dir/
+// what, Beta carries error/confused. Looking in a single map made "confused"
+// unreachable whenever errored was false, so the agent-busy expression silently
+// degraded to the resting face. Both maps are consulted, in a priority order,
+// before falling back to the resting pose.
 func BeaverFrame(key BeaverFrameKey, errored bool) string {
-	var frame string
+	if frame := lookupBeaverFrame(string(key), errored); frame != "" {
+		return mascotStyle.Render(normalizeDenseFrame(frame))
+	}
+	return mascotStyle.Render(normalizeDenseFrame(boot.BeaverFramesDenseAlpha[string(FrameCenter)]))
+}
+
+// lookupBeaverFrame resolves a pose name across the Alpha and Beta frame maps.
+// When errored is set the Beta (x-ray) poses take precedence, otherwise the
+// Alpha poses do. Each map is still consulted as a fallback so a pose that only
+// exists in one map stays reachable from either state.
+func lookupBeaverFrame(name string, errored bool) string {
 	if errored {
-		frame = boot.BeaverFramesDenseBeta[string(key)]
-	} else {
-		frame = boot.BeaverFramesDenseAlpha[string(key)]
+		if frame := boot.BeaverFramesDenseBeta[name]; frame != "" {
+			return frame
+		}
+		return boot.BeaverFramesDenseAlpha[name]
 	}
-	if frame == "" {
-		frame = boot.BeaverFramesDenseAlpha[string(FrameCenter)]
+	if frame := boot.BeaverFramesDenseAlpha[name]; frame != "" {
+		return frame
 	}
-	return mascotStyle.Render(normalizeDenseFrame(frame))
+	return boot.BeaverFramesDenseBeta[name]
 }
 
 // normalizeDenseFrame pads every row of a dense beaver frame to the 13-cell
@@ -413,16 +438,15 @@ func BeaverFrame(key BeaverFrameKey, errored bool) string {
 // of the exact spacing in the source strings. The stable footprint keeps the
 // surrounding TUI layout (click hitbox, hero position) unchanged across poses.
 //
-// Every frame in BeaverFramesDenseAlpha/Beta is designed so no row exceeds 13
-// cells; rows shorter than 13 are right-padded with spaces.
+// Every frame in BeaverFramesDenseAlpha/Beta is designed so no row exceeds
+// DenseFrameWidth cells; shorter rows are right-padded with spaces.
 func normalizeDenseFrame(frame string) string {
-	const width = 13
 	lines := strings.Split(frame, "\n")
 	out := make([]string, 0, len(lines))
 	for _, l := range lines {
 		lw := lipgloss.Width(l)
-		if lw < width {
-			l = l + strings.Repeat(" ", width-lw)
+		if lw < DenseFrameWidth {
+			l = l + strings.Repeat(" ", DenseFrameWidth-lw)
 		}
 		out = append(out, l)
 	}
