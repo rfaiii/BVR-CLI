@@ -164,6 +164,110 @@ func TestCosineSimilarity_DifferentLengths(t *testing.T) {
 	require.Zero(t, CosineSimilarity([]float64{1, 2}, []float64{1, 2, 3}))
 }
 
+// TestInsertProduct_PopulatesFTSIndex guards the FTS write path. The insert
+// statement used to declare fewer placeholders than columns and its error was
+// discarded, so the index silently stayed empty and every search returned
+// nothing while InsertProduct still reported success.
+func TestInsertProduct_PopulatesFTSIndex(t *testing.T) {
+	t.Parallel()
+	repo := openTestRepo(t)
+	defer repo.Close()
+
+	ctx := context.Background()
+	require.NoError(t, repo.InsertProduct(ctx, Product{
+		ID:       "fts1",
+		Brand:    "Louis Vuitton",
+		Category: "handbag",
+		Title:    "Neverfull MM",
+		Pattern:  ns("LV monogram"),
+		Material: ns("coated canvas"),
+	}))
+
+	var n int
+	require.NoError(t, repo.db.QueryRowContext(ctx,
+		`SELECT count(*) FROM products_fts WHERE product_id = ?`, "fts1").Scan(&n))
+	require.Equal(t, 1, n, "FTS row was not written")
+
+	// The indexed columns must carry the real values, not just the row count.
+	var brand, searchable string
+	require.NoError(t, repo.db.QueryRowContext(ctx,
+		`SELECT brand, searchable_text FROM products_fts WHERE product_id = ?`, "fts1").
+		Scan(&brand, &searchable))
+	require.Equal(t, "Louis Vuitton", brand)
+	require.Contains(t, searchable, "Neverfull MM")
+}
+
+// TestInsertProduct_ReplacesFTSRow verifies upsert semantics. FTS5 virtual
+// tables reject ON CONFLICT DO UPDATE outright, so the row must be deleted
+// before reinsertion; otherwise re-importing a product duplicates its index
+// entry and the product surfaces multiple times in results.
+func TestInsertProduct_ReplacesFTSRow(t *testing.T) {
+	t.Parallel()
+	repo := openTestRepo(t)
+	defer repo.Close()
+
+	ctx := context.Background()
+	product := Product{
+		ID:       "dup1",
+		Brand:    "Gucci",
+		Category: "handbag",
+		Title:    "GG Canvas Tote",
+	}
+
+	require.NoError(t, repo.InsertProduct(ctx, product))
+	require.NoError(t, repo.InsertProduct(ctx, product))
+
+	var n int
+	require.NoError(t, repo.db.QueryRowContext(ctx,
+		`SELECT count(*) FROM products_fts WHERE product_id = ?`, "dup1").Scan(&n))
+	require.Equal(t, 1, n, "re-inserting a product must not duplicate its FTS row")
+
+	// A changed title must be reflected in the index.
+	product.Title = "GG Canvas Tote (revised)"
+	require.NoError(t, repo.InsertProduct(ctx, product))
+
+	var searchable string
+	require.NoError(t, repo.db.QueryRowContext(ctx,
+		`SELECT searchable_text FROM products_fts WHERE product_id = ?`, "dup1").
+		Scan(&searchable))
+	require.Contains(t, searchable, "(revised)")
+}
+
+func TestFTSQuery_CombinesTermsWithOr(t *testing.T) {
+	t.Parallel()
+
+	// Candidate retrieval must be permissive; relevance is decided later by
+	// ComputeScore. Implicit AND would require every signal to be present and
+	// collapse recall to near zero.
+	got := ftsQuery("category: handbag; brand: Louis Vuitton; material: coated canvas")
+	require.Equal(t, `"handbag" OR "Louis Vuitton" OR "coated canvas"`, got)
+}
+
+func TestFTSQuery_QuotesTermsWithPunctuation(t *testing.T) {
+	t.Parallel()
+
+	// Unquoted values would be parsed as FTS5 syntax or column filters.
+	require.Equal(t, `"gold-tone"`, ftsQuery("hardware: gold-tone"))
+	require.Equal(t, `"LV monogram"`, ftsQuery("pattern: LV monogram"))
+}
+
+func TestFTSQuery_EscapesEmbeddedQuotes(t *testing.T) {
+	t.Parallel()
+
+	// A double quote must be doubled, otherwise the literal is unterminated and
+	// the MATCH expression fails to parse.
+	require.Equal(t, `"say ""hi"""`, quoteFTS(`say "hi"`))
+	require.Equal(t, `"a""hi" OR "b"`, ftsQuery(`brand: a"hi; model: b`))
+}
+
+func TestFTSQuery_HandlesBareTerms(t *testing.T) {
+	t.Parallel()
+
+	// A query with no labels at all still has to produce a valid expression.
+	require.Equal(t, `"wayfarer sunglasses"`, ftsQuery("wayfarer sunglasses"))
+	require.Equal(t, `""`, ftsQuery(""))
+}
+
 // --- helpers ---
 
 func openTestRepo(t *testing.T) *Repository {

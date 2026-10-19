@@ -2,8 +2,8 @@ package catalog
 
 import (
 	"context"
-	_ "embed"
 	"database/sql"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -242,29 +242,48 @@ func (r *Repository) InsertProduct(ctx context.Context, p Product) error {
 		return fmt.Errorf("insert product: %w", err)
 	}
 
-	// Upsert FTS row.
-	_, _ = r.db.ExecContext(ctx, `
+	// Refresh the FTS row and aliases atomically with the product row.
+	//
+	// FTS5 virtual tables do not support UPSERT, so ON CONFLICT DO UPDATE
+	// fails with "UPSERT not implemented for virtual table". Because
+	// product_id is UNINDEXED there is no unique constraint to conflict on
+	// either, so the row must be deleted explicitly before reinserting.
+	// Doing this inside a transaction prevents the index from being left
+	// empty for other readers if the insert fails.
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin fts transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if _, err := tx.ExecContext(ctx,
+		`DELETE FROM products_fts WHERE product_id = ?`, p.ID,
+	); err != nil {
+		return fmt.Errorf("delete stale fts row: %w", err)
+	}
+
+	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO products_fts (
 			product_id, brand, line, model, style_code, category,
 			material, color, pattern, searchable_text
-		) VALUES (?,?,?,?,?,?,?,?,?)
-		ON CONFLICT(product_id) DO UPDATE SET
-			brand = excluded.brand,
-			line = excluded.line,
-			model = excluded.model,
-			style_code = excluded.style_code,
-			category = excluded.category,
-			material = excluded.material,
-			color = excluded.color,
-			pattern = excluded.pattern,
-			searchable_text = excluded.searchable_text
+		) VALUES (?,?,?,?,?,?,?,?,?,?)
 	`, p.ID, p.Brand, p.Line, p.Model, p.StyleCode, p.Category,
-		p.Material, p.Color, p.Pattern, searchableText)
+		p.Material, p.Color, p.Pattern, searchableText,
+	); err != nil {
+		return fmt.Errorf("insert fts row: %w", err)
+	}
 
 	for _, alias := range p.Aliases {
-		_, _ = r.db.ExecContext(ctx,
+		if _, err := tx.ExecContext(ctx,
 			`INSERT OR IGNORE INTO product_aliases (product_id, alias) VALUES (?,?)`,
-			p.ID, alias)
+			p.ID, alias,
+		); err != nil {
+			return fmt.Errorf("insert alias %q: %w", alias, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit fts transaction: %w", err)
 	}
 	return nil
 }
@@ -325,8 +344,19 @@ func (r *Repository) StoreCachedAnalysis(ctx context.Context, imageSHA256, visio
 
 // --- internal helpers ---
 
-// ftsQuery converts the SearchText label:value format into a space-separated
-// bag of terms for an FTS5 MATCH expression.
+// ftsQuery converts the SearchText label:value format into an FTS5 MATCH
+// expression.
+//
+// Terms are combined with OR rather than relying on FTS5's implicit AND.
+// This query exists purely to retrieve a candidate set; final relevance is
+// decided afterwards by ComputeScore over the parsed signals. Under AND
+// semantics a multi-signal query such as "category: handbag; brand: Louis
+// Vuitton; material: coated canvas" requires every term to be present, so
+// only near-exact matches survive and recall collapses to almost nothing.
+//
+// Each term is quoted so that punctuation in real values ("gold-tone",
+// "LV monogram") is treated as literal text rather than FTS5 syntax, and so
+// that untrusted input cannot inject operators into the MATCH expression.
 func ftsQuery(query string) string {
 	parts := strings.Split(query, ";")
 	var terms []string
@@ -334,17 +364,27 @@ func ftsQuery(query string) string {
 		part = strings.TrimSpace(part)
 		idx := strings.Index(part, ":")
 		if idx < 0 {
+			// A bare fragment with no label is still a usable search term.
+			if part != "" {
+				terms = append(terms, quoteFTS(part))
+			}
 			continue
 		}
 		value := strings.TrimSpace(part[idx+1:])
 		if value != "" {
-			terms = append(terms, value)
+			terms = append(terms, quoteFTS(value))
 		}
 	}
 	if len(terms) == 0 {
-		return query
+		return quoteFTS(query)
 	}
-	return strings.Join(terms, " ")
+	return strings.Join(terms, " OR ")
+}
+
+// quoteFTS wraps a term in double quotes, escaping any embedded quotes by
+// doubling them, which is the FTS5 string-literal escaping rule.
+func quoteFTS(term string) string {
+	return `"` + strings.ReplaceAll(term, `"`, `""`) + `"`
 }
 
 // buildSearchableText concatenates all searchable text fields for a product.
