@@ -342,10 +342,15 @@ func drainUntil[T any](ctx context.Context, evc <-chan any, match func(T) bool) 
 // config.Init does not read the host machine's real config.
 func TestE2E_TwoClientsReceiveSameMessage(t *testing.T) {
 	h := newRealCreateHarness(t)
-	// Shorten the create-grace window so the workspace's pending
-	// creation holds release quickly during test cleanup once both
-	// SSE streams have been detached.
-	h.backend.SetCreateGrace(200 * time.Millisecond)
+	// Client A's creation hold is what keeps the workspace in the path
+	// index between the two POSTs, so this window has to stay well
+	// above the time a real create plus a local round trip needs under
+	// -race. With the 200ms this test used to set, the hold expired
+	// first, the workspace tore down, and the dedupe assertion below
+	// failed with two different ids. Cleanup does not depend on the
+	// value: detaching the last SSE stream tears the workspace down
+	// immediately, grace or not.
+	h.backend.SetCreateGrace(5 * time.Second)
 
 	ctx, cancel := context.WithCancel(t.Context())
 	t.Cleanup(cancel)

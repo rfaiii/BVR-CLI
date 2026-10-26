@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -658,28 +657,28 @@ func TestRunnerAbandonRaceSafety(t *testing.T) {
 	origRunShell := runShell
 	t.Cleanup(func() { runShell = origRunShell })
 
-	// Synchronize shutdown with the abandoned goroutine so the test
-	// exits cleanly even under -race.
-	var wg sync.WaitGroup
-	release := make(chan struct{})
+	// The substitute shell executor outlives runOne by design, so the
+	// test cannot finish until it returns. A WaitGroup whose Add happens
+	// inside that goroutine is not usable here — nothing orders Add
+	// before Wait, so Wait can report "done" while the goroutine is
+	// still running and touching test state. A channel the goroutine
+	// closes on the way out is ordered by construction.
+	released := make(chan struct{})
+	quit := make(chan struct{})
 	t.Cleanup(func() {
-		close(release)
-		wg.Wait()
+		close(quit)
+		<-released
 	})
 
 	runShell = func(_ context.Context, opts shell.RunOptions) error {
-		wg.Add(1)
-		defer wg.Done()
+		defer close(released)
 		// Write before the caller observes ctx.Done(); the caller will
 		// not read the buffer while we still own it.
 		_, _ = io.WriteString(opts.Stdout, "before\n")
 		// Hold past ctx deadline + abandonGrace so the caller takes
 		// the abandon branch, then continue writing. If the caller
 		// reads these buffers after abandoning, -race will flag it.
-		select {
-		case <-time.After(5 * time.Second):
-		case <-release:
-		}
+		<-quit
 		_, _ = io.WriteString(opts.Stdout, "after\n")
 		return nil
 	}
