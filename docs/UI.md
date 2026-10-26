@@ -51,7 +51,7 @@ frames, so animation never moves the surrounding TUI.
 
 ### One mascot, two screens
 
-As of **1.2.7 the homescreen and the working screen show the same animated
+As of **1.2.8 the homescreen and the working screen show the same animated
 BVR**. There is no longer a separate "hero" beaver and "sidebar" beaver.
 
 | Screen | Renderer | Footprint |
@@ -65,7 +65,7 @@ never drift apart: same priority order, same reactions, same mouse tracking.
 `TestBeaverFrameSharedAcrossScreens` asserts byte-identical output across every
 frame key.
 
-### What changed in 1.2.7
+### What changed in 1.2.8
 
 Before this release the sidebar used `MiniMascotFrame` — a 12×7 mascot with a
 *different, reduced* expression set (center, look-left/right/up/down, laugh,

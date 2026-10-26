@@ -76,7 +76,7 @@ Goreleaser and install the `archlinux` format artifact with `pacman -U`:
 
 ```sh
 goreleaser release --snapshot
-sudo pacman -U ./dist/bvr-cli_1.2.7-1_x86_64.pkg.tar.zst
+sudo pacman -U ./dist/bvr-cli_1.2.8-1_x86_64.pkg.tar.zst
 ```
 
 ### Windows x64
@@ -94,7 +94,7 @@ bvr-cli.exe --help
 For local beta package generation across all six targets:
 
 ```sh
-./scripts/package/build-beta-packages.sh 1.2.7
+./scripts/package/build-beta-packages.sh 1.2.8
 ```
 
 ## Build from source
