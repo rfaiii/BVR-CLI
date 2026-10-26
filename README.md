@@ -1,13 +1,43 @@
 # BVR-CLI 1.2.8
 <img src="resources/screenshots/HEADER.png" alt="HEADER" width="50%">
-an APP BY RICHARD AIZEN AVERY III.
 
+###### an APP BY RICHARD AIZEN AVERY.
+###### dedicated to THE BEAV.
 
-**BVR-CLI is a KEYBOARD-FIRST AI workspace for the terminal.**
+## **BVR-CLI is a KEYBOARD-FIRST AI workspace for the terminal. Great for beginners and professionals alike!**
 
 **This app is for those who want total control over their CLI app of choice; with lots of menu options and plenty of themes for those who like to customize their setups!
 
 BVR-CLI brings conversations, project files, local models, tools, permissions, skills, LSP, MCP, audio feedback, and multi-device NODE work into one fast CLI/TUI cockpit.
+
+### __ABOUT:__ **"BVR"="BEAVER"**  
+**Why BVR-CLI?**
+
+I built this app because I wanted a tool that looked and acted like me: bright, loud, fast, and relentlessly dynamic.
+
+Most developer tools on the market are either painfully boring or too narrowly focused to be genuinely fun. So, I took the best elements from my absolute favorite apps, threw out the rulebook, and baked them into a single, high-performance command-line environment built for custom, high-end rigs.
+The Aesthetic & Theme
+
+I spent a long time dialing in the color scheme and visual architecture. It needed to feel alive, heavily customized, and right at home on my machines—pushing a high-contrast palette of neon greens, hot pinks, and electric purples across a dark charcoal base.
+
+**Dedicated to "The Beav"**
+
+This app is named after one of the smartest, funniest, and most honorable human beings I’ve ever known. His friends and family call him "the Beav" (aka "Beaver"), and I am dedicating this work entirely to him.
+
+This is my way of saying thank you for everything he has contributed to my family and my own life. Life would be significantly more boring without him around, and this project serves as a daily reminder that we’re all lucky to be here—and insanely lucky to have someone as awesome as the Beav in our corner.
+
+**Support & Status**
+
+As of November 2026, BVR-CLI has officially entered its BETA phase. It’s available for public use right here on GitHub for anyone who wants a little more attitude and power out of their command-line interface.
+
+If you'd like to support the project, any donations or contributions will go directly toward keeping it alive, active, and accessible to the public.
+
+**DONATIONS:**<br>
+<img src="resources/img/venmo.jpg" alt="donate to venmo" width="15%">
+
+click for email:
+[GMAIL](mailto:averydevz@gmail.com) or
+[OUTLOOK](mailto:averydevz@outlook.com)<br>
 
 <img src="resources/screenshots/BVR-CLI-HOME-MENU.png" alt="BVR-CLI home menu" width="50%">
 
@@ -17,14 +47,20 @@ AI development usually means bouncing between a terminal, model picker, file bro
 BVR-CLI is designed to make that whole loop feel like one application:
 
 1. Open a project.
-<img src="resources/screenshots/FILE-FINDER.png" alt="FILE FINDER" width="50%">
-2. Choose a provider or local model.
-3. Ask for work in the chat editor.
-4. Review tool calls, permissions, files, and output in one place.
-5. Continue from another device through the NODE architecture.
-<img src="resources/screenshots/COMMAND.png" alt="COMMAND-PALLETE" width="50%">
 
-It is friendly enough for someone new to AI tools, while keeping the keyboard
+<img src="resources/screenshots/FILE-FINDER.png" alt="FILE FINDER" width="40%">
+
+2. Choose a provider or local model.
+
+3. Ask for work in the chat editor.
+
+4. Review tool calls, permissions, files, and output in one place.
+
+5. Continue from another device through the NODE architecture.
+
+<img src="resources/screenshots/COMMAND.png" alt="COMMAND-PALLETE" width="40%"> 
+
+#### It is friendly enough for someone new to AI tools, while keeping the keyboard
 shortcuts and escape hatches experienced developers expect.
 
 
@@ -172,3 +208,5 @@ Open an issue at [github.com/richavery/bvr-cli](https://github.com/richavery/bvr
 BVR-CLI is released under the MIT License. See [LICENSE.md](LICENSE.md).
 
 **One terminal. Every project. A little more beaver.**
+
+###### Contact: <averydevz@gmail.com> & <averydevz@outlook.com>
