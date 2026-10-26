@@ -1,4 +1,36 @@
 # Changelog
+## 1.2.8
+
+### New!
+
+- **The `--version` mascot is now a truecolor pixel beaver.** The ASCII line-art
+  head and body are gone, replaced by a 36×24 sprite painted with 24-bit half
+  blocks that prints as 12 terminal rows and matches the reference artwork
+  ear-for-tail. Each character cell stacks two pixel rows (top pixel foreground,
+  bottom background), so the art keeps a 1:1 aspect in cells that are twice as
+  tall as wide.
+- **The sprite is generated, not hand-tuned.**
+  `scripts/gen_version_mascot.py` samples `resources/img/beaver.png` and writes
+  `internal/cmd/version_mascot.go`. Pass `--cols 28` for a smaller mascot, or
+  `--check` to fail when the committed Go file is stale.
+  `TestVersionMascotSprite` guards the row/palette contract.
+- **Dark artwork details survive the conversion.** The background is flood-filled
+  inward from the image border instead of being thresholded globally, so the
+  black eyes and the dark squares of the tail checkerboard are kept. Cells are
+  then snapped to a four-tone ramp whose brightest entry is the brand accent
+  `#3BF66B`, which also drops the JPEG ringing the source art carried.
+
+### Fixed
+
+- **`docs/UI.md` described a mascot that no longer exists.** It claimed
+  `LargeMascotFrame` was still used by `version_banner.go` for `--version`;
+  neither the version banner nor any UI surface renders it. The doc now covers
+  the generated sprite and its fallbacks.
+
+The banner still writes through the existing `colorprofile` writer, so truecolor
+downgrades automatically on 256-color and 16-color terminals and nothing prints
+when stdout is not a TTY.
+
 ## 1.2.7
 
 ### New!

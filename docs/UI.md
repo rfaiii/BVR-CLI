@@ -73,7 +73,34 @@ shocked, dance, chomp, click-boop, music). That path is gone from the TUI. The
 helpers `MiniMascotFrame` and `LargeMascotFrame` remain in `internal/ui/anim`
 and are still covered by `anim_test.go`, but nothing in the UI renders them.
 
-`LargeMascotFrame` is still used by `version_banner.go` for `--version`.
+`--version` does not draw from `internal/ui/anim` at all. It renders the baked
+truecolor sprite described in "Version mascot" below.
+
+### Version mascot (`--version`)
+
+The `--version` banner is a 36×24 pixel beaver painted with 24-bit half blocks,
+not line art. It lives in `internal/cmd/version_mascot.go` and is generated, not
+hand-written:
+
+```
+python3 scripts/gen_version_mascot.py            # regenerate the Go file
+python3 scripts/gen_version_mascot.py --cols 28  # smaller mascot (9 terminal rows)
+python3 scripts/gen_version_mascot.py --check    # fail if the Go file is stale
+```
+
+- **Source art:** `resources/img/beaver.png`, an RGBA PNG whose background is
+  already transparent.
+- **Encoding:** each row is a string where a space is transparent and `1`-`4`
+  index a four-tone ramp whose brightest entry is the brand accent `#3BF66B`.
+- **Rendering:** each character cell stacks two pixel rows (top pixel =
+  foreground, bottom = background), so the art keeps a 1:1 pixel aspect in cells
+  that are twice as tall as wide. 24 pixel rows therefore print as 12 rows.
+- **Fallback:** `Execute()` writes it through a `colorprofile` writer, so
+  truecolor downgrades automatically on 256-color and 16-color terminals, and
+  nothing is printed when stdout is not a TTY.
+
+The sprite is baked into source rather than decoded at runtime so the CLI needs
+no image decoder just to print its version.
 
 ### Render sizes
 
@@ -82,8 +109,8 @@ and are still covered by `anim_test.go`, but nothing in the UI renders them.
   keys: `center` (resting), `left-dir`, `right-dir` (driven by mouse gaze OR
   keys/selected text left/right of center), `what` (beaver clicked), `error`
   (agent error), and `confused` (agent loading/thinking).
-- **Large (legacy):** 24×8 via `LargeMascotFrame`, used only by the version
-  banner and the anim footprint tests.
+- **Large (legacy):** 24×8 via `LargeMascotFrame`, covered only by the anim
+  footprint tests; no UI surface renders it.
 
 The Alpha map holds the normal-expression frames (center, left-dir, right-dir,
 what); the Beta map holds the x-ray expressions (error, confused). The boot
@@ -609,6 +636,7 @@ User Input (keyboard / mouse)
 | `internal/ui/audio/native_windows.go` | Windows backend |
 | `internal/ui/anim/beaver.go` | `BeaverFrame` (dense 13×5 mascot) + `LargeMascotFrame` |
 | `internal/ui/boot/boot.go` | `BeaverFramesDenseAlpha` + `BeaverFramesDenseBeta` (ASCII frames) |
+| `internal/cmd/version_mascot.go` | `--version` pixel beaver (generated; see `scripts/gen_version_mascot.py`) |
 | `internal/cmd/lookup_image.go` | `bvr lookup-image [path]` CLI command for image recognition |
 
 ## Dialogs and user controls
