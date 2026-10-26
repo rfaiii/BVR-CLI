@@ -247,12 +247,8 @@ func nodeFromEntry(entry *zeroconf.ServiceEntry) Node {
 		HostName: entry.HostName,
 		Port:     entry.Port,
 	}
-	for _, ip := range entry.AddrIPv4 {
-		node.Addresses = append(node.Addresses, ip)
-	}
-	for _, ip := range entry.AddrIPv6 {
-		node.Addresses = append(node.Addresses, ip)
-	}
+	node.Addresses = append(node.Addresses, entry.AddrIPv4...)
+	node.Addresses = append(node.Addresses, entry.AddrIPv6...)
 	for _, record := range entry.Text {
 		key, value, found := strings.Cut(record, "=")
 		if !found {

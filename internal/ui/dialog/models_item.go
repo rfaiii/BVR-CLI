@@ -1,6 +1,8 @@
 package dialog
 
 import (
+	"strings"
+
 	"charm.land/catwalk/pkg/catwalk"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -9,7 +11,6 @@ import (
 	"github.com/richavery/bvr-cli/internal/ui/list"
 	"github.com/richavery/bvr-cli/internal/ui/styles"
 	"github.com/sahilm/fuzzy"
-	"strings"
 )
 
 // ModelGroup represents a group of model items.

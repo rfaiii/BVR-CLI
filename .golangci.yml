@@ -41,6 +41,21 @@ linters:
         text: "SA1019.*interp.ExecHandler"
         linters:
           - staticcheck
+      # These errors open with the product name, which is a proper noun and is
+      # spelled that way everywhere else in the UI. Lowercasing it to satisfy
+      # ST1005 would make the message read worse than the inconsistency does.
+      - source: 'fmt\.Errorf\("Ollama '
+        linters:
+          - staticcheck
+        text: ST1005
+      # MCP logging is deprecated as of protocol 2026-07-28 (SEP-2577) but stays
+      # functional for at least twelve months. Dropping the handler now would
+      # remove working log forwarding before the SDK forces the issue; tracked
+      # in docs/TASKLIST.md for the deprecation window.
+      - path: internal/agent/tools/mcp/init.go
+        text: "SA1019.*LoggingMessageHandler"
+        linters:
+          - staticcheck
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0

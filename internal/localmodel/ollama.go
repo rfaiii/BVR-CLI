@@ -289,7 +289,7 @@ func (o *Ollama) Start(ctx context.Context) error {
 	}
 	// Do not bind the daemon lifetime to the TUI command context. A successful
 	// start must survive the short-lived readiness/warm-up operation.
-	command := exec.Command(ollamaPath, "serve")
+	command := exec.Command(ollamaPath, "serve") //nolint:noctx // the detached daemon must survive the warm-up context; see the comment above
 	command.Stdin = nil
 	command.Stdout = io.Discard
 	command.Stderr = io.Discard
@@ -353,6 +353,7 @@ func contextLength(info map[string]any) int64 {
 	}
 	return 0
 }
+
 func contains(values []string, target string) bool {
 	for _, value := range values {
 		if value == target {

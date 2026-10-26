@@ -11,7 +11,7 @@ import (
 )
 
 func TestDiscoverDevicesProbesLocalhost(t *testing.T) {
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	ln, err := net.Listen("tcp", "127.0.0.1:0") //nolint:noctx // test listener bound for the duration of the test
 	require.NoError(t, err)
 	defer ln.Close()
 	go func() {
@@ -58,7 +58,7 @@ func TestExecuteDeviceRoutesToLocalTransport(t *testing.T) {
 }
 
 func TestDiscoverDevicesProbesConfiguredAddress(t *testing.T) {
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	ln, err := net.Listen("tcp", "127.0.0.1:0") //nolint:noctx // test listener bound for the duration of the test
 	require.NoError(t, err)
 	defer ln.Close()
 	go func() {

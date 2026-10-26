@@ -54,9 +54,10 @@ func (n *NodeSettings) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	lines := []string{"NODE CONNECTIONS", "", "r refresh  esc close", ""}
 	for _, device := range n.devices {
 		status := t.Resource.OfflineIcon.Render("○")
-		if device.Status == node.DeviceStatusOnline {
+		switch device.Status {
+		case node.DeviceStatusOnline:
 			status = t.Resource.OnlineIcon.Render("●")
-		} else if device.Status == node.DeviceStatusError {
+		case node.DeviceStatusError:
 			status = t.Resource.ErrorIcon.Render("●")
 		}
 		endpoint := device.Address

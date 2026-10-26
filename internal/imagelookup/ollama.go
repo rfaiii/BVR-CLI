@@ -20,7 +20,7 @@ type OllamaClient struct {
 	BaseURL     string
 	VisionModel string
 	EmbedModel  string
-	HTTPClient *http.Client
+	HTTPClient  *http.Client
 }
 
 // NewOllamaClient creates a client pointed at the given Ollama base URL.
@@ -36,11 +36,11 @@ func NewOllamaClient(baseURL, visionModel, embedModel string) *OllamaClient {
 }
 
 type ollamaChatRequest struct {
-	Model    string           `json:"model"`
-	Stream   bool             `json:"stream"`
-	Format   json.RawMessage  `json:"format,omitempty"`
-	Messages []ollamaMessage  `json:"messages"`
-	Options  ollamaOptions    `json:"options,omitempty"`
+	Model    string          `json:"model"`
+	Stream   bool            `json:"stream"`
+	Format   json.RawMessage `json:"format,omitempty"`
+	Messages []ollamaMessage `json:"messages"`
+	Options  ollamaOptions   `json:"options,omitempty"`
 }
 
 type ollamaMessage struct {
@@ -202,8 +202,8 @@ func (c *OllamaClient) EmbedText(ctx context.Context, text string) ([]float64, e
 	}
 
 	var payload struct {
-		Embedding  []float64    `json:"embedding"`
-		Embeddings []float64    `json:"embeddings"`
+		Embedding  []float64 `json:"embedding"`
+		Embeddings []float64 `json:"embeddings"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
 		return nil, fmt.Errorf("decode embed response: %w", err)

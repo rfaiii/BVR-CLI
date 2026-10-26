@@ -203,6 +203,7 @@ func ThemeByID(id string) ThemeDefinition {
 	}
 	return themeDefinitions[0]
 }
+
 func ThemeForName(id string) Styles {
 	theme := ThemeByID(id)
 	s := quickStyle(theme.Palette())

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os/exec"
 	"strings"
@@ -51,7 +52,13 @@ func (t *WebSocketTransport) connect(ctx context.Context) (*websocket.Conn, erro
 	if t.Token != "" {
 		header.Set("Authorization", "Bearer "+t.Token)
 	}
-	conn, _, err := dialer.DialContext(ctx, t.URL+websocketPath, header)
+	conn, resp, err := dialer.DialContext(ctx, t.URL+websocketPath, header)
+	// On a rejected handshake the response is the only thing carrying the
+	// server's status and body, and it leaks if the caller only sees the error.
+	if resp != nil && resp.Body != nil {
+		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4<<10))
+		_ = resp.Body.Close()
+	}
 	if err != nil {
 		return nil, err
 	}

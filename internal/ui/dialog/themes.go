@@ -47,6 +47,7 @@ func (t *Themes) HandleMsg(msg tea.Msg) Action {
 	}
 	return nil
 }
+
 func (t *Themes) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	themes := styles.Themes()
 	lines := []string{"BVR THEMES", "", "←/→ choose  enter apply  esc close", ""}

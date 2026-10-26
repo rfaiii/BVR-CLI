@@ -446,6 +446,7 @@ func startOllamaCmd() tea.Cmd {
 		return util.NewInfoMsg("Ollama started")
 	}
 }
+
 func pullOllamaCmd(ctx context.Context, name string) tea.Cmd {
 	progressCh := make(chan localmodel.PullProgress, 32)
 	doneCh := make(chan error, 1)

@@ -188,7 +188,7 @@ func (e *Editor) renderControls() string {
 
 // OpenInMicro opens a file in the micro editor.
 func OpenInMicro(filename string) tea.Cmd {
-	cmd := exec.Command("micro", filename)
+	cmd := exec.Command("micro", filename) //nolint:noctx // micro inherits the real terminal stdin/stdout; killing it on context cancel would strand the user
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

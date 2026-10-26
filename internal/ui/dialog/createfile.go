@@ -66,7 +66,7 @@ func (c *CreateFile) HandleMsg(msg tea.Msg) Action {
 				// Create the file if it doesn't exist
 				if _, err := os.Stat(path); os.IsNotExist(err) {
 					// ensure directory exists
-					if err := os.MkdirAll(filepath.Dir(path), 0755); err == nil {
+					if err := os.MkdirAll(filepath.Dir(path), 0o755); err == nil {
 						if f, err := os.Create(path); err == nil {
 							f.Close()
 						}

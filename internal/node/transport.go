@@ -152,7 +152,9 @@ var defaultTransportManager = NewTransportManager(defaultManager)
 func RegisterTransport(id string, transport Transport) {
 	defaultTransportManager.Register(id, transport)
 }
+
 func ExecuteDevice(ctx context.Context, id string, request CommandRequest) (CommandResult, error) {
 	return defaultTransportManager.Execute(ctx, id, request)
 }
+
 func PingDevice(ctx context.Context, id string) error { return defaultTransportManager.Ping(ctx, id) }

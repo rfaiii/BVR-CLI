@@ -31,6 +31,7 @@ func TestInstallCommandFor(t *testing.T) {
 		{"unknown os", "windows", nil, "ripgrep", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			require.Equal(t, tc.want, installCommandFor(tc.goos, tc.ids, tc.pkg))
 		})
 	}

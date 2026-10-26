@@ -27,7 +27,7 @@ func init() {
 		volFlag := fmt.Sprintf("%.2f", float64(percent)/100)
 
 		// afplay is native to macOS
-		cmd := exec.Command("afplay", "-v", volFlag, path)
+		cmd := exec.Command("afplay", "-v", volFlag, path) //nolint:noctx // playback must outlive the event that triggered it; cancelling it would truncate the cue
 		if err := cmd.Start(); err != nil {
 			slog.Error("Failed to start afplay", "error", err)
 			return err

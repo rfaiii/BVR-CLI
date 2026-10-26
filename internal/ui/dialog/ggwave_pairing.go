@@ -20,17 +20,17 @@ type PairingConfirmMsg struct {
 
 // PairingConfirmComponent shows a GGWave pairing confirmation dialog.
 type PairingConfirmComponent struct {
-	com        *common.Common
-	envelope   *ggwave.PairingEnvelope
-	confirmed  bool
-	keyLeft    key.Binding
-	keyRight   key.Binding
-	keyYes     key.Binding
-	keyNo      key.Binding
-	keyEnter   key.Binding
-	keyClose   key.Binding
-	focused    bool
-	lastWidth  int
+	com       *common.Common
+	envelope  *ggwave.PairingEnvelope
+	confirmed bool
+	keyLeft   key.Binding
+	keyRight  key.Binding
+	keyYes    key.Binding
+	keyNo     key.Binding
+	keyEnter  key.Binding
+	keyClose  key.Binding
+	focused   bool
+	lastWidth int
 }
 
 // NewPairingConfirmComponent creates a new pairing confirmation dialog.
@@ -119,9 +119,9 @@ func (p *PairingConfirmComponent) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cu
 	}
 
 	if p.confirmed {
-		lines = append(lines, t.Resource.OnlineIcon.Render("  [ ✓ ]  ACCEPT  ") + "  " + t.Resource.OfflineIcon.Render("  [   ]  REJECT  "))
+		lines = append(lines, t.Resource.OnlineIcon.Render("  [ ✓ ]  ACCEPT  ")+"  "+t.Resource.OfflineIcon.Render("  [   ]  REJECT  "))
 	} else {
-		lines = append(lines, t.Resource.OnlineIcon.Render("  [   ]  ACCEPT  ") + "  " + t.Resource.OfflineIcon.Render("  [ ✓ ]  REJECT  "))
+		lines = append(lines, t.Resource.OnlineIcon.Render("  [   ]  ACCEPT  ")+"  "+t.Resource.OfflineIcon.Render("  [ ✓ ]  REJECT  "))
 	}
 
 	view := t.Dialog.View.Width(min(76, max(1, w-4))).Render(

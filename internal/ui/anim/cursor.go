@@ -187,13 +187,13 @@ func (c *CursorEffectForTesting) Advance(positions ...int) {
 
 // SamplePositions exposes sampling for assertions.
 func (c *CursorEffectForTesting) SamplePositions(editorWidth, step int) []int {
-	return c.CursorEffect.samplePositions(editorWidth, step)
+	return c.samplePositions(editorWidth, step)
 }
 
 // String renders the effect with enabled forced on for assertions.
 func (c *CursorEffectForTesting) String(editorWidth int) string {
-	c.CursorEffect.enabled = true
-	return c.CursorEffect.Render(editorWidth)
+	c.enabled = true
+	return c.Render(editorWidth)
 }
 
 // RenderedRunes exposes the underlying rune map for precise assertions.

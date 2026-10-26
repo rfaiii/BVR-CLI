@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"hash"
 	"io"
 	"os"
 	"time"
@@ -36,8 +35,8 @@ type Service struct {
 // NewService creates a [Service] wired with an [OllamaClient] from the config.
 func NewService(cfg Config) *Service {
 	return &Service{
-		Config:  cfg,
-		Vision:  NewOllamaClient(cfg.OllamaBaseURL, cfg.VisionModel, cfg.EmbedModel),
+		Config: cfg,
+		Vision: NewOllamaClient(cfg.OllamaBaseURL, cfg.VisionModel, cfg.EmbedModel),
 	}
 }
 
@@ -105,16 +104,13 @@ func (s *Service) buildResult(analysis ImageAnalysis) (LookupResult, error) {
 	case len(result.Candidates) == 0:
 		result.Recommendation =
 			"No close local-catalog match was found. Add clear photos " +
-			"of logos, interior labels, hardware, and measurements."
+				"of logos, interior labels, hardware, and measurements."
 	case result.Candidates[0].Score >= 0.82:
-		result.Recommendation =
-			"Strong candidate match. Compare the listed distinguishing details before labeling the item."
+		result.Recommendation = "Strong candidate match. Compare the listed distinguishing details before labeling the item."
 	case result.Candidates[0].Score >= 0.60:
-		result.Recommendation =
-			"Possible match. Collect the requested additional photos and compare the top candidates."
+		result.Recommendation = "Possible match. Collect the requested additional photos and compare the top candidates."
 	default:
-		result.Recommendation =
-			"Low-confidence match. Use the extracted attributes to expand the local catalog or research manually."
+		result.Recommendation = "Low-confidence match. Use the extracted attributes to expand the local catalog or research manually."
 	}
 
 	return result, nil
@@ -128,7 +124,7 @@ func hashFile(path string) (string, error) {
 	}
 	defer f.Close()
 
-	var h hash.Hash = sha256.New()
+	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
 		return "", err
 	}

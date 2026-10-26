@@ -16,7 +16,7 @@ import (
 	"charm.land/glamour/v2"
 	"charm.land/lipgloss/v2"
 	codebergreadability "codeberg.org/readeck/go-readability/v2"
-	"github.com/JohannesKaufmann/html-to-markdown/v2"
+	htmltomarkdown "github.com/JohannesKaufmann/html-to-markdown/v2"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/richavery/bvr-cli/internal/ui/common"
@@ -260,7 +260,7 @@ func (b *Browser) FullHelp() [][]key.Binding {
 // closeLabel returns the close button text.
 func (b *Browser) fetchArticle(pageURL string) tea.Cmd {
 	return func() tea.Msg {
-		req, err := http.NewRequest("GET", pageURL, nil)
+		req, err := http.NewRequest("GET", pageURL, nil) //nolint:noctx // runs inside a tea.Cmd with no caller context; a context.Background() here would be decorative
 		if err != nil {
 			return articleRenderedMsg{err: err}
 		}

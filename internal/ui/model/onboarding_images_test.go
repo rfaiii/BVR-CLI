@@ -37,6 +37,7 @@ func TestShotCells(t *testing.T) {
 		{"no size at all", 0, 0, 12, 24, 0, 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			cols, rows := shotCells(tc.termCols, tc.termRows, tc.cellW, tc.cellH, 960, 600)
 			require.Equal(t, tc.wantCols, cols)
 			require.Equal(t, tc.wantRows, rows)

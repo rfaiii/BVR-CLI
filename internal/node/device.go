@@ -165,7 +165,7 @@ func TCPProbe(timeout time.Duration) ProbeFunc {
 		timeout = 250 * time.Millisecond
 	}
 	return func(candidate Probe) bool {
-		conn, err := net.DialTimeout("tcp", candidate.Address, timeout)
+		conn, err := net.DialTimeout("tcp", candidate.Address, timeout) //nolint:noctx // the probe API is synchronous and carries its own timeout; there is no caller context to thread
 		if err != nil {
 			return false
 		}

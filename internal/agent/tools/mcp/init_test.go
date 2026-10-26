@@ -761,7 +761,7 @@ func setDistinct(typ reflect.Type, field reflect.Value) {
 		m := reflect.MakeMap(typ)
 		m.SetMapIndex(reflect.Zero(typ.Key()), reflect.Zero(typ.Elem()))
 		field.Set(m)
-	case reflect.Ptr:
+	case reflect.Pointer:
 		field.Set(reflect.New(typ.Elem()))
 	default:
 		panic("setDistinct: unhandled kind " + typ.Kind().String())

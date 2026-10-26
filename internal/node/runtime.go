@@ -18,7 +18,7 @@ func Detect() []Runtime {
 			continue
 		}
 		runtime := Runtime{Name: name, Available: true}
-		if output, err := exec.Command(name, "--version").Output(); err == nil {
+		if output, err := exec.Command(name, "--version").Output(); err == nil { //nolint:noctx // version probe during startup detection, already guarded by the availability check above
 			runtime.Version = string(bytes.TrimSpace(output))
 		}
 		result = append(result, runtime)

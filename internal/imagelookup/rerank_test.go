@@ -59,6 +59,7 @@ func TestConfidenceToScore(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.c), func(t *testing.T) {
+			t.Parallel()
 			require.Equal(t, tt.want, ConfidenceToScore(tt.c))
 		})
 	}

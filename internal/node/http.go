@@ -88,11 +88,14 @@ func (t *HTTPTransport) Ping(ctx context.Context) error {
 	return nil
 }
 
-type executeRequest struct{ CommandRequest }
-type executeResponse struct {
-	CommandResult
-	Error string `json:"error,omitempty"`
-}
+type (
+	executeRequest  struct{ CommandRequest }
+	executeResponse struct {
+		CommandResult
+		Error string `json:"error,omitempty"`
+	}
+)
+
 type healthResponse struct {
 	OK       bool   `json:"ok"`
 	Protocol string `json:"protocol"`

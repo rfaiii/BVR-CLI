@@ -2559,7 +2559,7 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 			cmds = append(cmds, util.ReportError(err))
 			break
 		}
-		process := exec.Command(cmd, "--cwd", msg.Path)
+		process := exec.Command(cmd, "--cwd", msg.Path) //nolint:noctx // bubbletea owns this process lifetime via tea.ExecProcess, not the Update goroutine
 		cmds = append(cmds, tea.ExecProcess(process, func(err error) tea.Msg {
 			if err != nil {
 				return util.ReportError(fmt.Errorf("switch project: %w", err))
@@ -3432,7 +3432,7 @@ func (m *UI) restartInProject(path string) tea.Cmd {
 	if err != nil {
 		return util.ReportError(err)
 	}
-	return tea.ExecProcess(exec.Command(process, "--cwd", path), func(err error) tea.Msg {
+	return tea.ExecProcess(exec.Command(process, "--cwd", path), func(err error) tea.Msg { //nolint:noctx // bubbletea owns this process lifetime via tea.ExecProcess, not the Update goroutine
 		if err != nil {
 			return util.ReportError(fmt.Errorf("switch project: %w", err))
 		}

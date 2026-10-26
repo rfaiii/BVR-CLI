@@ -74,8 +74,10 @@ var LoadingColor = lipgloss.Color("#b972ff")
 // at this cadence.
 const frameDelay = 70 * time.Millisecond
 
-var mascotStyle = lipgloss.NewStyle().Foreground(MascotColor).Bold(true)
-var loadingStyle = lipgloss.NewStyle().Foreground(LoadingColor)
+var (
+	mascotStyle  = lipgloss.NewStyle().Foreground(MascotColor).Bold(true)
+	loadingStyle = lipgloss.NewStyle().Foreground(LoadingColor)
+)
 
 // renderFrame renders a dense beaver frame, using the x-ray Beta map for
 // exception states (error, confused) and the Alpha map for normal expressions.

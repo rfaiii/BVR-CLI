@@ -150,7 +150,7 @@ bvr-cli --continue
 		if _, err := program.Run(); err != nil {
 			event.Error(err)
 			slog.Error("TUI run error", "error", err)
-			return errors.New("BVR crashed. If metrics are enabled, we were notified about it. If you'd like to report it, please copy the stacktrace above and open an issue at https://github.com/richavery/bvr-cli/issues/new?template=bug.yml") //nolint:staticcheck
+			return errors.New("BVR crashed. If metrics are enabled, we were notified about it. If you'd like to report it, please copy the stacktrace above and open an issue at https://github.com/richavery/bvr-cli/issues/new?template=bug.yml")
 		}
 		return nil
 	},

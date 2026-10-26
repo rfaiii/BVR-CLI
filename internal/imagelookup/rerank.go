@@ -76,17 +76,17 @@ func ConfidenceToScore(c Confidence) float64 {
 // The query has the form "category: handbag; brand: Louis Vuitton; logo: LV; ..."
 // so we split on ";" and parse "label: value" pairs.
 type ParsedSignals struct {
-	Category    string
-	Brand       string
-	Logos       []string
-	Silhouettes []string
-	Materials   []string
-	Colors      []string
-	Patterns    []string
-	Hardware    []string
-	Cues        []string
-	CategoryConf   Confidence
-	BrandConf   Confidence
+	Category     string
+	Brand        string
+	Logos        []string
+	Silhouettes  []string
+	Materials    []string
+	Colors       []string
+	Patterns     []string
+	Hardware     []string
+	Cues         []string
+	CategoryConf Confidence
+	BrandConf    Confidence
 }
 
 // ParseSignals parses a SearchText query string into [ParsedSignals]. If a

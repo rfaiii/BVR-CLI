@@ -33,7 +33,7 @@ func RenderResult(result LookupResult) string {
 		for _, cue := range result.Analysis.DistinguishingCues {
 			b.WriteString("- " + cue.Value)
 			if cue.Confidence != ConfidenceNone {
-				b.WriteString(fmt.Sprintf(" (%s)", confidenceLabel(cue.Confidence)))
+				fmt.Fprintf(&b, " (%s)", confidenceLabel(cue.Confidence))
 			}
 			if cue.Evidence != "" {
 				b.WriteString(" — " + cue.Evidence)

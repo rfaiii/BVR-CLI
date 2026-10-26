@@ -153,6 +153,7 @@ func TestFileBrowserLoadErrorIsVisible(t *testing.T) {
 }
 
 func TestFileBrowserDrawStaysInsideScreenBounds(t *testing.T) {
+	t.Parallel()
 	for _, size := range []image.Point{{X: 120, Y: 32}, {X: 42, Y: 10}, {X: 12, Y: 6}} {
 		t.Run(fmt.Sprintf("%dx%d", size.X, size.Y), func(t *testing.T) {
 			t.Parallel()

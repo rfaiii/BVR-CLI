@@ -51,6 +51,7 @@ int decode(ggwave_Instance instance, const void *waveform, int waveformSize, voi
 }
 */
 import "C"
+
 import (
 	"encoding/base64"
 	"errors"

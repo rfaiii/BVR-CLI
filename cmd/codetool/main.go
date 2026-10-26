@@ -648,6 +648,7 @@ func extractJSONObject(s string) map[string]any {
 	// lenient: try to balance braces
 	depth := 0
 	var end int
+scan:
 	for i, r := range s {
 		switch r {
 		case '{':
@@ -656,11 +657,8 @@ func extractJSONObject(s string) map[string]any {
 			depth--
 			if depth == 0 {
 				end = i + 1
-				break
+				break scan
 			}
-		}
-		if end != 0 {
-			break
 		}
 	}
 	if end == 0 {
@@ -817,7 +815,7 @@ func execTool(ctx context.Context, name, args, cwd string, timeout time.Duration
 			limit = int(c)
 		}
 		if limit == 0 {
-			b = bytes.Replace(b, []byte(old), []byte(new), -1)
+			b = bytes.ReplaceAll(b, []byte(old), []byte(new))
 		} else {
 			b = bytes.Replace(b, []byte(old), []byte(new), limit)
 		}
@@ -934,7 +932,7 @@ func errMsg(err error) string {
 // runSkill delegates to an external coding agent CLI (cline/hermes) by name.
 func runSkill(name, task, cwd string) {
 	bin := name
-	args := []string{}
+	var args []string
 	switch name {
 	case "cline":
 		args = []string{"--yolo", task}

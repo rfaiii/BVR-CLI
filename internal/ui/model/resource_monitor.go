@@ -134,9 +134,6 @@ func renderGradientBar(width int, percent float64, styleSet *styles.Styles) stri
 		return ""
 	}
 	end := styleSet.Status.ResourceFilled.GetForeground()
-	if end == nil {
-		end = colorColor("#3BF66B")
-	}
 	return cachedGradientBar(width, percent, end)
 }
 
