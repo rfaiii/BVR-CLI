@@ -156,21 +156,6 @@ bvr-cli --continue
 	},
 }
 
-// versionMascot is the compact outline Beaver prepended to --version output.
-// Keep it ASCII-first and line-art based so it remains readable in every
-// terminal instead of turning into a solid block when font rendering differs.
-var versionMascot = lipgloss.NewStyle().Foreground(lipgloss.Color("#3BF66B")).SetString(`
-      .------.
-     /  @@ @@ \
-    |   (___)  |
-     \  \___/  /
-      '.___.'
-      |     |
-     / \___/ \
-    /  \___/  \
-   /___________\
-`)
-
 // copied from cobra:
 const defaultVersionTemplate = `{{with .DisplayName}}{{printf "%s " .}}{{end}}{{printf "version %s" .Version}}
 `
@@ -196,7 +181,7 @@ func Execute() {
 		var b bytes.Buffer
 		w := colorprofile.NewWriter(os.Stdout, os.Environ())
 		w.Forward = &b
-		_, _ = w.WriteString(versionMascot.String())
+		_, _ = w.WriteString(renderVersionMascot())
 		rootCmd.SetVersionTemplate(b.String() + "\n" + defaultVersionTemplate)
 	}
 	if err := fang.Execute(
