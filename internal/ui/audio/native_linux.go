@@ -28,9 +28,9 @@ func init() {
 		paplayArgs = append(paplayArgs, fmt.Sprintf("--volume=%d", 65536*percent/100))
 
 		// Try paplay (PulseAudio) first, fallback to aplay (ALSA)
-		cmd := exec.Command("paplay", paplayArgs...)
+		cmd := exec.Command("paplay", paplayArgs...) //nolint:noctx // playback must outlive the event that triggered it; cancelling it would truncate the cue
 		if err := cmd.Start(); err != nil {
-			cmd = exec.Command("aplay", "-q", path)
+			cmd = exec.Command("aplay", "-q", path) //nolint:noctx // playback must outlive the event that triggered it; cancelling it would truncate the cue
 			if err := cmd.Start(); err != nil {
 				slog.Error("Failed to start audio playback on linux", "error", err)
 				return err

@@ -28,7 +28,7 @@ func init() {
 		// Use WPF MediaPlayer so Windows can honor the same 25/50/75/100 scale
 		// as the macOS and Linux native backends.
 		script := fmt.Sprintf(`Add-Type -AssemblyName PresentationCore; $p=New-Object System.Windows.Media.MediaPlayer; $p.Open([Uri]::new('%s')); $p.Volume=%.2f; $p.Play(); Start-Sleep -Milliseconds 2000; $p.Close()`, filepath.Clean(path), float64(percent)/100)
-		cmd := exec.Command("powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", script)
+		cmd := exec.Command("powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", script) //nolint:noctx // playback must outlive the event that triggered it; cancelling it would truncate the cue
 
 		if err := cmd.Start(); err != nil {
 			slog.Error("Failed to start powershell audio playback", "error", err)
