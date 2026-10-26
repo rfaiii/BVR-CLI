@@ -1,5 +1,5 @@
 # BVR-CLI 1.2.8
-![HEADER](resources/screenshots/HEADER.png)
+<img src="resources/screenshots/HEADER.png" alt="HEADER" width="50%">
 an APP BY RICHARD AIZEN AVERY III.
 
 
@@ -9,7 +9,7 @@ an APP BY RICHARD AIZEN AVERY III.
 
 BVR-CLI brings conversations, project files, local models, tools, permissions, skills, LSP, MCP, audio feedback, and multi-device NODE work into one fast CLI/TUI cockpit.
 
-![BVR-CLI home menu](resources/screenshots/BVR-CLI-HOME-MENU.png)
+<img src="resources/screenshots/BVR-CLI-HOME-MENU.png" alt="BVR-CLI home menu" width="50%">
 
 ## Why BVR-CLI?
 
@@ -17,12 +17,12 @@ AI development usually means bouncing between a terminal, model picker, file bro
 BVR-CLI is designed to make that whole loop feel like one application:
 
 1. Open a project.
-![FILE FINDER](resources/screenshots/FILE-FINDER.png)
+<img src="resources/screenshots/FILE-FINDER.png" alt="FILE FINDER" width="50%">
 2. Choose a provider or local model.
 3. Ask for work in the chat editor.
 4. Review tool calls, permissions, files, and output in one place.
 5. Continue from another device through the NODE architecture.
-![COMMAND-PALLETE](resources/screenshots/COMMAND.png)
+<img src="resources/screenshots/COMMAND.png" alt="COMMAND-PALLETE" width="50%">
 
 It is friendly enough for someone new to AI tools, while keeping the keyboard
 shortcuts and escape hatches experienced developers expect.
