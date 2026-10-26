@@ -7,9 +7,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestResetCache and TestResetIdempotent work against the package-global cache,
+// so neither may call t.Parallel(): it lets one test's inserts land between the
+// other's ResetCache() and its length check, which fails the assertion
+// intermittently.
 func TestResetCache(t *testing.T) {
-	t.Parallel()
-
 	cachedMutex.Lock()
 	cachedImages[imageKey{id: "a", cols: 10, rows: 10}] = cachedImage{
 		img:  image.NewRGBA(image.Rect(0, 0, 1, 1)),
@@ -33,9 +35,8 @@ func TestResetCache(t *testing.T) {
 }
 
 func TestResetIdempotent(t *testing.T) {
-	t.Parallel()
-
 	// Calling Reset on an empty cache should not panic.
+	// Not parallel: see the note on TestResetCache.
 	ResetCache()
 
 	cachedMutex.RLock()
