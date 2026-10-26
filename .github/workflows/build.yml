@@ -27,4 +27,8 @@ jobs:
       - run: go mod tidy
       - run: git diff --exit-code
       - run: go build -race ./...
-      - run: go test -race -failfast ./...
+      # No -failfast: on the windows-latest builder the platform-specific
+      # failures come one per package, and stopping at the first turns each fix
+      # into a separate CI round trip. Running every package reports the whole
+      # list at once.
+      - run: go test -race ./...
