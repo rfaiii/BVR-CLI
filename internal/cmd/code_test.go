@@ -3,11 +3,20 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
 func TestNativeCodeTool_UsesConfiguredPath(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "codetool")
+	// exec.LookPath on Windows only accepts a name whose extension is in
+	// PATHEXT, so the fixture has to carry one there. The mode bits are
+	// not what decides it — a 0o755 "codetool" is simply not an
+	// executable on that platform, and LookPath is correct to say so.
+	name := "codetool"
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
+	path := filepath.Join(t.TempDir(), name)
 	if err := os.WriteFile(path, []byte("#!/bin/sh\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
