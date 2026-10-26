@@ -155,7 +155,7 @@ for beta marketing, release notes, onboarding copy, and internal triage.
 
 - JSON config via `bvr.json`.
 - Bash-style `bvrrc` with builtins:
-  - `provider`, `model`, `mcp`, `lsp`, `permissions`, `hook`, `options`.
+  - `provider`, `model`, `mcp`, `lsp`, `permissions`, `hook`, `option`.
 - Context files: `AGENTS.md`, `BVR.md`, `CLAUDE.md`, `GEMINI.md`.
 - Default context paths and project-level overrides.
 - Data directory override with `--data-dir`.

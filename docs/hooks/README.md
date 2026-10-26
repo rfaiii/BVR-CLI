@@ -15,7 +15,7 @@ forward.
 - Hooks are just shell commands
 - Hooks can be written in any language because they’re just executables: Bash, Python, Node, Rust, Haskell, whatever
 - Hooks are Claude Code-compatible
-- BVR ships with a builtin `bvr-hook` skill write, edit, and configure
+- BVR ships with a builtin `bvr-hooks` skill write, edit, and configure
   hooks; just tell BVR how to configure BVR
 - BVR currently supports just one hook, `PreToolUse`, with plans to support
   the full gamut; please let us know which hooks you'd like to see next
@@ -235,8 +235,8 @@ The available environment variables are:
 | Variable                     | Description                                    |
 | ---------------------------- | ---------------------------------------------- |
 | `BVR`                      | Always `1` when running under BVR.           |
-| `AGENT`                      | Always `bvr-cli.                                |
-| `AI_AGENT`                   | Always `bvr-cli.                                |
+| `AGENT`                      | Always `bvr`.                                    |
+| `AI_AGENT`                   | Always `bvr`.                                    |
 | `BVR_EVENT`                | The hook event name (e.g. `PreToolUse`).       |
 | `BVR_TOOL_NAME`            | The tool being called (e.g. `bash`).           |
 | `BVR_SESSION_ID`           | Current session ID.                            |
@@ -744,7 +744,6 @@ We'd love to hear your thoughts on this project. Need help? We gotchu. You can
 find us on:
 
 - [Twitter](https://twitter.com/bvrcli)
-- [Slack](https://discord.gg/bvr)
 - [Discord](https://discord.gg/bvr)
 - [The Fediverse](https://mastodon.social/@bvrcli)
 - [Bluesky](https://bsky.app/profile/bvr-cli.com)
@@ -753,7 +752,7 @@ find us on:
 
 Part of [BVR](https://bvr-cli.com).
 
-<a href="https://bvr-cli.com/"><img alt="The BVR logo" width="400" src="https://raw.githubusercontent.com/rfaiii/BVR-CLI/main/docs/bvr-banner.png" /></a>
+<a href="https://bvr-cli.com/"><img alt="The BVR logo" width="400" src="https://raw.githubusercontent.com/rfaiii/BVR-CLI/main/resources/screenshots/HEADER.png" /></a>
 
 <!--prettier-ignore-->
 BVR热爱开源 • BVR loves open source

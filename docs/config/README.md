@@ -73,7 +73,7 @@ Not breaking the config API is really important to us! That said, you can
 target specific BVR versions with `$BVR_VERSION`:
 
 ```bash
-if [[ $BVR_VERSION == "0.85.*" ]]; then
+if [[ $BVR_VERSION == "1.2.*" ]]; then
     option debug true
 fi
 ```
@@ -601,7 +601,6 @@ We'd love to hear your thoughts on this project. Need help? We gotchu. You can
 find us on:
 
 - [Twitter](https://twitter.com/bvrcli)
-- [Slack](https://discord.gg/bvr)
 - [Discord](https://discord.gg/bvr)
 - [The Fediverse](https://mastodon.social/@bvrcli)
 - [Bluesky](https://bsky.app/profile/bvr-cli.com)
@@ -610,7 +609,7 @@ find us on:
 
 Part of [BVR](https://bvr-cli.com).
 
-<a href="https://bvr-cli.com/"><img alt="The BVR logo" width="400" src="https://raw.githubusercontent.com/rfaiii/BVR-CLI/main/docs/bvr-banner.png" /></a>
+<a href="https://bvr-cli.com/"><img alt="The BVR logo" width="400" src="https://raw.githubusercontent.com/rfaiii/BVR-CLI/main/resources/screenshots/HEADER.png" /></a>
 
 <!--prettier-ignore-->
 BVR热爱开源 • BVR loves open source

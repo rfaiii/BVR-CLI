@@ -9,17 +9,17 @@ This document outlines the BVR-CLI beta testing program, including invite manage
 ### 1. Direct DMG Distribution (Primary)
 
 **Platform:** macOS (Apple Silicon / Intel)
-**Format:** Signed DMG with terminal-aware launcher
+**Format:** Unsigned DMG with terminal-aware launcher (nothing in this
+repository signs or notarizes, so Gatekeeper prompts on first launch)
 **Distribution:** Direct download / email attachment
 
 ```bash
-# Build DMG for distribution
-cd /Users/richavery/Projects/BVR-CLI
-./scripts/package/macos-dmg.sh v1.2.4-beta.1
+# Build DMG for distribution (run from the repository root)
+./scripts/package/macos-dmg.sh v1.2.8-beta.1
 ```
 
 **Installation:**
-1. Download `bvr-cli_v1.2.4-beta.1_darwin_arm64.dmg`
+1. Download `bvr-cli_1.2.8-beta.1_darwin_arm64.dmg`
 2. Open DMG and drag BVR.app to Applications
 3. First launch may require: Right-click → Open (to bypass Gatekeeper)
 4. Launcher auto-detects terminal preference
@@ -29,41 +29,43 @@ cd /Users/richavery/Projects/BVR-CLI
 **Platform:** macOS / Linux
 **Formula:** `packaging/homebrew-bvr-cli.rb`
 
-```bash
-# Install via Homebrew
-brew install rfaiii/tap/bvr-cli
-
-# Upgrade to beta
-brew upgrade bvr-cli
-```
+Not installable yet. No tap repository exists under this account, and the
+formula in the repo is a skeleton: it carries no `sha256`, and it interpolates
+`#{version}` in the `url` on line 4 before `version` is assigned on line 5, so
+the URL resolves to `.../refs/tags/v.tar.gz`. Build from source instead.
 
 ### 3. NPM Package (Cross-platform)
 
 **Platform:** macOS / Windows / Linux
 **Package:** `packaging/npm-package.json`
 
-```bash
-# Install via NPM
-npm install -g @bvrcli/bvr-cli
-
-# Upgrade to beta
-npm update -g @bvrcli/bvr-cli
-```
+Not published yet. `@bvrcli/bvr-cli` is not on the npm registry, and its
+postinstall downloader (`packaging/scripts/install.js`) fetches release
+assets that only exist from v1.2.5 onward. Build from source instead.
 
 ### 4. Go Install (Developers)
 
-**Platform:** Any with Go 1.23+
+**Platform:** Any with Go 1.27.3+
 **Command:**
 
+`go install` does not work today: `go.mod` declares the module path
+`github.com/richavery/bvr-cli`, which is not a fetchable repository, while the
+code lives at `rfaiii/BVR-CLI`. Clone and build instead:
+
 ```bash
-go install github.com/richavery/bvr-cli@latest
+git clone https://github.com/rfaiii/BVR-CLI.git
+cd BVR-CLI
+go build -o ./bvr-cli .
 ```
 
 ### 5. Windows (Future)
 
 **Platform:** Windows 10/11
 **Format:** EXE installer / MSI
-**Status:** Planned for v1.2.4
+**Status:** An NSIS `windows_amd64` installer is built locally by
+`./scripts/package/build-installers.sh`, but it is unsigned, so SmartScreen
+warns on first run. The winget manifests under `winget/manifest/` are staged in
+this repository only; nothing has been submitted to the winget catalog.
 
 ---
 
@@ -183,7 +185,7 @@ Verify:
 
 **Template:**
 ```
-**Version:** v1.2.4-beta.X
+**Version:** v1.2.8-beta.X
 **Platform:** macOS/Windows/Linux
 **Terminal:** Ghostty/Alacritty/etc.
 **Go Version:** (if applicable)
@@ -244,7 +246,7 @@ reach out to the maintainer through the project site.
 
 1. **Build beta DMG:**
    ```bash
-   ./scripts/package/macos-dmg.sh v1.2.4-beta.1
+   ./scripts/package/macos-dmg.sh v1.2.8-beta.1
    ```
 
 2. **Upload to distribution:**
@@ -269,7 +271,7 @@ After 2 weeks of beta testing:
 1. **Fix all P0/P1 bugs**
 2. **Build RC:**
    ```bash
-   ./scripts/package/macos-dmg.sh v1.2.4-rc.1
+   ./scripts/package/macos-dmg.sh v1.2.8-rc.1
    ```
 3. **Send to full beta list**
 4. **Wait 3 days for showstoppers**
@@ -278,15 +280,24 @@ After 2 weeks of beta testing:
 
 If no showstoppers:
 
-1. **Tag release:**
+1. **Tag and publish the release.** Pushing a tag is *not* enough:
+   `.github/workflows/release.yml` delegates to Charm's GoReleaser workflow,
+   which needs Charm's `releasers` runner group, a GoReleaser PRO key and the
+   Apple/AUR signing secrets this repository does not have, so the run ends in
+   `startup_failure` and no release appears. Releases are published by hand
+   today (v1.2.5 was):
+
    ```bash
-   git tag v1.2.4
-   git push origin v1.2.4
+   git tag v1.2.8
+   git push origin v1.2.8
+   ./scripts/package/build-installers.sh 1.2.8
+   gh release create v1.2.8 ./dist/installers/bvr-cli_1.2.8_* \
+       ./dist/installers/bvr-cli-1.2.8-*
    ```
 
 2. **Build final DMG:**
    ```bash
-   ./scripts/package/macos-dmg.sh v1.2.4
+   ./scripts/package/macos-dmg.sh v1.2.8
    ```
 
 3. **Publish:**

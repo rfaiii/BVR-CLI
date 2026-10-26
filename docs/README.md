@@ -8,7 +8,7 @@ superseded specs live in `archive/`.
 
 | Document | Covers |
 | --- | --- |
-| [SETUP.md](SETUP.md) | Installation (macOS, Linux, Arch/AUR, Windows), build from source, dependencies, troubleshooting |
+| [SETUP.md](SETUP.md) | Installation (macOS, Linux, Arch, Windows), build from source, dependencies, troubleshooting |
 | [PROVIDERS.md](PROVIDERS.md) | Ollama local models, native small-model coder, Cline hosted gateway |
 | [UI.md](UI.md) | Branding/wordmark, Beaver mascot, File Finder, command palette, SFX, dialogs |
 | [BVR_COLOR_SCHEME.md](BVR_COLOR_SCHEME.md) | Source of truth for theming: color roles, markdown tokens, adding a theme |

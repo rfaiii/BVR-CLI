@@ -69,7 +69,7 @@ present-day behavior.
   `ElevationRequirement: user` accurate. Before 1.2.7 the artifact published
   under that name was the bare console binary, so winget would have "installed"
   it by launching the TUI.
-- `./scripts/package/build-beta-packages.sh 1.2.7` creates portable
+- `./scripts/package/build-beta-packages.sh 1.2.8` creates portable
   tar/zip archives for six OS/arch pairs plus the Arch packages, for smoke
   testing on target machines.
 - The GoReleaser configuration produces Linux `deb`, `rpm`, `apk`, and

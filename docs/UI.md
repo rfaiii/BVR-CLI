@@ -223,9 +223,7 @@ keeps keyboard focus, mouse events, theming, and the agent session in one
 Bubble Tea program instead of handing control to a separate application.
 
 Open it from the `/` command palette by choosing **Open File Finder**, or type
-`/finder` to filter directly to it. `ctrl+o` is the palette shortcut and
-`ctrl+shift+f` is a quick toggle that opens the finder and closes it when it is
-already open. The finder provides:
+`/finder` to filter directly to it. `ctrl+o` is the file-finder shortcut. The finder provides:
 
 - a project directory listing with mouse-clickable rows;
 - a live text preview in the adjacent pane;

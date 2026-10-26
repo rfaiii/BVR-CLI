@@ -52,32 +52,27 @@ Ensure `~/.local/bin` is on `PATH`.
 
 ### Arch Linux / Manjaro / Omarchy
 
-BVR ships official Arch User Repository (AUR) packages built by the release
-pipeline, so installation on Arch Linux and its derivatives is a single
-command:
+There is **no AUR package yet**. The release pipeline that would publish one
+has not run for this repository, so `yay -S bvr-cli` and `yay -S bvr-cli-bin`
+both fail with "package not found" until that packaging lands. Install the
+built `.pkg.tar.zst` instead:
 
 ```sh
-yay -S bvr-cli
-# or, for the prebuilt binary variant:
-yay -S bvr-cli-bin
+./scripts/package/build-installers.sh 1.2.8
+sudo pacman -U ./dist/installers/bvr-cli-1.2.8-1-x86_64.pkg.tar.zst
 ```
 
-Manjaro and Omarchy use the same AUR, so the same command works there. The
-`bvr-cli` source package builds from the tagged release; `bvr-cli-bin`
-installs the prebuilt `linux_amd64`/`linux_arm64` binaries. After install:
+Use the `aarch64` file on Arm machines. Manjaro and Omarchy use the same
+package. After install:
 
 ```sh
 bvr-cli --version
 bvr-cli --help
 ```
 
-To build a local installable Arch package (`.pkg.tar.zst`) for testing, run
-Goreleaser and install the `archlinux` format artifact with `pacman -U`:
-
-```sh
-goreleaser release --snapshot
-sudo pacman -U ./dist/bvr-cli_1.2.8-1_x86_64.pkg.tar.zst
-```
+`goreleaser release --snapshot` also produces Arch artifacts, but
+`.goreleaser.yml` requires a GoReleaser **PRO** license key and Charm's
+runner group, so it fails in this repository; use the script above.
 
 ### Windows x64
 
@@ -99,7 +94,7 @@ For local beta package generation across all six targets:
 
 ## Build from source
 
-Requirements: Go 1.26 or newer.
+Requirements: Go 1.27.3 or newer, matching the `go` directive in `go.mod`.
 
 ```sh
 git clone https://github.com/rfaiii/BVR-CLI.git
@@ -149,10 +144,10 @@ without sending the command to the AI agent.
 
 ### macOS
 
-- macOS 13.0+ for signed DMG builds.
+- macOS 13.0+ for DMG builds. The locally produced DMGs are unsigned.
 - Rosetta 2 on Apple Silicon if using Intel-only terminal plugins.
 - Internet connection for first-run model/provider setup.
-- Developer/build: Go 1.26.5+, Xcode Command Line Tools
+- Developer/build: Go 1.27.3+, Xcode Command Line Tools
   (`xcode-select --install`), optional `goreleaser` for release builds.
 
 ### Arch Linux / Linux
@@ -161,14 +156,14 @@ without sending the command to the AI agent.
 - Arch-based systems: the AUR packages above, or install the `nfpms`
   deb/rpm/apk artifacts on other distributions.
 - Optional system service for Ollama (`systemctl --user enable --now ollama`).
-- Developer/build: Go 1.26.5+, Git, optional `goreleaser`.
+- Developer/build: Go 1.27.3+, Git, optional `goreleaser`.
 
 ### Windows
 
 - Windows 10/11 x64 or ARM64.
 - Windows Terminal or another modern terminal host.
 - Internet connection for first-run setup.
-- Developer/build: Go 1.26.5+; MinGW/MSYS2 or Visual Studio Build Tools only
+- Developer/build: Go 1.27.3+; MinGW/MSYS2 or Visual Studio Build Tools only
   if CGO dependencies require it; optional `goreleaser`, `nsis` or
   `wixtoolset` for installer packaging.
 
@@ -193,7 +188,7 @@ without sending the command to the AI agent.
 
 ### Build requirements
 
-- Go 1.26.5+
+- Go 1.27.3+
 - Git
 - Optional: `goreleaser`, `nsis`/`wixtoolset`, Xcode Command Line Tools
 

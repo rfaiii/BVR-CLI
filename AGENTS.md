@@ -88,7 +88,7 @@ internal/
   and agent — it takes inputs, runs commands, returns decisions. The
   `hookedTool` decorator in `internal/agent/hooked_tool.go` wraps tools at
   the coordinator level. Hooks run before permission checks. See
-  `HOOKS.md` for the user-facing protocol.
+  [`docs/hooks/README.md`](docs/hooks/README.md) for the user-facing protocol.
 - **CGO disabled**: builds with `CGO_ENABLED=0` and
   `GOEXPERIMENT=greenteagc`.
 
