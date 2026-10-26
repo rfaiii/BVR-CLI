@@ -94,6 +94,12 @@ type Workspace interface {
 
 	// Messages
 	ListMessages(ctx context.Context, sessionID string) ([]message.Message, error)
+	// ListMessagesPage reads one window of a session's history: up to limit
+	// messages older than before, where before is the Cursor of the page
+	// read previously and 0 starts at the newest message. Opening a session
+	// should use this rather than ListMessages, whose cost grows with the
+	// length of the session.
+	ListMessagesPage(ctx context.Context, sessionID string, limit int, before int64) (message.MessagePage, error)
 	ListUserMessages(ctx context.Context, sessionID string) ([]message.Message, error)
 	ListAllUserMessages(ctx context.Context) ([]message.Message, error)
 

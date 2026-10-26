@@ -19,25 +19,29 @@ import (
 )
 
 const (
-	fps           = 20
+	// fps is the animation tick rate. 20 FPS doubled every redraw cost in
+	// the frame loop for no visible gain on text rain; at 10 FPS the
+	// wall-clock timings below are preserved by halving their step counts.
+	fps           = 10
 	initialChar   = '.'
 	labelGap      = " "
 	labelGapWidth = 1
 
 	// Periods of ellipsis animation speed in steps.
 	//
-	// If the FPS is 20 (50 milliseconds) this means that the ellipsis will
-	// change every 8 frames (400 milliseconds).
-	ellipsisAnimSpeed = 8
+	// With fps == 10 (100 milliseconds) this means that the ellipsis will
+	// change every 4 frames (400 milliseconds), preserving the original
+	// wall-clock cadence.
+	ellipsisAnimSpeed = 4
 
 	// The maximum number of animation steps that can pass before a
-	// character appears. With fps == 20 this is ~1s of staggered
+	// character appears. With fps == 10 this is ~1s of staggered
 	// entrance, identical to the previous wall-clock-driven value.
 	// Switching from wall-clock + rand to a step-driven birth schedule
 	// keeps Render() deterministic: two Anim instances built from the
 	// same Settings produce byte-identical output when no Animate ticks
 	// have advanced their step counter.
-	maxBirthSteps = 20
+	maxBirthSteps = 10
 
 	// Number of frames to prerender for the animation. After this number
 	// of frames, the animation will loop. This only applies when color
@@ -237,6 +241,23 @@ func New(opts Settings) *Anim {
 			ramp = makeGradientRamp(a.width, opts.GradColorA, opts.GradColorB)
 		}
 
+		// Each prerendered cell is an ANSI string, and the frames repeat the
+		// same (rune, color) pairs heavily: the initial layer is one rune over
+		// a ramp of only len(ramp) colors, and the cycling layer draws a
+		// ~30-rune alphabet over that same ramp. Interning collapses a
+		// quarter-million cell strings down to the few hundred distinct ones,
+		// which is most of the heap a color-cycling banner would otherwise
+		// hold forever. Output is byte-identical.
+		interned := make(map[string]string, len(ramp)*2)
+		renderCell := func(c color.Color, r rune) string {
+			s := lipgloss.NewStyle().Foreground(c).Render(string(r))
+			if prev, ok := interned[s]; ok {
+				return prev
+			}
+			interned[s] = s
+			return s
+		}
+
 		// Pre-render initial characters.
 		a.initialFrames = make([][]string, numFrames)
 		offset := 0
@@ -256,9 +277,7 @@ func New(opts Settings) *Anim {
 
 				// Also prerender the initial character with Lip Gloss to avoid
 				// processing in the render loop.
-				a.initialFrames[i][j] = lipgloss.NewStyle().
-					Foreground(c).
-					Render(string(initialChar))
+				a.initialFrames[i][j] = renderCell(c, initialChar)
 			}
 			if opts.CycleColors {
 				offset++
@@ -284,9 +303,7 @@ func New(opts Settings) *Anim {
 				// Also prerender the color with Lip Gloss here to avoid processing
 				// in the render loop.
 				r := availableRunes[rng.IntN(len(availableRunes))]
-				a.cyclingFrames[i][j] = lipgloss.NewStyle().
-					Foreground(ramp[j+offset]).
-					Render(string(r))
+				a.cyclingFrames[i][j] = renderCell(ramp[j+offset], r)
 			}
 			if opts.CycleColors {
 				offset++

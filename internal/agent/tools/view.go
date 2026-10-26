@@ -311,7 +311,9 @@ func readTextFile(filePath string, offset, limit, maxContentSize int) (string, b
 	}
 	defer file.Close()
 
-	reader := bufio.NewReader(file)
+	// Large buffer keeps deep-offset line scanning from issuing thousands of
+	// syscalls on big files (default bufio is 4 KiB).
+	reader := bufio.NewReaderSize(file, 256*1024)
 	skipped := 0
 	for skipped < offset {
 		_, err := reader.ReadString('\n')

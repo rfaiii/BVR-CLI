@@ -81,6 +81,28 @@ func (b *Backend) ListSessionMessages(ctx context.Context, workspaceID, sessionI
 	return ws.Messages.List(ctx, sessionID)
 }
 
+// ListSessionMessagesPage returns one window of a session's history, newest
+// first limited to `limit` messages and older than `before` (0 starts at the
+// newest message). It exists so a TUI attached over HTTP does not have to
+// transfer the whole history of a long session to open it.
+func (b *Backend) ListSessionMessagesPage(ctx context.Context, workspaceID, sessionID string, limit int, before int64) (message.MessagePage, error) {
+	ws, err := b.GetWorkspace(workspaceID)
+	if err != nil {
+		return message.MessagePage{}, err
+	}
+
+	// Drain debounced updates so HTTP clients (and the TUI on session
+	// switch) observe the latest in-memory state rather than racing the
+	// debounce timer in message.Service.
+	if err := ws.Messages.FlushAll(ctx); err != nil {
+		return message.MessagePage{}, err
+	}
+	if before > 0 {
+		return ws.Messages.ListOlder(ctx, sessionID, before, limit)
+	}
+	return ws.Messages.ListLatest(ctx, sessionID, limit)
+}
+
 // ListSessionHistory returns the history items for a session.
 func (b *Backend) ListSessionHistory(ctx context.Context, workspaceID, sessionID string) (any, error) {
 	ws, err := b.GetWorkspace(workspaceID)

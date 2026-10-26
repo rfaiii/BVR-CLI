@@ -129,11 +129,16 @@ func New(ctx context.Context, conn *sql.DB, store *config.ConfigStore, skillsMgr
 
 	app.setupEvents()
 
-	// Initialize clipboard support. This is best-effort; if it fails
-	// (e.g., headless environment), clipboard operations will return nil.
-	if err := clipboard.Init(); err != nil {
-		slog.Warn("Clipboard initialization failed", "error", err)
-	}
+	// Initialize clipboard support asynchronously. This is best-effort; if
+	// it fails (e.g., headless environment or Wayland-only session),
+	// clipboard operations will return nil. It must not block startup:
+	// the X11 backend can stall on systems without X (Omarchy is
+	// Wayland-first), so first use may briefly report not-initialized.
+	go func() {
+		if err := clipboard.Init(); err != nil {
+			slog.Warn("Clipboard initialization failed", "error", err)
+		}
+	}()
 
 	// Check for updates in the background.
 	go app.checkForUpdates(ctx)

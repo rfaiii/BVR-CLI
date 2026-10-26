@@ -145,8 +145,11 @@ func (m *UI) updateSidebarScrollState() {
 		skillsSection,
 	)
 
-	totalLines := strings.Count(content, "\n") + 1
 	m.sidebarContent = content
+	// Split once here so drawSidebar does not allocate a full line slice on
+	// every frame of the animation tick.
+	m.sidebarLines = strings.Split(content, "\n")
+	totalLines := len(m.sidebarLines)
 	m.sidebarTotalLines = totalLines
 	m.sidebarContentWidth = contentWidth
 	m.sidebarContentHeight = contentHeight
@@ -208,11 +211,11 @@ func (m *UI) drawSidebar(scr uv.Screen, area uv.Rectangle) {
 		)
 	}
 
-	// Slice visible lines.
-	end := min(m.sidebarOffset+contentHeight, totalLines)
-	lines := strings.Split(m.sidebarContent, "\n")
-	visibleLines := lines[m.sidebarOffset:end]
-	visibleStr := strings.Join(visibleLines, "\n")
+	// Slice visible lines from the split cached with the content, so a tick
+	// only costs one join instead of a full re-split of the sidebar.
+	end := min(m.sidebarOffset+contentHeight, len(m.sidebarLines))
+	start := min(m.sidebarOffset, end)
+	visibleStr := strings.Join(m.sidebarLines[start:end], "\n")
 
 	// Determine scrollbar visibility: always visible when focused, otherwise
 	// auto-hide.

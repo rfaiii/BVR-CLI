@@ -1,8 +1,10 @@
 package dialog
 
 import (
+	"bytes"
 	"fmt"
 	"image"
+	"io"
 	"os"
 	"path/filepath"
 	"slices"
@@ -157,14 +159,22 @@ func previewForEntry(e fileBrowserEntry) string {
 	if e.dir {
 		return "directory\n\nPress enter to open"
 	}
-	b, err := os.ReadFile(e.path)
+	// Read at most the preview window; never slurp whole large files just to
+	// truncate them afterwards.
+	f, err := os.Open(e.path)
 	if err != nil {
 		return err.Error()
 	}
-	if len(b) > 12000 {
-		b = b[:12000]
+	defer f.Close()
+
+	const previewLimit = 12000
+	buf := make([]byte, previewLimit+1)
+	n, _ := io.ReadFull(f, buf)
+	if n > previewLimit {
+		n = previewLimit
 	}
-	if strings.IndexByte(string(b), 0) >= 0 {
+	b := buf[:n]
+	if bytes.IndexByte(b, 0) >= 0 {
 		return "(binary file)"
 	}
 	return string(b)

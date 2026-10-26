@@ -385,8 +385,10 @@ func TestIsTextFile(t *testing.T) {
 			filePath := filepath.Join(tempDir, tt.filename)
 			require.NoError(t, os.WriteFile(filePath, tt.content, 0o644))
 
-			got := isTextFile(filePath)
-			require.Equal(t, tt.wantText, got, "isTextFile(%s) = %v, want %v", tt.filename, got, tt.wantText)
+			data, err := os.ReadFile(filePath)
+			require.NoError(t, err)
+			got := isTextContent(data)
+			require.Equal(t, tt.wantText, got, "isTextContent(%s) = %v, want %v", tt.filename, got, tt.wantText)
 		})
 	}
 }

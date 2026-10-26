@@ -81,6 +81,6 @@ cmd := texteditor.OpenInMicro("config.toml")
 
 The text editor is accessible from the BVR-CLI main interface. Users can trigger the editor through commands like `:edit` or `:open` to open files for text editing. The editor integrates with the existing UI theme and color scheme.
 
-See [SYSTEM_ARCHITECTURE.md](../../../docs/SYSTEM_ARCHITECTURE.md) and
-[UI_BRANDING.md](../../../docs/UI_BRANDING.md) for the current integration and
+See [ARCHITECTURE.md](../../../docs/ARCHITECTURE.md) and
+[UI.md](../../../docs/UI.md) for the current integration and
 visual-design requirements.

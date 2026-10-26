@@ -41,6 +41,7 @@ type countingWorkspace struct {
 	permSetCalls    int
 	clearQueueCalls int
 	cancelCalls     int
+	historyReads    int
 }
 
 func (w *countingWorkspace) AgentIsReady() bool { w.readyCalls++; return w.ready }
@@ -75,6 +76,7 @@ func (w *countingWorkspace) AgentClearQueue(string) { w.clearQueueCalls++; w.que
 func (w *countingWorkspace) AgentCancel(string)     { w.cancelCalls++ }
 
 func (w *countingWorkspace) ListMessages(context.Context, string) ([]message.Message, error) {
+	w.historyReads++
 	return nil, nil
 }
 
@@ -102,7 +104,7 @@ func (w *countingWorkspace) resetCounters() {
 
 // newBusyUI builds a UI wired to the stub workspace with an active session
 // "s1", enough state for Update to run end to end.
-func newBusyUI(ws *countingWorkspace) *UI {
+func newBusyUI(ws workspace.Workspace) *UI {
 	com := common.DefaultCommon(ws)
 	return &UI{
 		com:         com,
@@ -140,8 +142,9 @@ func warmCaches(m *UI, busy bool) {
 }
 
 // runCmds executes a command tree the way the Bubble Tea runtime would,
-// feeding cache-refresh messages back into Update. Other leaf commands are
-// executed (for their side effects on the stub) but their messages dropped.
+// feeding cache-refresh and history-pagination messages back into Update.
+// Other leaf commands are executed (for their side effects on the stub) but
+// their messages dropped.
 func runCmds(m *UI, cmd tea.Cmd) {
 	if cmd == nil {
 		return
@@ -151,7 +154,7 @@ func runCmds(m *UI, cmd tea.Cmd) {
 		for _, c := range msg {
 			runCmds(m, c)
 		}
-	case busyStateMsg, promptQueueMsg, agentRunSubmittedMsg:
+	case busyStateMsg, promptQueueMsg, agentRunSubmittedMsg, loadOlderMessagesMsg:
 		_, next := m.Update(msg)
 		runCmds(m, next)
 	}
@@ -463,14 +466,14 @@ func TestSetSessionMessagesGatesAnimationsOnBusy(t *testing.T) {
 		},
 	}
 
-	// When the agent is not busy, setSessionMessages must not start animations.
-	cmd := m.setSessionMessages(msgs)
-	require.Nil(t, cmd, "setSessionMessages must not start animations when agent is idle")
+	// When the agent is not busy, applying a page must not start animations.
+	cmd := m.applyNewestHistory(m.prepareNewestPage(msgs, 0))
+	require.Nil(t, cmd, "applying history must not start animations when agent is idle")
 
 	// When the agent is busy, animations should start.
 	warmCaches(m, true)
-	cmd = m.setSessionMessages(msgs)
-	require.NotNil(t, cmd, "setSessionMessages must start animations when agent is busy")
+	cmd = m.applyNewestHistory(m.prepareNewestPage(msgs, 0))
+	require.NotNil(t, cmd, "applying history must start animations when agent is busy")
 }
 
 // TestStaleBusyRefreshDiscardedAndReDispatched pins the generation guard for

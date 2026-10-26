@@ -34,3 +34,16 @@ func TestSetStatusUpdatesLastSeen(t *testing.T) {
 	require.Equal(t, DeviceStatusOnline, device.Status)
 	require.False(t, device.LastSeen.Before(before))
 }
+
+func TestSetNicknamePersists(t *testing.T) {
+	m := NewManager()
+	m.Upsert(Device{ID: "one", Name: "One"})
+	m.SetNickname("one", "Workstation")
+
+	require.Equal(t, "Workstation", m.Devices()[0].Nickname)
+	require.Equal(t, "Workstation", m.Devices()[0].DisplayName())
+
+	// Renaming an unknown id must not create a device.
+	m.SetNickname("missing", "Ghost")
+	require.Len(t, m.Devices(), 1)
+}

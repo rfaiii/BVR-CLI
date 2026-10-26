@@ -6,14 +6,15 @@ sound never blocks the Bubble Tea update loop.
 
 ## Sound files
 
-Processed cues are 16-bit, 44.1 kHz WAV files. The filenames are intentionally
-semantic: code refers to an event name and the audio backend resolves it to the
-bundled filename.
+Cues are mono, 8-bit unsigned PCM at 11.025 kHz WAV files, produced by
+`scripts/compress_sounds.sh`. Lo-fi is deliberate: short interface blips lose
+nothing audible at that rate, and every player BVR shells out to handles PCM 8
+without a codec. The filenames are intentionally semantic: code refers to an
+event name and the audio backend resolves it to the bundled filename.
 
 | File | Placement |
 | --- | --- |
 | `STARTUP-SONG-FLAT.wav` | Application startup. |
-| `INTRO-BOP-01-FLAT.wav` | Reserved for the animated-logo intro sequence. |
 | `BROKEN-FLAT.wav` | Failed shell command or unknown/janky failure. |
 | `QUICK-NOTIFY-01-FLAT.wav` | Prompt/command submission, generic confirmation, and File Finder open. |
 | `QUICK-NOTIFY-02-FLAT.wav` | Help toggle, lighter UI confirmations, and Create File open. |
@@ -54,15 +55,21 @@ These remain embedded and available but are not part of the processed set:
 
 - `exit-01.wav`, `exit-02.wav`, `exit-03.wav`: exit confirmation variations.
 - `advert-01.wav`: future AFK/advertising cue.
-- `sub-01.wav`, `sub-02.wav`: future low-frequency transition cues.
-- `who-01.wav`: reserved for a future identity/attention cue.
+- `sub-01.wav`: future low-frequency transition cue.
+
+Cues that no event and no name mapping could reach were dropped rather than
+carried: `INTRO-BOP-01-FLAT.wav`, `sub-02.wav`, and `who-01.wav`.
 
 ## Technical notes
 
+- `scripts/compress_sounds.sh` re-encodes from the studio masters: `-ac 1`
+  (mono), 11.025 kHz, `pcm_u8`, plus `-map_metadata -1 -fflags +bitexact` so
+  the editor padding that made some headers 4 KB on their own disappears. With
+  no `ffmpeg` on PATH it uses `afconvert -f WAVE -d UI8@11025 -c 1`.
 - Native playback uses `afplay` on macOS, `paplay`/`aplay` on Linux, and
   PowerShell WPF `MediaPlayer` on Windows when available.
-- The audio package extracts embedded files to a temporary directory on first
-  use and cleans them up at process exit.
+- The audio package extracts the embedded file being played to a temporary
+  directory on first use and cleans up at process exit.
 - `25`, `50`, `75`, `100`, and `silent` volume modes are controlled from the
   Sounds menu or `options.audio_volume`. New installs default to 25% to avoid
   surprising headphone users; the older `high` and `low` values remain

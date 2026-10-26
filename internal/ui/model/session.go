@@ -14,6 +14,7 @@ import (
 	"github.com/richavery/bvr-cli/internal/diff"
 	"github.com/richavery/bvr-cli/internal/fsext"
 	"github.com/richavery/bvr-cli/internal/history"
+	"github.com/richavery/bvr-cli/internal/message"
 	"github.com/richavery/bvr-cli/internal/session"
 	"github.com/richavery/bvr-cli/internal/ui/common"
 	"github.com/richavery/bvr-cli/internal/ui/styles"
@@ -26,6 +27,22 @@ type loadSessionMsg struct {
 	session   *session.Session
 	files     []SessionFile
 	readFiles []string
+	// history is the newest page of chat history, already converted into
+	// renderable items.
+	history sessionHistory
+	// historyCursor is the sequence number of the oldest message in
+	// history; historyHasMore reports that older messages exist. Together
+	// they are the pagination state of the page the chat was opened with.
+	historyCursor  int64
+	historyHasMore bool
+}
+
+// loadOlderMessagesMsg carries one page of history older than everything the
+// chat currently shows, already converted into renderable items.
+type loadOlderMessagesMsg struct {
+	history sessionHistory
+	cursor  int64
+	hasMore bool
 }
 
 // lspFilePaths returns deduplicated file paths from both modified and read
@@ -70,6 +87,9 @@ type SessionFile struct {
 // That report is fire-and-forget: errors are logged at debug and the
 // UI never blocks on the call.
 func (m *UI) loadSession(sessionID string) tea.Cmd {
+	// Captured here, on the Update goroutine, because the command that uses it
+	// must not read model state while Update owns it.
+	lastUserSeed := m.lastUserMessageTime
 	load := func() tea.Msg {
 		session, err := m.com.Workspace.GetSession(context.Background(), sessionID)
 		if err != nil {
@@ -86,13 +106,55 @@ func (m *UI) loadSession(sessionID string) tea.Cmd {
 			slog.Error("Failed to load read files for session", "error", err)
 		}
 
+		// The history read is the expensive part of a session switch: it
+		// decodes every parts blob in the page and renders each message into a
+		// chat item, reading any nested agent sessions on the way. Keeping all
+		// of that here rather than in the loadSessionMsg handler means the cost
+		// lands on this command's goroutine instead of stalling Bubble Tea's
+		// Update loop, which is what paints the terminal.
+		page, err := m.com.Workspace.ListMessagesPage(context.Background(), sessionID, message.DefaultPageLimit, 0)
+		if err != nil {
+			return util.ReportError(err)
+		}
+
 		return loadSessionMsg{
-			session:   &session,
-			files:     sessionFiles,
-			readFiles: readFiles,
+			session:        &session,
+			files:          sessionFiles,
+			readFiles:      readFiles,
+			history:        m.prepareNewestPage(page.Messages, lastUserSeed),
+			historyCursor:  page.Cursor,
+			historyHasMore: page.HasMore,
 		}
 	}
 	return tea.Batch(load, m.reportCurrentSession(sessionID))
+}
+
+// loadOlderMessages reads the page of history immediately older than what the
+// chat already shows. Like the session open it runs on a command goroutine:
+// reading a page means decoding every parts blob in it and rendering it, which
+// must not happen while Bubble Tea is between frames.
+func (m *UI) loadOlderMessages() tea.Cmd {
+	if m.session == nil || m.historyCursor <= 0 {
+		return nil
+	}
+	sessionID := m.session.ID
+	before := m.historyCursor
+	// Read on this goroutine, use on the other: the older page is built
+	// against the tool results collected so far.
+	known := m.historyToolResults
+	return func() tea.Msg {
+		page, err := m.com.Workspace.ListMessagesPage(
+			context.Background(), sessionID, message.DefaultPageLimit, before,
+		)
+		if err != nil {
+			return util.ReportError(err)
+		}
+		return loadOlderMessagesMsg{
+			history: m.prepareOlderPage(page.Messages, known),
+			cursor:  page.Cursor,
+			hasMore: page.HasMore,
+		}
+	}
 }
 
 // reportCurrentSession returns a fire-and-forget tea.Cmd that

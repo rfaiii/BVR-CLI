@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"charm.land/catwalk/pkg/catwalk"
 	"github.com/stretchr/testify/require"
@@ -14,12 +16,23 @@ import (
 type mockCatwalkClient struct {
 	providers []catwalk.Provider
 	err       error
-	callCount int
+	callCount atomic.Int32
 }
 
 func (m *mockCatwalkClient) GetProviders(ctx context.Context, etag string) ([]catwalk.Provider, error) {
-	m.callCount++
+	m.callCount.Add(1)
 	return m.providers, m.err
+}
+
+// snapshot waits for the background refresh to replace the in-memory result
+// and returns the settled value.
+func (s *catwalkSync) settled(t *testing.T) []catwalk.Provider {
+	t.Helper()
+	var out []catwalk.Provider
+	s.mu.RLock()
+	out = s.result
+	s.mu.RUnlock()
+	return out
 }
 
 func TestCatwalkSync_Init(t *testing.T) {
@@ -60,7 +73,7 @@ func TestCatwalkSync_GetWithAutoUpdateDisabled(t *testing.T) {
 	providers, err := syncer.Get(t.Context())
 	require.NoError(t, err)
 	require.NotEmpty(t, providers)
-	require.Equal(t, 0, client.callCount, "Client should not be called when autoupdate is disabled")
+	require.Equal(t, int32(0), client.callCount.Load(), "Client should not be called when autoupdate is disabled")
 
 	// Should return embedded providers.
 	for _, p := range providers {
@@ -81,16 +94,22 @@ func TestCatwalkSync_GetFreshProviders(t *testing.T) {
 
 	syncer.Init(client, path, true)
 
+	// Get returns the embedded snapshot immediately without waiting on the
+	// (mock) network refresh.
 	providers, err := syncer.Get(t.Context())
 	require.NoError(t, err)
-	require.Len(t, providers, 1)
-	require.Equal(t, "Fresh Provider", providers[0].Name)
-	require.Equal(t, 1, client.callCount)
+	require.NotEmpty(t, providers)
 
-	// Verify cache was written.
-	fileInfo, err := os.Stat(path)
-	require.NoError(t, err)
-	require.False(t, fileInfo.IsDir())
+	// The background refresh replaces the result and writes the cache.
+	require.Eventually(t, func() bool {
+		result := syncer.settled(t)
+		return len(result) == 1 && result[0].Name == "Fresh Provider"
+	}, time.Second, 5*time.Millisecond)
+	require.Eventually(t, func() bool {
+		fileInfo, err := os.Stat(path)
+		return err == nil && !fileInfo.IsDir()
+	}, time.Second, 5*time.Millisecond)
+	require.Equal(t, int32(1), client.callCount.Load())
 }
 
 func TestCatwalkSync_GetNotModifiedUsesCached(t *testing.T) {
@@ -118,10 +137,17 @@ func TestCatwalkSync_GetNotModifiedUsesCached(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, providers, 1)
 	require.Equal(t, "Cached Provider", providers[0].Name)
-	require.Equal(t, 1, client.callCount)
+
+	require.Eventually(t, func() bool {
+		return client.callCount.Load() == 1
+	}, time.Second, 5*time.Millisecond)
+
+	// ErrNotModified must leave the cached snapshot in place.
+	time.Sleep(50 * time.Millisecond)
+	require.Equal(t, "Cached Provider", syncer.settled(t)[0].Name)
 }
 
-func TestCatwalkSync_GetEmptyResultFallbackToCached(t *testing.T) {
+func TestCatwalkSync_GetEmptyResultKeepsCached(t *testing.T) {
 	t.Parallel()
 
 	tmpDir := t.TempDir()
@@ -143,10 +169,18 @@ func TestCatwalkSync_GetEmptyResultFallbackToCached(t *testing.T) {
 	syncer.Init(client, path, true)
 
 	providers, err := syncer.Get(t.Context())
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "empty providers list from catwalk")
+	require.NoError(t, err)
 	require.Len(t, providers, 1)
 	require.Equal(t, "Cached Provider", providers[0].Name)
+
+	require.Eventually(t, func() bool {
+		return client.callCount.Load() == 1
+	}, time.Second, 5*time.Millisecond)
+
+	// An empty refresh must not clobber the cached result.
+	time.Sleep(50 * time.Millisecond)
+	require.Len(t, syncer.settled(t), 1)
+	require.Equal(t, "Cached Provider", syncer.settled(t)[0].Name)
 }
 
 func TestCatwalkSync_GetEmptyCacheDefaultsToEmbedded(t *testing.T) {
@@ -174,6 +208,10 @@ func TestCatwalkSync_GetEmptyCacheDefaultsToEmbedded(t *testing.T) {
 
 	// Verify it's embedded providers by checking we have multiple common ones.
 	require.Greater(t, len(providers), 5)
+
+	require.Eventually(t, func() bool {
+		return client.callCount.Load() == 1
+	}, time.Second, 5*time.Millisecond)
 }
 
 func TestCatwalkSync_GetClientError(t *testing.T) {
@@ -192,6 +230,10 @@ func TestCatwalkSync_GetClientError(t *testing.T) {
 	providers, err := syncer.Get(t.Context())
 	require.NoError(t, err) // Should fall back to embedded.
 	require.NotEmpty(t, providers)
+
+	require.Eventually(t, func() bool {
+		return client.callCount.Load() == 1
+	}, time.Second, 5*time.Millisecond)
 }
 
 func TestCatwalkSync_GetCalledMultipleTimesUsesOnce(t *testing.T) {
@@ -210,12 +252,18 @@ func TestCatwalkSync_GetCalledMultipleTimesUsesOnce(t *testing.T) {
 	// Call Get multiple times.
 	providers1, err1 := syncer.Get(t.Context())
 	require.NoError(t, err1)
-	require.Len(t, providers1, 1)
+	require.NotEmpty(t, providers1)
 
 	providers2, err2 := syncer.Get(t.Context())
 	require.NoError(t, err2)
-	require.Len(t, providers2, 1)
+	require.NotEmpty(t, providers2)
 
-	// Client should only be called once due to sync.Once.
-	require.Equal(t, 1, client.callCount)
+	// The refresh runs once in the background despite repeated Gets.
+	require.Eventually(t, func() bool {
+		return client.callCount.Load() == 1
+	}, time.Second, 5*time.Millisecond)
+	require.Eventually(t, func() bool {
+		result := syncer.settled(t)
+		return len(result) == 1 && result[0].Name == "Provider"
+	}, time.Second, 5*time.Millisecond)
 }

@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"runtime/metrics"
 	"strings"
+	"sync"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -14,7 +15,7 @@ import (
 	"github.com/richavery/bvr-cli/internal/ui/styles"
 )
 
-const resourceMonitorInterval = time.Second
+const resourceMonitorInterval = 2 * time.Second
 
 type resourceSnapshotMsg struct {
 	time       time.Time
@@ -23,16 +24,21 @@ type resourceSnapshotMsg struct {
 }
 
 // resourceMonitorCmd publishes resource snapshots on a fixed interval.
+// It uses runtime/metrics exclusively: runtime.ReadMemStats stops the world,
+// which is visible as frame hitches when called once per second.
 func (m *UI) resourceMonitorCmd() tea.Cmd {
 	return tea.Tick(resourceMonitorInterval, func(now time.Time) tea.Msg {
-		var samples = []metrics.Sample{{Name: "/cpu/classes/total:cpu-seconds"}}
+		samples := []metrics.Sample{
+			{Name: "/cpu/classes/total:cpu-seconds"},
+			{Name: "/memory/classes/heap/objects:bytes"},
+			{Name: "/memory/classes/total:bytes"},
+		}
 		metrics.Read(samples)
 
-		var memory runtime.MemStats
-		runtime.ReadMemStats(&memory)
 		ramPercent := 0.0
-		if memory.HeapSys > 0 {
-			ramPercent = float64(memory.HeapAlloc) / float64(memory.HeapSys) * 100
+		heapAlloc, heapSys := samples[1].Value, samples[2].Value
+		if heapAlloc.Kind() == metrics.KindUint64 && heapSys.Kind() == metrics.KindUint64 && heapSys.Uint64() > 0 {
+			ramPercent = float64(heapAlloc.Uint64()) / float64(heapSys.Uint64()) * 100
 		}
 
 		return resourceSnapshotMsg{
@@ -91,6 +97,35 @@ func renderResourceBar(label string, percent float64, width int, styleSet *style
 	return styleSet.Status.ResourceLabel.Render(labelText) + bar + " " + styleSet.Status.ResourceValue.Render(value)
 }
 
+// gradientBarCache memoizes rendered bars; the same (width, percent, color)
+// combination is rebuilt on every draw otherwise, at one lipgloss style per
+// cell. Percent is quantized because the label renders whole percents.
+var gradientBarCache struct {
+	mu   sync.Mutex
+	bars map[string]string
+}
+
+func cachedGradientBar(width int, percent float64, end color.Color) string {
+	e := colorToRGB(end)
+	endHex := fmt.Sprintf("#%02x%02x%02x", e.R, e.G, e.B)
+	key := fmt.Sprintf("%d|%d|%s", width, int(percent+0.5), endHex)
+
+	gradientBarCache.mu.Lock()
+	defer gradientBarCache.mu.Unlock()
+	if gradientBarCache.bars == nil {
+		gradientBarCache.bars = make(map[string]string)
+	}
+	if bar, ok := gradientBarCache.bars[key]; ok {
+		return bar
+	}
+	if len(gradientBarCache.bars) > 1024 {
+		gradientBarCache.bars = make(map[string]string)
+	}
+	bar := buildGradientBar(width, float64(int(percent+0.5)), end)
+	gradientBarCache.bars[key] = bar
+	return bar
+}
+
 // renderGradientBar returns a horizontal bar that interpolates between a dark
 // base and the theme primary color. The mix is driven by both position and
 // usage percent, so light usage stays darker while high usage glows brighter.
@@ -98,11 +133,15 @@ func renderGradientBar(width int, percent float64, styleSet *styles.Styles) stri
 	if width <= 0 {
 		return ""
 	}
-	start := colorColor("#2a2a2a")
 	end := styleSet.Status.ResourceFilled.GetForeground()
 	if end == nil {
 		end = colorColor("#3BF66B")
 	}
+	return cachedGradientBar(width, percent, end)
+}
+
+func buildGradientBar(width int, percent float64, end color.Color) string {
+	start := colorColor("#2a2a2a")
 	startRGB := colorToRGB(start)
 	endRGB := colorToRGB(end)
 	parts := make([]string, width)

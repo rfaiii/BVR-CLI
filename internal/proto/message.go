@@ -31,6 +31,15 @@ type Message struct {
 	UpdatedAt int64         `json:"updated_at"`
 }
 
+// MessagePage is one window of a session's history, oldest message first.
+// Cursor is the sequence number of the oldest message in Messages and is the
+// `before` value for reading the next, older page.
+type MessagePage struct {
+	Messages []Message `json:"messages"`
+	Cursor   int64     `json:"cursor"`
+	HasMore  bool      `json:"has_more"`
+}
+
 // MessageRole represents the role of a message sender.
 type MessageRole string
 

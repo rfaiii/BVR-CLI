@@ -72,7 +72,7 @@ archives:
     wrap_in_directory: true
     files:
       - README*
-      - docs/installation.md
+      - docs/SETUP.md
       - LICENSE*
       - manpages/*
       - completions/*

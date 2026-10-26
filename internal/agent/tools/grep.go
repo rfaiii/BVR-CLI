@@ -10,13 +10,17 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"charm.land/fantasy"
@@ -305,26 +309,26 @@ func searchFilesWithRegex(pattern, rootPath, include string) ([]grepMatch, error
 	// Create walker with gitignore and bvrignore support
 	walker := fsext.NewFastGlobWalker(rootPath)
 
-	err = filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
+	// Phase 1: collect candidate paths without opening or stat-ing files.
+	var files []string
+	err = filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil // Skip errors
 		}
 
-		if info.IsDir() {
-			// Check if directory should be skipped
+		if d.IsDir() {
 			if walker.ShouldSkip(path) {
-				return filepath.SkipDir
+				return fs.SkipDir
 			}
-			return nil // Continue into directory
+			return nil
 		}
 
-		// Use walker's shouldSkip method for files
 		if walker.ShouldSkip(path) {
 			return nil
 		}
 
 		// Skip hidden files (starting with a dot) to match ripgrep's default behavior
-		base := filepath.Base(path)
+		base := d.Name()
 		if base != "." && strings.HasPrefix(base, ".") {
 			return nil
 		}
@@ -333,28 +337,68 @@ func searchFilesWithRegex(pattern, rootPath, include string) ([]grepMatch, error
 			return nil
 		}
 
-		lineMatches, err := fileMatches(path, regex)
-		if err != nil {
-			return nil // Skip files we can't read
-		}
-
-		for _, lm := range lineMatches {
-			matches = append(matches, grepMatch{
-				path:     path,
-				modTime:  info.ModTime(),
-				lineNum:  lm.lineNum,
-				charNum:  lm.charNum,
-				lineText: lm.lineText,
-			})
-			if len(matches) >= 200 {
-				return filepath.SkipAll
-			}
-		}
-
+		files = append(files, path)
 		return nil
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// Phase 2: scan files on a worker pool. ripgrep is absent by default on
+	// Arch/Omarchy, so this fallback is a primary path there; serial opens
+	// made whole-tree greps minutes-slow on large repos. Results are keyed by
+	// index so assembly below preserves walk order deterministically.
+	results := make([][]lineMatch, len(files))
+	var found atomic.Int64
+	const maxMatches = 200
+
+	workers := min(len(files), max(1, runtime.NumCPU()))
+	jobs := make(chan int)
+	var wg sync.WaitGroup
+	for range workers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range jobs {
+				if found.Load() >= maxMatches {
+					continue
+				}
+				lineMatches, err := fileMatches(files[i], regex)
+				if err != nil || len(lineMatches) == 0 {
+					continue
+				}
+				results[i] = lineMatches
+				found.Add(int64(len(lineMatches)))
+			}
+		}()
+	}
+	for i := range files {
+		jobs <- i
+	}
+	close(jobs)
+	wg.Wait()
+
+	// Phase 3: assemble in walk order; stat only matched files.
+	for i, lineMatches := range results {
+		if len(lineMatches) == 0 {
+			continue
+		}
+		var modTime time.Time
+		if info, statErr := os.Stat(files[i]); statErr == nil {
+			modTime = info.ModTime()
+		}
+		for _, lm := range lineMatches {
+			matches = append(matches, grepMatch{
+				path:     files[i],
+				modTime:  modTime,
+				lineNum:  lm.lineNum,
+				charNum:  lm.charNum,
+				lineText: lm.lineText,
+			})
+			if len(matches) >= maxMatches {
+				return matches, nil
+			}
+		}
 	}
 
 	return matches, nil
@@ -372,13 +416,10 @@ type lineMatch struct {
 // fileMatches returns every line in filePath that matches pattern. Like
 // ripgrep, it reports one entry per matching line (using the first match
 // on the line for the column) instead of stopping at the first match in
-// the file.
+// the file. The file is opened once: the MIME sniff reuses the same handle
+// and its peeked prefix is replayed into the line scanner.
 func fileMatches(filePath string, pattern *regexp.Regexp) ([]lineMatch, error) {
 	if pattern == nil {
-		return nil, nil
-	}
-	// Only search text files.
-	if !isTextFile(filePath) {
 		return nil, nil
 	}
 
@@ -388,8 +429,18 @@ func fileMatches(filePath string, pattern *regexp.Regexp) ([]lineMatch, error) {
 	}
 	defer file.Close()
 
+	head := make([]byte, 512)
+	n, readErr := file.Read(head)
+	if readErr != nil && readErr != io.EOF {
+		return nil, readErr
+	}
+	// Only search text files.
+	if !isTextContent(head[:n]) {
+		return nil, nil
+	}
+
+	reader := bufio.NewReader(io.MultiReader(bytes.NewReader(head[:n]), file))
 	var matches []lineMatch
-	reader := bufio.NewReader(file)
 	lineNum := 0
 	for {
 		line, err := reader.ReadString('\n')
@@ -414,23 +465,11 @@ func fileMatches(filePath string, pattern *regexp.Regexp) ([]lineMatch, error) {
 	return matches, nil
 }
 
-// isTextFile checks if a file is a text file by examining its MIME type.
-func isTextFile(filePath string) bool {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return false
-	}
-	defer file.Close()
-
-	// Read first 512 bytes for MIME type detection.
-	buffer := make([]byte, 512)
-	n, err := file.Read(buffer)
-	if err != nil && err != io.EOF {
-		return false
-	}
-
+// isTextContent reports whether a file's first bytes look like searchable
+// text, using the same MIME heuristics ripgrep approximates.
+func isTextContent(head []byte) bool {
 	// Detect content type.
-	contentType := http.DetectContentType(buffer[:n])
+	contentType := http.DetectContentType(head)
 
 	// Check if it's a text MIME type.
 	return strings.HasPrefix(contentType, "text/") ||

@@ -286,6 +286,40 @@ func setupWorkspace(cmd *cobra.Command) (workspace.Workspace, func(), error) {
 	return setupLocalWorkspace(cmd)
 }
 
+// setupTiming reports stage durations on stderr when BVR_SETUP_TIMING=1.
+// Used to keep the startup critical path observable (see docs/TASKLIST.md).
+type setupTiming struct {
+	enabled  bool
+	stage    string
+	stageAt  time.Time
+	startAll time.Time
+}
+
+func newSetupTiming() *setupTiming {
+	return &setupTiming{enabled: os.Getenv("BVR_SETUP_TIMING") != "", startAll: time.Now()}
+}
+
+func (t *setupTiming) begin(name string) {
+	if !t.enabled {
+		return
+	}
+	t.stage, t.stageAt = name, time.Now()
+}
+
+func (t *setupTiming) end() {
+	if !t.enabled {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "bvr-timing: %s %s\n", t.stage, time.Since(t.stageAt).Round(time.Millisecond))
+}
+
+func (t *setupTiming) total() {
+	if !t.enabled {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "bvr-timing: total %s\n", time.Since(t.startAll).Round(time.Millisecond))
+}
+
 // setupLocalWorkspace creates an in-process app.App and wraps it in an
 // AppWorkspace.
 func setupLocalWorkspace(cmd *cobra.Command) (workspace.Workspace, func(), error) {
@@ -300,7 +334,12 @@ func setupLocalWorkspace(cmd *cobra.Command) (workspace.Workspace, func(), error
 		return nil, nil, err
 	}
 
+	timing := newSetupTiming()
+	defer timing.total()
+
+	timing.begin("config")
 	store, err := config.Init(cwd, dataDir, debug)
+	timing.end()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -309,6 +348,7 @@ func setupLocalWorkspace(cmd *cobra.Command) (workspace.Workspace, func(), error
 	store.Overrides().SkipPermissionRequests = beastmode
 	store.Overrides().EnabledChannels = channels
 
+	timing.begin("data-dir+projects")
 	if err := os.MkdirAll(cfg.Options.DataDirectory, 0o700); err != nil {
 		return nil, nil, fmt.Errorf("failed to create data directory: %q %w", cfg.Options.DataDirectory, err)
 	}
@@ -323,8 +363,11 @@ func setupLocalWorkspace(cmd *cobra.Command) (workspace.Workspace, func(), error
 	if err := projects.Register(cwd, cfg.Options.DataDirectory); err != nil {
 		slog.Warn("Failed to register project", "error", err)
 	}
+	timing.end()
 
+	timing.begin("db")
 	conn, err := db.Connect(ctx, cfg.Options.DataDirectory)
+	timing.end()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -336,6 +379,7 @@ func setupLocalWorkspace(cmd *cobra.Command) (workspace.Workspace, func(), error
 	// workspace per process, so WithGlobalMirror keeps the package
 	// globals (which the TUI reads via skills.GetLatestStates) in sync
 	// with the manager.
+	timing.begin("skills")
 	discoveryCfg := localSkillsDiscoveryConfig(store)
 	allSkills, activeSkills, skillStates := skills.DiscoverFromConfig(discoveryCfg)
 	skillsMgr := skills.NewManager(
@@ -344,8 +388,11 @@ func setupLocalWorkspace(cmd *cobra.Command) (workspace.Workspace, func(), error
 		skills.WithResolvedPaths(discoveryCfg.ResolvePaths()),
 		skills.WithWorkingDir(discoveryCfg.WorkingDir),
 	)
+	timing.end()
 
+	timing.begin("app")
 	appInstance, err := app.New(ctx, conn, store, skillsMgr)
+	timing.end()
 	if err != nil {
 		_ = conn.Close()
 		slog.Error("Failed to create app instance", "error", err)
@@ -353,7 +400,9 @@ func setupLocalWorkspace(cmd *cobra.Command) (workspace.Workspace, func(), error
 	}
 
 	if shouldEnableMetrics(cfg) {
+		timing.begin("events")
 		event.Init()
+		timing.end()
 	}
 
 	ws := workspace.NewAppWorkspace(appInstance, store)

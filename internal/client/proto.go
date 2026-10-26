@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/charmbracelet/x/powernap/pkg/lsp/protocol"
@@ -542,6 +543,30 @@ func (c *Client) ListMessages(ctx context.Context, id string, sessionID string) 
 		return nil, fmt.Errorf("failed to decode messages: %w", err)
 	}
 	return msgs, nil
+}
+
+// ListMessagesPage retrieves one window of a session's messages. before is
+// the Cursor of the page read previously, or 0 to start from the newest
+// message.
+func (c *Client) ListMessagesPage(ctx context.Context, id string, sessionID string, limit int, before int64) (*proto.MessagePage, error) {
+	query := url.Values{}
+	query.Set("limit", strconv.Itoa(limit))
+	if before > 0 {
+		query.Set("before", strconv.FormatInt(before, 10))
+	}
+	rsp, err := c.get(ctx, fmt.Sprintf("/workspaces/%s/sessions/%s/messages/page", id, sessionID), query, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get message page: %w", err)
+	}
+	defer rsp.Body.Close()
+	if rsp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get message page: status code %d", rsp.StatusCode)
+	}
+	var page proto.MessagePage
+	if err := json.NewDecoder(rsp.Body).Decode(&page); err != nil && !errors.Is(err, io.EOF) {
+		return nil, fmt.Errorf("failed to decode message page: %w", err)
+	}
+	return &page, nil
 }
 
 // GetSession retrieves a specific session as a proto type.

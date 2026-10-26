@@ -1269,13 +1269,15 @@ func assignIfNil[T any](ptr **T, val T) {
 	}
 }
 
+// isInsideWorktree reports whether the process working directory is inside a
+// git working tree. It reuses the memoized worktreeRoot so repeated config
+// reloads don't each fork a `git rev-parse` subprocess.
 func isInsideWorktree() bool {
-	bts, err := exec.CommandContext(
-		context.Background(),
-		"git", "rev-parse",
-		"--is-inside-work-tree",
-	).CombinedOutput()
-	return err == nil && strings.TrimSpace(string(bts)) == "true"
+	wd, err := os.Getwd()
+	if err != nil {
+		return false
+	}
+	return worktreeRoot(wd) != ""
 }
 
 // worktreeRoot returns the absolute path of the git working tree root for

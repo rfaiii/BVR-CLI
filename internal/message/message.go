@@ -28,6 +28,29 @@ type CreateMessageParams struct {
 	IsSummaryMessage bool
 }
 
+const (
+	// DefaultPageLimit is how many messages a history page carries when the
+	// caller does not choose. It is what makes opening a session cost the
+	// same whether the session has 50 messages or 5000.
+	DefaultPageLimit = 100
+	// MaxPageLimit caps a single page so one caller cannot ask the paging
+	// API for an unbounded read.
+	MaxPageLimit = 1000
+)
+
+// MessagePage is one window of a session's history, oldest message first.
+type MessagePage struct {
+	Messages []Message
+	// Cursor is the sequence number of the oldest message in Messages. Pass
+	// it to Service.ListOlder to read the next, older page. It is opaque to
+	// callers: it orders a session exactly like the message rows were
+	// written, which created_at does not because it only has second
+	// granularity.
+	Cursor int64
+	// HasMore reports that older messages may exist beyond this page.
+	HasMore bool
+}
+
 // Service is the public interface to the message store.
 //
 // [Service.Update] is eventually consistent: it accepts new state into
@@ -49,6 +72,14 @@ type Service interface {
 	Update(ctx context.Context, message Message) error
 	Get(ctx context.Context, id string) (Message, error)
 	List(ctx context.Context, sessionID string) ([]Message, error)
+	// ListLatest returns the newest `limit` messages of a session, oldest
+	// first, plus the cursor for reading the next, older page. Use it
+	// instead of List when a session is opened: List reads and decodes the
+	// whole history, which grows with session length.
+	ListLatest(ctx context.Context, sessionID string, limit int) (MessagePage, error)
+	// ListOlder returns up to `limit` messages older than `before`, oldest
+	// first, where `before` is the Cursor of the page returned previously.
+	ListOlder(ctx context.Context, sessionID string, before int64, limit int) (MessagePage, error)
 	ListUserMessages(ctx context.Context, sessionID string) ([]Message, error)
 	ListAllUserMessages(ctx context.Context) ([]Message, error)
 	Delete(ctx context.Context, id string) error
@@ -466,6 +497,52 @@ func (s *service) List(ctx context.Context, sessionID string) ([]Message, error)
 		}
 	}
 	return messages, nil
+}
+
+// ListLatest reads the newest `limit` messages of a session. See
+// [Service.ListLatest].
+func (s *service) ListLatest(ctx context.Context, sessionID string, limit int) (MessagePage, error) {
+	dbMessages, err := s.q.ListLatestMessagesBySession(ctx, db.ListLatestMessagesBySessionParams{
+		SessionID: sessionID,
+		Limit:     int64(limit),
+	})
+	if err != nil {
+		return MessagePage{}, err
+	}
+	return s.pageFromRows(dbMessages, limit)
+}
+
+// ListOlder reads the page of messages immediately older than `before`. See
+// [Service.ListOlder].
+func (s *service) ListOlder(ctx context.Context, sessionID string, before int64, limit int) (MessagePage, error) {
+	dbMessages, err := s.q.ListMessagesBySessionBefore(ctx, db.ListMessagesBySessionBeforeParams{
+		SessionID: sessionID,
+		Seq:       before,
+		Limit:     int64(limit),
+	})
+	if err != nil {
+		return MessagePage{}, err
+	}
+	return s.pageFromRows(dbMessages, limit)
+}
+
+// pageFromRows flips a newest-first paged read into an oldest-first page.
+func (s *service) pageFromRows(dbMessages []db.Message, limit int) (MessagePage, error) {
+	page := MessagePage{
+		Messages: make([]Message, len(dbMessages)),
+		HasMore:  len(dbMessages) >= limit,
+	}
+	for i, dbMessage := range dbMessages {
+		m, err := s.fromDBItem(dbMessage)
+		if err != nil {
+			return MessagePage{}, err
+		}
+		page.Messages[len(dbMessages)-1-i] = m
+	}
+	if len(dbMessages) > 0 {
+		page.Cursor = dbMessages[len(dbMessages)-1].Seq
+	}
+	return page, nil
 }
 
 func (s *service) ListUserMessages(ctx context.Context, sessionID string) ([]Message, error) {

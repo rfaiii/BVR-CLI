@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	githubApiUrl = "https://api.github.com/repos/charmbracelet/bvr/releases/latest"
+	githubApiUrl = "https://api.github.com/repos/rfaiii/BVR-CLI/releases/latest"
 	userAgent    = "bvr/1.0"
 )
 

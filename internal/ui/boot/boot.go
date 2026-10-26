@@ -69,6 +69,11 @@ var MascotColor = lipgloss.Color("#39f66b")
 // mascot.
 var LoadingColor = lipgloss.Color("#b972ff")
 
+// frameDelay keeps the full pose tour under ~1s. At 400ms the intro cost
+// 4s of dead time on every launch; the poses are readable in a flip-book
+// at this cadence.
+const frameDelay = 70 * time.Millisecond
+
 var mascotStyle = lipgloss.NewStyle().Foreground(MascotColor).Bold(true)
 var loadingStyle = lipgloss.NewStyle().Foreground(LoadingColor)
 
@@ -95,6 +100,6 @@ func Run() {
 		fmt.Println(renderFrame(frame))
 		fmt.Println()
 		fmt.Println(loadingStyle.Render("Initializing bvr-cli components..."))
-		time.Sleep(400 * time.Millisecond)
+		time.Sleep(frameDelay)
 	}
 }

@@ -64,10 +64,11 @@ node_modules/
 mcp-server/src/mcp_server/__pycache__/
 
 # Internal working documents that are not published to GitHub.
-# Everything that is ignored-and-markdown lives under docs/ignore/; see the
-# README in that folder before promoting a document back into the published
-# docs set. docs/TASKLIST.md, docs/REMOVAL.md, antigravity/rules.md and the
-# root CONTEXT.md were consolidated there in 1.2.7.
+# docs/TASKLIST.md is the live performance worklist: numbers and rationale that
+# only matter while the work is in progress, so it stays local by request.
+# Everything else ignored-and-markdown lives under docs/ignore/; see the README
+# in that folder before promoting a document back into the published docs set.
+docs/TASKLIST.md
 docs/ignore/
 CONTEXT.md
 *.asd

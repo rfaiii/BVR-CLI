@@ -432,6 +432,32 @@ func (m *Chat) AppendMessages(msgs ...chat.MessageItem) {
 	m.list.AppendItems(items...)
 }
 
+// PrependMessages adds message items to the front of the chat list. The
+// list keeps its scroll offset relative to the content that was already
+// visible, so pulling in an older page of history does not move the view.
+func (m *Chat) PrependMessages(msgs ...chat.MessageItem) {
+	items := make([]list.Item, len(msgs))
+	for i, msg := range msgs {
+		items[i] = msg
+	}
+
+	// Shift every registered index before registering the new head, otherwise
+	// the prepended items would be renumbered along with the rest.
+	for id, idx := range m.idInxMap {
+		m.idInxMap[id] = idx + len(items)
+	}
+	for i, msg := range msgs {
+		m.idInxMap[msg.ID()] = i
+		if container, ok := msg.(chat.NestedToolContainer); ok {
+			for _, nested := range container.NestedTools() {
+				m.idInxMap[nested.ID()] = i
+			}
+		}
+	}
+
+	m.list.PrependItems(items...)
+}
+
 // UpdateNestedToolIDs updates the ID map for nested tools within a container.
 // Call this after modifying nested tools to ensure animations work correctly.
 func (m *Chat) UpdateNestedToolIDs(containerID string) {
@@ -534,6 +560,12 @@ func (m *Chat) Blur() {
 // AtBottom returns whether the chat list is currently scrolled to the bottom.
 func (m *Chat) AtBottom() bool {
 	return m.list.AtBottom()
+}
+
+// AtTop returns whether the chat viewport is at the first line of the first
+// item, which is what triggers pulling an older page of history.
+func (m *Chat) AtTop() bool {
+	return m.list.Len() == 0 || m.list.AtTop()
 }
 
 // Follow returns whether the chat view is in follow mode (auto-scroll to

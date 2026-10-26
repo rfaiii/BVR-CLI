@@ -69,13 +69,24 @@ package_archlinux() {
 		printf 'nfpm not installed; skipping archlinux package for %s/%s (install from goreleaser/nfpm)\n' "$os" "$arch"
 		return
 	fi
-	pkgarch=${arch#arm}
-	[ "$arch" = "arm64" ] && pkgarch="arm64" || pkgarch="x86_64"
+	if [ "$arch" = "arm64" ]; then
+		pkgarch="arm64"
+	else
+		pkgarch="x86_64"
+	fi
+	# Unpack the tarball this script just made rather than pointing at the
+	# staging directory it already removed: the path was always absent, so the
+	# Arch branch could never build, and unpacking also proves the tarball is
+	# readable.
+	tarball="$OUT/bvr-cli_${VERSION}_${os}_${arch}.tar.gz"
+	tree="$STAGING/arch-$os-$arch"
+	mkdir -p "$tree"
+	tar -xzf "$tarball" -C "$tree"
+	bin_src="$tree/bvr-cli_${VERSION}_${os}_${arch}"
 	# Build the nfpm config dynamically.
-	bin_src="$OUT/bvr-cli_${VERSION}_${os}_${arch}"
 	cat > "$STAGING/nfpm_$arch.yaml" <<EOF
 name: "bvr-cli"
-arch: "$arch"
+arch: "$pkgarch"
 platform: "linux"
 version: "$VERSION"
 section: "default"
@@ -86,8 +97,6 @@ vendor: "BVR"
 homepage: "https://bvr-cli.com"
 license: "FSL-1.1-MIT"
 provides:
-  - bvr-cli
-conflicts:
   - bvr-cli
 contents:
   - src: "$bin_src/bvr-cli"
@@ -111,6 +120,7 @@ EOF
 			|| nfpm package -c "nfpm_$arch.yaml" -p archlinux -t "$OUT"
 	)
 	rm -f "$STAGING/nfpm_$arch.yaml"
+	rm -rf "$tree"
 	# nfpm emits pkgver-pkgrel-arch.pkg.tar.zst; rename to include OS too.
 	if [ -f "$OUT/bvr-cli_${VERSION}-1_${pkgarch}.pkg.tar.zst" ]; then
 		mv "$OUT/bvr-cli_${VERSION}-1_${pkgarch}.pkg.tar.zst" \

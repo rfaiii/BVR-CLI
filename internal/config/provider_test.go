@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"charm.land/catwalk/pkg/catwalk"
 	"github.com/stretchr/testify/require"
@@ -83,17 +84,27 @@ func TestProviders_Integration_WithMockClients(t *testing.T) {
 	testCatwalkSyncer.Init(mockCatwalkClient, catwalkPath, true)
 	testHyperSyncer.Init(mockHyperClient, hyperPath, true)
 
-	// Get providers from each syncer.
+	// Get providers from each syncer — first call returns the embedded
+	// snapshot; the mock refresh lands in the background.
 	catwalkProviders, err := testCatwalkSyncer.Get(t.Context())
 	require.NoError(t, err)
-	require.Len(t, catwalkProviders, 2)
+	require.NotEmpty(t, catwalkProviders)
+
+	require.Eventually(t, func() bool {
+		return len(testCatwalkSyncer.settled(t)) == 2
+	}, time.Second, 5*time.Millisecond)
 
 	hyperProvider, err := testHyperSyncer.Get(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, "Hyper", hyperProvider.Name)
+	require.NotEmpty(t, hyperProvider.Name)
+
+	require.Eventually(t, func() bool {
+		return testHyperSyncer.settled(t).Name == "Hyper"
+	}, time.Second, 5*time.Millisecond)
+	hyperProvider = testHyperSyncer.settled(t)
 
 	// Verify total.
-	allProviders := append(catwalkProviders, hyperProvider)
+	allProviders := append(testCatwalkSyncer.settled(t), hyperProvider)
 	require.Len(t, allProviders, 3)
 }
 
@@ -184,7 +195,11 @@ func TestProviders_Integration_CatwalkFailsHyperSucceeds(t *testing.T) {
 
 	hyperResult, err := testHyperSyncer.Get(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, "Hyper", hyperResult.Name)
+	require.NotEmpty(t, hyperResult.Name) // Embedded snapshot first.
+
+	require.Eventually(t, func() bool {
+		return testHyperSyncer.settled(t).Name == "Hyper"
+	}, time.Second, 5*time.Millisecond)
 }
 
 func TestProviders_Integration_BothFail(t *testing.T) {

@@ -53,8 +53,7 @@ bvr-cli --cwd /path/to/project
 ```
 
 For packaged macOS, Windows, and Linux installation paths, see
-[`docs/installation.md`](docs/installation.md) and
-[`docs/ONBOARDING.md`](docs/ONBOARDING.md).
+[`docs/SETUP.md`](docs/SETUP.md).
 
 ## Feature set
 
@@ -96,9 +95,7 @@ designs, with a portable pairing envelope and a GGWave-inspired visual pairing
 surface in the TUI. The native GGWave audio codec adapter is being kept
 optional so the default cross-platform build remains CGO-free.
 
-See [`docs/NODE_TRANSPORTS.md`](docs/NODE_TRANSPORTS.md),
-[`docs/BVR-SERVER.md`](docs/BVR-SERVER.md), and
-[`docs/GGWAVE.md`](docs/GGWAVE.md).
+See [`docs/NODES.md`](docs/NODES.md) and [`docs/MOBILE.md`](docs/MOBILE.md).
 
 ## Useful controls
 
@@ -142,20 +139,18 @@ Package the supported targets with:
 
 | Document | Purpose |
 | --- | --- |
-| [`docs/installation.md`](docs/installation.md) | Installation and troubleshooting |
-| [`docs/ONBOARDING.md`](docs/ONBOARDING.md) | First-run setup and dependencies |
-| [`docs/FEATURES-OVERVIEW.md`](docs/FEATURES-OVERVIEW.md) | Full feature inventory |
-| [`docs/COMMAND-MENU.md`](docs/COMMAND-MENU.md) | Command palette items, SFX, and architecture |
-| [`docs/BETA.md`](docs/BETA.md) | Beta testing and release process |
-| [`docs/GGWAVE.md`](docs/GGWAVE.md) | GGWave pairing architecture |
-| [`docs/BEAVER_MASCOT.md`](docs/BEAVER_MASCOT.md) | Animated Beaver states and layout contract |
-| [`docs/NODE_TRANSPORTS.md`](docs/NODE_TRANSPORTS.md) | Multi-device transport options |
-| [`docs/FILE_FINDER.md`](docs/FILE_FINDER.md) | File Finder behavior |
-| [`docs/OLLAMA_HOW_TO.md`](docs/OLLAMA_HOW_TO.md) | Local Ollama setup |
+| [`docs/README.md`](docs/README.md) | Documentation index and conventions |
+| [`docs/SETUP.md`](docs/SETUP.md) | Installation, dependencies, and troubleshooting |
+| [`docs/PROVIDERS.md`](docs/PROVIDERS.md) | Ollama local models and the Cline gateway |
+| [`docs/UI.md`](docs/UI.md) | Branding, mascot, File Finder, command palette, dialogs |
+| [`docs/NODES.md`](docs/NODES.md) | Multi-device transports and GGWave pairing |
+| [`docs/MOBILE.md`](docs/MOBILE.md) | Mobile companion apps and host-side bridge |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System boundaries and roadmap |
+| [`docs/FEATURES.md`](docs/FEATURES.md) | Full feature inventory and contact info |
 | [`docs/SKILLS.md`](docs/SKILLS.md) | Agent Skills discovery and syncing |
-| [`docs/CLINE_PROVIDER.md`](docs/CLINE_PROVIDER.md) | Cline provider integration |
-| [`docs/UI_BRANDING.md`](docs/UI_BRANDING.md) | Visual identity and TUI branding |
-| [`docs/PACKAGING.md`](docs/PACKAGING.md) | Installer and distribution reference |
+| [`docs/PACKAGING.md`](docs/PACKAGING.md) | Installer, distribution, and asset reference |
+| [`docs/BETA.md`](docs/BETA.md) | Beta testing and release process |
+| [`docs/TASKLIST.md`](docs/TASKLIST.md) | Performance and optimization work plan |
 
 ![PINK THEME](resources/screenshots/PINK-THEME-MODELS.png)
 

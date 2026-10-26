@@ -4,10 +4,21 @@ import (
 	"fmt"
 	"image/color"
 	"strings"
+	"sync"
 
 	"charm.land/lipgloss/v2"
 	"github.com/rivo/uniseg"
 )
+
+// gradCache memoizes finished gradient renders. The same wordmark gradient is
+// rebuilt on every frame by the logo/header code; keys include the base style
+// so distinct style instances never share a result incorrectly. Entries stay
+// small: one per (input, colors, base) combination actually used per theme.
+var gradCache sync.Map
+
+func gradKey(input string, bold bool, base lipgloss.Style, color1, color2 color.Color) string {
+	return fmt.Sprintf("%t|%v|%v|%v|%s", bold, color1, color2, base, input)
+}
 
 // ForegroundGrad returns a slice of strings representing the input string
 // rendered with a horizontal gradient foreground from color1 to color2. Each
@@ -47,12 +58,18 @@ func ApplyForegroundGrad(base lipgloss.Style, input string, color1, color2 color
 	if input == "" {
 		return ""
 	}
+	key := gradKey(input, false, base, color1, color2)
+	if cached, ok := gradCache.Load(key); ok {
+		return cached.(string)
+	}
 	var o strings.Builder
 	clusters := ForegroundGrad(base, input, false, color1, color2)
 	for _, c := range clusters {
 		fmt.Fprint(&o, c)
 	}
-	return o.String()
+	out := o.String()
+	gradCache.Store(key, out)
+	return out
 }
 
 // ApplyBoldForegroundGrad renders a given string with a horizontal gradient
@@ -61,10 +78,16 @@ func ApplyBoldForegroundGrad(base lipgloss.Style, input string, color1, color2 c
 	if input == "" {
 		return ""
 	}
+	key := gradKey(input, true, base, color1, color2)
+	if cached, ok := gradCache.Load(key); ok {
+		return cached.(string)
+	}
 	var o strings.Builder
 	clusters := ForegroundGrad(base, input, true, color1, color2)
 	for _, c := range clusters {
 		fmt.Fprint(&o, c)
 	}
-	return o.String()
+	out := o.String()
+	gradCache.Store(key, out)
+	return out
 }

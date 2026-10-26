@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"charm.land/catwalk/pkg/catwalk"
 	"github.com/stretchr/testify/require"
@@ -15,8 +16,9 @@ func (m *emptyProviderClient) GetProviders(context.Context, string) ([]catwalk.P
 	return []catwalk.Provider{}, nil
 }
 
-// TestCatwalkSync_GetEmptyResultFromClient tests that when the client returns
-// an empty list, we fall back to cached providers and return an error.
+// TestCatwalkSync_GetEmptyResultFromClient tests that when the background
+// refresh returns an empty list, the embedded fallback stays in place and no
+// cache file is written.
 func TestCatwalkSync_GetEmptyResultFromClient(t *testing.T) {
 	t.Parallel()
 
@@ -29,11 +31,12 @@ func TestCatwalkSync_GetEmptyResultFromClient(t *testing.T) {
 	syncer.Init(client, path, true)
 
 	providers, err := syncer.Get(t.Context())
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "empty providers list from catwalk")
-	require.NotEmpty(t, providers) // Should have embedded providers as fallback.
+	require.NoError(t, err)
+	require.NotEmpty(t, providers) // Embedded providers as fallback.
 
-	// Check that no cache file was created for empty results.
+	// Give the background refresh time to (not) write anything.
+	time.Sleep(100 * time.Millisecond)
 	_, statErr := os.Stat(path)
 	require.True(t, os.IsNotExist(statErr), "Cache file should not exist for empty results")
+	require.NotEmpty(t, syncer.settled(t))
 }

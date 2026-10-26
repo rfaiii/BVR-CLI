@@ -40,6 +40,23 @@ tasks:
     env:
       GOEXPERIMENT: null
 
+  size:
+    desc: Check the release-shaped binary against the recorded size budget
+    cmds:
+      - ./scripts/binary_size.sh
+
+  size:update:
+    desc: Move the binary size budget to the current build
+    cmds:
+      - ./scripts/binary_size.sh --update
+
+  installers:
+    desc: Build unsigned installer artifacts for macOS, Ubuntu, Omarchy and Windows
+    vars:
+      VERSION: '{{default "1.2.7" .VERSION}}'
+    cmds:
+      - ./scripts/package/build-installers.sh {{.VERSION}}
+
   build:
     desc: Run build
     vars:

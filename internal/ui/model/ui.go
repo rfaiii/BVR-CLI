@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"image"
 	"log/slog"
+	"maps"
 	"math/rand"
 	"net/http"
 	"os"
@@ -211,14 +212,30 @@ type UI struct {
 
 	lastUserMessageTime int64
 
+	// Session history pagination. Opening a session reads one page of
+	// messages; scrolling to the top of the chat pulls the next, older page.
+	// historyCursor is the sequence number just below the oldest loaded
+	// message, historyHasMore says an older page may exist, and
+	// historyLoading guards against pulling two pages at once.
+	historyCursor  int64
+	historyHasMore bool
+	historyLoading bool
+	// historyToolResults links tool calls to their results across every
+	// loaded page, so a call pulled in by an older page still renders as
+	// finished when its result lives in a newer one.
+	historyToolResults map[string]message.ToolResult
+
 	// The width and height of the terminal in cells.
-	width         int
-	height        int
-	bannerFrame   int
-	ggwaveFrame   uint64
-	ggwaveMode    ggwave.Mode
-	ggwaveSpeed   float64
-	bannerAnim    *anim.Anim
+	width       int
+	height      int
+	bannerFrame int
+	ggwaveFrame uint64
+	ggwaveMode  ggwave.Mode
+	ggwaveSpeed float64
+	bannerAnim  *anim.Anim
+	// frameBuf reuses the full-screen cell buffer across frames; only the
+	// zeroing work repeats, not the allocation (docs/TASKLIST.md P1-7).
+	frameBuf      uv.ScreenBuffer
 	versionBanner *versionBanner
 	// pendingClineKeyAdd marks an in-flight "ADD CLINE API KEY" flow in the
 	// Other Models dialog. When the returned ActionSelectModel arrives it is
@@ -363,13 +380,14 @@ type UI struct {
 	sidebarOffset           int  // current scroll offset in lines
 	sidebarScrollable       bool // true when sidebar content exceeds available height
 	sidebarScrollbarVisible bool
-	sidebarScrollbarSeq     int    // sequence number for auto-hide timer
-	sidebarMaxOffsetVal     int    // max scroll offset, computed in updateSidebarScrollState
-	sidebarContent          string // cached rendered sidebar content
-	sidebarTotalLines       int    // total lines in sidebarContent
-	sidebarContentHeight    int    // available height for sidebar content
-	sidebarContentWidth     int    // available width for sidebar content
-	sidebarDrawLogo         string // logo to render (may differ from sidebarLogo for short heights)
+	sidebarScrollbarSeq     int      // sequence number for auto-hide timer
+	sidebarMaxOffsetVal     int      // max scroll offset, computed in updateSidebarScrollState
+	sidebarContent          string   // cached rendered sidebar content
+	sidebarLines            []string // sidebarContent split on newlines; rebuilt with it
+	sidebarTotalLines       int      // total lines in sidebarContent
+	sidebarContentHeight    int      // available height for sidebar content
+	sidebarContentWidth     int      // available width for sidebar content
+	sidebarDrawLogo         string   // logo to render (may differ from sidebarLogo for short heights)
 
 	// Notification state
 	notifyBackend       notification.Backend
@@ -440,6 +458,11 @@ type UI struct {
 // New creates a new instance of the [UI] model.
 func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 	node.EnsureDefaultDevice()
+	// Hosts found by a previous `bvr node scan` come back as offline rows, so
+	// the picker shows what was reachable last time while the live probe runs.
+	if _, err := node.LoadDeviceRegistry(); err != nil {
+		slog.Debug("Failed to restore the NODE device registry", "error", err)
+	}
 	// Editor components
 	ta := textarea.New()
 	ta.SetStyles(com.Styles.Editor.Textarea)
@@ -891,6 +914,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.setState(uiChat, m.focus)
 		m.session = msg.session
+		m.historyCursor = msg.historyCursor
+		m.historyHasMore = msg.historyHasMore
+		m.historyLoading = false
 		m.sidebarOffset = 0
 		m.sessionFiles = msg.files
 		// Session switch: the memoized busy state and queued prompts
@@ -909,14 +935,16 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 		}
 		cmds = append(cmds, m.startLSPs(msg.lspFilePaths()))
-		msgs, err := m.com.Workspace.ListMessages(context.Background(), m.session.ID)
-		if err != nil {
-			cmds = append(cmds, util.ReportError(err))
-			break
-		}
-		if cmd := m.setSessionMessages(msgs); cmd != nil {
+		if cmd := m.applyNewestHistory(msg.history); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	case loadOlderMessagesMsg:
+		// Prepending shifts the viewport by the number of new items, so the
+		// text the reader was looking at stays exactly where it was.
+		m.historyLoading = false
+		m.historyCursor = msg.cursor
+		m.historyHasMore = msg.hasMore
+		m.applyOlderHistory(msg.history)
 		if cmd := m.autoExpandPillsIfReasonable(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
@@ -1616,6 +1644,17 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	default:
+		// Onboarding is a dialog surface, but only key presses reach it
+		// through the state switch. Its Init commands (dependency and
+		// provider probes) land here, and dropping them left every tool
+		// looking uninstalled.
+		if m.state == uiOnboarding && m.onboardingDialog != nil {
+			if action := m.onboardingDialog.HandleMsg(msg); action != nil {
+				if cmd := m.handleDialogAction(action); cmd != nil {
+					cmds = append(cmds, cmd)
+				}
+			}
+		}
 		if m.dialog.HasDialogs() {
 			if cmd := m.handleDialogMsg(msg); cmd != nil {
 				cmds = append(cmds, cmd)
@@ -1640,6 +1679,17 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
+	// Reaching the top of a session that still has history below it pulls the
+	// next, older page. Scrolling up is the only case where a reader wants
+	// more than the last page, so a session open never pays for it.
+	if m.state == uiChat && m.session != nil && m.historyHasMore &&
+		!m.historyLoading && m.chat.AtTop() {
+		m.historyLoading = true
+		if cmd := m.loadOlderMessages(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+	}
+
 	// TTL backstop: schedule an off-thread re-probe for any memoized
 	// workspace state that has gone stale. Never does IO on this
 	// goroutine.
@@ -1651,39 +1701,72 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-// setSessionMessages sets the messages for the current session in the chat
-func (m *UI) setSessionMessages(msgs []message.Message) tea.Cmd {
-	var cmds []tea.Cmd
-	// Build tool result map to link tool calls with their results
+// sessionHistory is one page of chat history turned into renderable items.
+// Turning messages into items is not cheap: it renders every part and reads the
+// nested agent sessions a tool call may own, both of which belong on a command
+// goroutine rather than between frames.
+type sessionHistory struct {
+	items       []chat.MessageItem
+	toolResults map[string]message.ToolResult
+	// lastUser is the timestamp the newest user message in the page carries,
+	// which the assistant info rows measure elapsed time from. Only the newest
+	// page owns it.
+	lastUser int64
+}
+
+// preparePage converts msgs into items. Nothing on the model may be read or
+// written here beyond what is passed in, because this runs on a command
+// goroutine while Update owns the model.
+func (m *UI) preparePage(
+	msgs []message.Message,
+	known map[string]message.ToolResult,
+	lastUserSeed int64,
+) sessionHistory {
 	msgPtrs := make([]*message.Message, len(msgs))
 	for i := range msgs {
 		msgPtrs[i] = &msgs[i]
 	}
-	toolResultMap := chat.BuildToolResultMap(msgPtrs)
-	if len(msgPtrs) > 0 {
-		m.lastUserMessageTime = msgPtrs[0].CreatedAt
+	results := chat.BuildToolResultMap(msgPtrs)
+	if known != nil {
+		// A tool call on an older page can have its result on a newer one, so
+		// older pages are built against everything already seen. The copy also
+		// keeps this goroutine from mutating a map Update may still hold.
+		merged := make(map[string]message.ToolResult, len(known)+len(results))
+		maps.Copy(merged, known)
+		maps.Copy(merged, results)
+		results = merged
 	}
 
-	// Add messages to chat with linked tool results
-	items := make([]chat.MessageItem, 0, len(msgs)*2)
-	for _, msg := range msgPtrs {
-		switch msg.Role {
-		case message.User:
-			m.lastUserMessageTime = msg.CreatedAt
-			items = append(items, chat.ExtractMessageItems(m.com.Styles, msg, toolResultMap)...)
-		case message.Assistant:
-			items = append(items, chat.ExtractMessageItems(m.com.Styles, msg, toolResultMap)...)
-			if msg.FinishPart() != nil && msg.FinishPart().Reason == message.FinishReasonEndTurn {
-				infoItem := chat.NewAssistantInfoItem(m.com.Styles, msg, m.com.Config(), time.Unix(m.lastUserMessageTime, 0))
-				items = append(items, infoItem)
-			}
-		default:
-			items = append(items, chat.ExtractMessageItems(m.com.Styles, msg, toolResultMap)...)
-		}
-	}
-
-	// Load nested tool calls for agent/agentic_fetch tools.
+	items, lastUser := m.buildSessionItems(msgs, results, lastUserSeed)
 	m.loadNestedToolCalls(items)
+	return sessionHistory{items: items, toolResults: results, lastUser: lastUser}
+}
+
+// prepareNewestPage prepares the page a session opens with. The cross-page
+// tool result map starts over: whatever a previously opened session registered
+// is gone from the chat with it.
+func (m *UI) prepareNewestPage(msgs []message.Message, lastUserSeed int64) sessionHistory {
+	return m.preparePage(msgs, nil, lastUserSeed)
+}
+
+// prepareOlderPage prepares a page older than everything already in the chat,
+// against the tool results collected so far. The elapsed-time seed is
+// irrelevant here — an older page never owns it — so nothing is read off the
+// model.
+func (m *UI) prepareOlderPage(msgs []message.Message, known map[string]message.ToolResult) sessionHistory {
+	if known == nil {
+		known = map[string]message.ToolResult{}
+	}
+	return m.preparePage(msgs, known, 0)
+}
+
+// applyNewestHistory replaces the chat with a prepared page. This page owns the
+// tool result map and the elapsed-time seed because it is the newest content.
+func (m *UI) applyNewestHistory(history sessionHistory) tea.Cmd {
+	m.historyToolResults = history.toolResults
+	m.lastUserMessageTime = history.lastUser
+
+	var cmds []tea.Cmd
 
 	// If the user switches between sessions while the agent is working we
 	// want to make sure the animations are shown. Gate on the agent actually
@@ -1693,7 +1776,7 @@ func (m *UI) setSessionMessages(msgs []message.Message) tea.Cmd {
 	// leave a ghost "working" spinner (and a second one alongside any tool
 	// spinner) after the session is reloaded.
 	if m.isAgentBusy() {
-		for _, item := range items {
+		for _, item := range history.items {
 			if animatable, ok := item.(chat.Animatable); ok {
 				if cmd := animatable.StartAnimation(); cmd != nil {
 					cmds = append(cmds, cmd)
@@ -1702,7 +1785,7 @@ func (m *UI) setSessionMessages(msgs []message.Message) tea.Cmd {
 		}
 	}
 
-	if cmd := m.chat.SetMessages(items...); cmd != nil {
+	if cmd := m.chat.SetMessages(history.items...); cmd != nil {
 		cmds = append(cmds, cmd)
 	}
 	if cmd := m.chat.RestartPausedVisibleAnimations(); cmd != nil {
@@ -1710,6 +1793,57 @@ func (m *UI) setSessionMessages(msgs []message.Message) tea.Cmd {
 	}
 	m.chat.SelectLast()
 	return tea.Sequence(cmds...)
+}
+
+// applyOlderHistory puts a prepared page in front of everything already in the
+// chat. lastUserMessageTime deliberately stays untouched: it belongs to the
+// newest loaded message.
+func (m *UI) applyOlderHistory(history sessionHistory) {
+	if len(history.items) == 0 {
+		return
+	}
+	m.historyToolResults = history.toolResults
+	m.chat.PrependMessages(history.items...)
+}
+
+// buildSessionItems turns a chronological slice of messages into chat items,
+// linking each tool call to the result registered for it in toolResults. The
+// assistant info row needs the timestamp of the user message that preceded
+// each turn; lastUserSeed carries it in from the caller so this can run off the
+// Update goroutine.
+func (m *UI) buildSessionItems(
+	msgs []message.Message,
+	toolResults map[string]message.ToolResult,
+	lastUserSeed int64,
+) ([]chat.MessageItem, int64) {
+	msgPtrs := make([]*message.Message, len(msgs))
+	for i := range msgs {
+		msgPtrs[i] = &msgs[i]
+	}
+
+	lastUserTime := lastUserSeed
+	if len(msgPtrs) > 0 {
+		lastUserTime = msgPtrs[0].CreatedAt
+	}
+
+	items := make([]chat.MessageItem, 0, len(msgs)*2)
+	for _, msg := range msgPtrs {
+		switch msg.Role {
+		case message.User:
+			lastUserTime = msg.CreatedAt
+			items = append(items, chat.ExtractMessageItems(m.com.Styles, msg, toolResults)...)
+		case message.Assistant:
+			items = append(items, chat.ExtractMessageItems(m.com.Styles, msg, toolResults)...)
+			if msg.FinishPart() != nil && msg.FinishPart().Reason == message.FinishReasonEndTurn {
+				infoItem := chat.NewAssistantInfoItem(m.com.Styles, msg, m.com.Config(), time.Unix(lastUserTime, 0))
+				items = append(items, infoItem)
+			}
+		default:
+			items = append(items, chat.ExtractMessageItems(m.com.Styles, msg, toolResults)...)
+		}
+	}
+
+	return items, lastUserTime
 }
 
 // loadNestedToolCalls recursively loads nested tool calls for agent/agentic_fetch tools.
@@ -3528,7 +3662,12 @@ func (m *UI) View() tea.View {
 	v.ReportFocus = m.caps.ReportFocusEvents
 	v.WindowTitle = "bvr " + home.Short(m.com.Workspace.WorkingDir())
 
-	canvas := uv.NewScreenBuffer(m.width, m.height)
+	if m.frameBuf.RenderBuffer == nil || m.frameBuf.Width() != m.width || m.frameBuf.Height() != m.height {
+		m.frameBuf = uv.NewScreenBuffer(m.width, m.height)
+	} else {
+		screen.Clear(m.frameBuf)
+	}
+	canvas := m.frameBuf
 	v.Cursor = m.Draw(canvas, canvas.Bounds())
 
 	content := strings.ReplaceAll(canvas.Render(), "\r\n", "\n") // normalize newlines
@@ -4639,11 +4778,16 @@ func (m *UI) beaverMouseDir() int {
 	}
 }
 
-// startOnboarding opens the onboarding dialog when requested.
+// startOnboarding opens the onboarding dialog when requested. The dialog's
+// Init is what schedules the dependency probe, so skipping it would leave
+// every tool looking uninstalled.
 func (m *UI) startOnboarding() tea.Cmd {
 	model := newOnboardingModel(m.com)
+	// The tour's screenshots are painted through the same image path the file
+	// picker uses, which needs to know what this terminal answered to.
+	model.SetImageCapabilities(&m.caps)
 	m.onboardingDialog = model
-	return nil
+	return model.Init()
 }
 
 // initializeProject starts project initialization.

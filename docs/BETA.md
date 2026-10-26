@@ -338,5 +338,8 @@ Maintain `CHANGELOG.md` with:
 
 ## Resources
 
+- **Maintainer:** Richard Aizen Avery III — averydevz@outlook.com
+- **GitHub:** https://github.com/rfaiii/BVR-CLI
 - **Beta Issues:** https://github.com/richavery/bvr-cli/issues
-- **Documentation:** See `docs/` directory
+- **Website:** https://bvr-cli.com
+- **Documentation:** See `docs/` directory and [`README.md`](README.md)

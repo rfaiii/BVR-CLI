@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/richavery/bvr-cli/internal/backend"
+	"github.com/richavery/bvr-cli/internal/message"
 	"github.com/richavery/bvr-cli/internal/proto"
 	"github.com/richavery/bvr-cli/internal/session"
 )
@@ -494,6 +496,64 @@ func (c *controllerV1) handleGetWorkspaceSessionMessages(w http.ResponseWriter, 
 		return
 	}
 	jsonEncode(w, messagesToProto(messages))
+}
+
+// handleGetWorkspaceSessionMessagesPage returns one window of a session's
+// messages, oldest first, plus the cursor for reading the next, older page.
+//
+//	@Summary		Get a page of session messages
+//	@Tags			sessions
+//	@Produce		json
+//	@Param			id		path		string	 true	"Workspace ID"
+//	@Param			sid		path		string	 true	"Session ID"
+//	@Param			limit	query		int		 true	"Maximum messages to return"
+//	@Param			before	query		int		false	"Sequence cursor: read messages older than this"
+//	@Success		200		{object}	proto.MessagePage
+//	@Failure		400		{object}	proto.Error
+//	@Failure		404		{object}	proto.Error
+//	@Failure		500		{object}	proto.Error
+//	@Router			/workspaces/{id}/sessions/{sid}/messages/page [get]
+func (c *controllerV1) handleGetWorkspaceSessionMessagesPage(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	sid := r.PathValue("sid")
+
+	limit, err := pageParam(r.URL.Query().Get("limit"), message.DefaultPageLimit)
+	if err != nil {
+		jsonError(w, http.StatusBadRequest, "invalid limit")
+		return
+	}
+	if limit > message.MaxPageLimit {
+		limit = message.MaxPageLimit
+	}
+	before, err := pageParam(r.URL.Query().Get("before"), 0)
+	if err != nil {
+		jsonError(w, http.StatusBadRequest, "invalid before")
+		return
+	}
+
+	page, err := c.backend.ListSessionMessagesPage(r.Context(), id, sid, limit, int64(before))
+	if err != nil {
+		c.handleError(w, r, err)
+		return
+	}
+	jsonEncode(w, proto.MessagePage{
+		Messages: messagesToProto(page.Messages),
+		Cursor:   page.Cursor,
+		HasMore:  page.HasMore,
+	})
+}
+
+// pageParam parses a non-negative message pagination query parameter,
+// falling back to def when the parameter is absent.
+func pageParam(raw string, def int) (int, error) {
+	if raw == "" {
+		return def, nil
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil || value < 0 {
+		return 0, fmt.Errorf("invalid page parameter %q", raw)
+	}
+	return value, nil
 }
 
 // handlePutWorkspaceSession updates a session.

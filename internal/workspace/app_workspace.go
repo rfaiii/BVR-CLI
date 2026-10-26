@@ -93,6 +93,20 @@ func (w *AppWorkspace) ListMessages(ctx context.Context, sessionID string) ([]me
 	return w.app.Messages.List(ctx, sessionID)
 }
 
+// ListMessagesPage reads one window of a session's history. See
+// [Workspace.ListMessagesPage].
+func (w *AppWorkspace) ListMessagesPage(ctx context.Context, sessionID string, limit int, before int64) (message.MessagePage, error) {
+	// Drain any debounced updates so the caller observes the latest
+	// in-memory state, for the same reason as ListMessages.
+	if err := w.app.Messages.FlushAll(ctx); err != nil {
+		return message.MessagePage{}, err
+	}
+	if before > 0 {
+		return w.app.Messages.ListOlder(ctx, sessionID, before, limit)
+	}
+	return w.app.Messages.ListLatest(ctx, sessionID, limit)
+}
+
 func (w *AppWorkspace) ListUserMessages(ctx context.Context, sessionID string) ([]message.Message, error) {
 	return w.app.Messages.ListUserMessages(ctx, sessionID)
 }

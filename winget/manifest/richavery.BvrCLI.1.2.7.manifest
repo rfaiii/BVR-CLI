@@ -1,26 +1,40 @@
 {
-  "$schema": "https://aka.ms/winget-packages.schema.2.0.0.json",
+  "$schema": "https://aka.ms/winget-manifest.installer.1.6.0.schema.json",
+  "ManifestType": "installer",
+  "ManifestVersion": "1.6.0",
   "PackageIdentifier": "richavery.BvrCLI",
   "PackageVersion": "1.2.7",
-  "Moniker": "bvr-cli",
-  "Publisher": "richavery",
-  "PublisherUrl": "https://github.com/rfaiii/BVR-CLI",
-  "License": "MIT",
-  "ShortDescription": "Keyboard-first terminal AI workspace.",
+  "InstallerLocale": "en-US",
+  "Platform": [
+    "Windows.Desktop"
+  ],
+  "MinimumOSVersion": "10.0.0.0",
+  "InstallerType": "nullsoft",
+  "Scope": "user",
+  "ElevationRequirement": "elevationProhibited",
+  "UpgradeBehavior": "install",
+  "InstallLocationRequired": false,
+  "InstallerSwitches": {
+    "Silent": "/S",
+    "SilentWithProgress": "/S",
+    "InstallLocation": "/D={0}"
+  },
+  "Commands": [
+    "bvr-cli"
+  ],
   "Installers": [
     {
       "Architecture": "x64",
-      "InstallerType": "exe",
-      "Url": "https://github.com/rfaiii/BVR-CLI/releases/download/v1.2.7/bvr-cli_1.2.7_windows_amd64.exe",
-      "InstallationMetadata": {
-        "InstallLocation": "$LOCALAPPDATA\\Programs\\bvr-cli"
+      "InstallerType": "nullsoft",
+      "Scope": "user",
+      "ElevationRequirement": "elevationProhibited",
+      "InstallerSwitches": {
+        "Silent": "/S",
+        "SilentWithProgress": "/S",
+        "InstallLocation": "/D={0}"
       },
-      "InstallerFunction": "install",
-      "InstallationNotes": "Copy bvr-cli.exe into a folder on PATH."
+      "InstallerUrl": "https://github.com/rfaiii/BVR-CLI/releases/download/v1.2.7/bvr-cli_1.2.7_windows_amd64.exe",
+      "InstallerSha256": "c91a483cabc19f698d192d5415475e87a4023c3386a39e976d302f5347e7231d"
     }
-  ],
-  "InstallationMetadata": {
-    "DefaultInstallLocation": "$LOCALAPPDATA\\Programs\\bvr-cli"
-  },
-  "ElevationRequirement": "user"
+  ]
 }

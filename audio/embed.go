@@ -2,6 +2,7 @@ package audio
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -14,58 +15,57 @@ import (
 var soundsFS embed.FS
 
 var (
+	tempDirOnce sync.Once
 	tempDir     string
-	extractOnce sync.Once
-	extractErr  error
+	tempErr     error
+
+	extractMu sync.Mutex
+	extracted = make(map[string]bool)
 )
 
-// GetSoundPath extracts the bundled sounds to a temporary directory
-// and returns the absolute path to the requested sound file.
-// If the sound does not exist, it returns an empty string.
+// GetSoundPath returns the absolute path to a bundled sound file, extracting
+// it from the embedded bundle on first request. Only the requested file is
+// written to disk, so the first sound played costs one small file copy rather
+// than the whole bundle.
 func GetSoundPath(filename string) (string, error) {
-	extractOnce.Do(func() {
-		// Create a temporary directory for BVR audio
-		tempDir, extractErr = os.MkdirTemp("", "bvr-audio-*")
-		if extractErr != nil {
-			slog.Error("Failed to create temp dir for audio", "error", extractErr)
-			return
-		}
+	if filename != filepath.Base(filename) || filename == "." || filename == ".." {
+		return "", fmt.Errorf("invalid sound file name %q", filename)
+	}
 
-		// Extract all wav files
-		entries, err := fs.ReadDir(soundsFS, "sounds")
-		if err != nil {
-			extractErr = err
-			return
-		}
-
-		for _, entry := range entries {
-			if entry.IsDir() {
-				continue
-			}
-
-			data, err := soundsFS.ReadFile(filepath.Join("sounds", entry.Name()))
-			if err != nil {
-				slog.Error("Failed to read embedded sound file", "file", entry.Name(), "error", err)
-				continue
-			}
-
-			destPath := filepath.Join(tempDir, entry.Name())
-			if err := os.WriteFile(destPath, data, 0o644); err != nil {
-				slog.Error("Failed to write sound file to temp dir", "file", entry.Name(), "error", err)
-			}
+	tempDirOnce.Do(func() {
+		tempDir, tempErr = os.MkdirTemp("", "bvr-audio-*")
+		if tempErr != nil {
+			slog.Error("Failed to create temp dir for audio", "error", tempErr)
 		}
 	})
-
-	if extractErr != nil {
-		return "", extractErr
+	if tempErr != nil {
+		return "", tempErr
 	}
 
-	targetPath := filepath.Join(tempDir, filename)
-	if _, err := os.Stat(targetPath); err == nil {
-		return targetPath, nil
+	destPath := filepath.Join(tempDir, filename)
+
+	extractMu.Lock()
+	defer extractMu.Unlock()
+
+	if extracted[filename] {
+		return destPath, nil
 	}
 
-	return "", fmt.Errorf("sound file %s not found in bundle", filename)
+	data, err := soundsFS.ReadFile("sounds/" + filename)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return "", fmt.Errorf("sound file %s not found in bundle", filename)
+		}
+		return "", err
+	}
+
+	if err := os.WriteFile(destPath, data, 0o644); err != nil {
+		slog.Error("Failed to write sound file to temp dir", "file", filename, "error", err)
+		return "", err
+	}
+	extracted[filename] = true
+
+	return destPath, nil
 }
 
 // Cleanup removes the temporary audio files. This should be called on exit.

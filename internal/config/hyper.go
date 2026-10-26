@@ -23,6 +23,7 @@ type hyperClient interface {
 var _ syncer[catwalk.Provider] = (*hyperSync)(nil)
 
 type hyperSync struct {
+	mu         sync.RWMutex
 	once       sync.Once
 	result     catwalk.Provider
 	cache      cache[catwalk.Provider]
@@ -43,7 +44,6 @@ func (s *hyperSync) Get(ctx context.Context) (catwalk.Provider, error) {
 		panic("called Get before Init")
 	}
 
-	var throwErr error
 	s.once.Do(func() {
 		if !s.autoupdate {
 			slog.Info("Using embedded Hyper provider")
@@ -56,29 +56,41 @@ func (s *hyperSync) Get(ctx context.Context) (catwalk.Provider, error) {
 			// if cached file is empty, default to embedded provider
 			cached = hyper.Embedded()
 		}
+		s.result = cached
 
-		slog.Info("Fetching Hyper provider")
-		result, err := s.client.Get(ctx, etag)
-		if errors.Is(err, context.DeadlineExceeded) {
-			slog.Warn("Hyper provider not updated in time")
-			s.result = cached
-			return
-		}
-		if errors.Is(err, catwalk.ErrNotModified) {
-			slog.Info("Hyper provider not modified")
-			s.result = cached
-			return
-		}
-		if len(result.Models) == 0 {
-			slog.Warn("Hyper did not return any models")
-			s.result = cached
-			return
-		}
+		// Refresh in the background so startup never blocks on the network.
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+			defer cancel()
 
-		s.result = result
-		throwErr = s.cache.Store(result)
+			slog.Info("Fetching Hyper provider in background")
+			result, err := s.client.Get(ctx, etag)
+			switch {
+			case errors.Is(err, catwalk.ErrNotModified):
+				return
+			case errors.Is(err, context.DeadlineExceeded):
+				slog.Warn("Hyper provider not updated in time")
+				return
+			case err != nil:
+				slog.Warn("Hyper provider not updated", "error", err)
+				return
+			case len(result.Models) == 0:
+				slog.Warn("Hyper did not return any models")
+				return
+			}
+
+			s.mu.Lock()
+			s.result = result
+			s.mu.Unlock()
+			if err := s.cache.Store(result); err != nil {
+				slog.Warn("Failed to store hyper cache", "error", err)
+			}
+		}()
 	})
-	return s.result, throwErr
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.result, nil
 }
 
 var _ hyperClient = realHyperClient{}

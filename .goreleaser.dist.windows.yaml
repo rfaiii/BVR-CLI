@@ -9,7 +9,7 @@ files:
     dst: .
   - src: LICENSE*
     dst: .
-  - src: docs/installation.md
+  - src: docs/SETUP.md
     dst: .
   - src: completions/*
     dst: completions

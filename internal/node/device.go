@@ -110,7 +110,11 @@ func (m *Manager) SetStatus(id string, status DeviceStatus) {
 func (m *Manager) SetNickname(id, nickname string) {
 	m.mu.Lock()
 	if device, ok := m.devices[id]; ok {
-		device.Nickname, m.devices[id] = nickname, device
+		// Two statements, not one tuple: in `device.Nickname, m.devices[id] =
+		// nickname, device` the right-hand `device` is evaluated before the
+		// nickname assignment, so the map would keep the unrenamed copy.
+		device.Nickname = nickname
+		m.devices[id] = device
 	}
 	m.mu.Unlock()
 	m.emit()

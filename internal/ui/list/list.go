@@ -143,6 +143,12 @@ func (l *List) AtBottom() bool {
 	return totalHeight-l.offsetLine <= l.height
 }
 
+// AtTop reports whether the viewport is showing the first item from its
+// first line. O(1) so it can be checked on every scroll, unlike Offset().
+func (l *List) AtTop() bool {
+	return l.offsetIdx <= 0 && l.offsetLine <= 0
+}
+
 // SetReverse shows the list in reverse order.
 func (l *List) SetReverse(reverse bool) {
 	l.reverse = reverse

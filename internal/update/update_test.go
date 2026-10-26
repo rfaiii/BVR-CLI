@@ -46,3 +46,14 @@ func (t testClient) Latest(ctx context.Context) (*Release, error) {
 		HTMLURL: "https://example.org",
 	}, nil
 }
+
+// The constant carried the upstream repository's path for a whole release
+// cycle, so the update notice could never fire for this fork. Pin it to the
+// remote so the next merge from upstream has to fail a test to break it again.
+func TestUpdateURLPointsAtThisFork(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t,
+		"https://api.github.com/repos/rfaiii/BVR-CLI/releases/latest",
+		githubApiUrl)
+}

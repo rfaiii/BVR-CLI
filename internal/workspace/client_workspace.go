@@ -186,6 +186,22 @@ func (w *ClientWorkspace) ListMessages(ctx context.Context, sessionID string) ([
 	return protoToMessages(msgs), nil
 }
 
+func (w *ClientWorkspace) ListMessagesPage(ctx context.Context, sessionID string, limit int, before int64) (message.MessagePage, error) {
+	page, err := w.client.ListMessagesPage(ctx, w.workspaceID(), sessionID, limit, before)
+	if err != nil {
+		return message.MessagePage{}, err
+	}
+	out := message.MessagePage{
+		Messages: make([]message.Message, len(page.Messages)),
+		Cursor:   page.Cursor,
+		HasMore:  page.HasMore,
+	}
+	for i, m := range page.Messages {
+		out.Messages[i] = protoToMessage(m)
+	}
+	return out, nil
+}
+
 func (w *ClientWorkspace) ListUserMessages(ctx context.Context, sessionID string) ([]message.Message, error) {
 	msgs, err := w.client.ListUserMessages(ctx, w.workspaceID(), sessionID)
 	if err != nil {
