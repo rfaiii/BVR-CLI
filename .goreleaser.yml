@@ -15,8 +15,7 @@ metadata:
   description: "BVR is a keyboard-first terminal AI workspace for projects, local models, tools, and automation."
   full_description: "BVR is a keyboard-first terminal AI workspace for projects, local models, tools, and automation."
   maintainers:
-    - "kujtimiihoxha <kujtim@charm.sh>"
-    - "caarlos0 <carlos@charm.sh>" # for aur
+    - "Richard Aizen Avery <averydevz@outlook.com>"
 
 nightly:
   publish_release: true
@@ -172,7 +171,7 @@ furies:
 
 brews:
   - repository:
-      owner: richavery
+      owner: rfaiii
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: "https://bvr-cli.com"
@@ -190,7 +189,7 @@ brews:
 
 scoops:
   - repository:
-      owner: richavery
+      owner: rfaiii
       name: scoop-bucket
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     description: "BVR is a keyboard-first terminal AI workspace."
@@ -251,7 +250,7 @@ sboms:
 
 nix:
   - repository:
-      owner: "charmbracelet"
+      owner: "rfaiii"
       name: nur
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     commit_author:
@@ -275,7 +274,7 @@ winget:
       name: "BVR"
       email: "bvrcli@users.noreply.github.com"
     repository:
-      owner: "charmbracelet"
+      owner: "rfaiii"
       name: winget-pkgs
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
       branch: "bvr-cli-{{.Version}}"
@@ -287,8 +286,6 @@ winget:
           owner: microsoft
           name: winget-pkgs
           branch: master
-        body: |
-          /cc @andreynering
 
 changelog:
   sort: asc
@@ -336,6 +333,3 @@ changelog:
 
 release:
   prerelease: auto
-  footer:
-    from_url:
-      url: https://raw.githubusercontent.com/charmbracelet/meta/main/footer.md
