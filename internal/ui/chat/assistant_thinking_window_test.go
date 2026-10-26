@@ -11,52 +11,94 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// thinkingMessageWithLines builds a still-thinking assistant message
-// whose reasoning content is `count` short paragraphs separated by
-// blank lines. The blank-line separation is what matters: glamour
-// renders paragraph blocks one-per-line in the output (with a
-// trailing blank line between paragraphs) instead of reflowing the
-// entire input into one big wrapped paragraph. That gives us a
-// post-glamour line count we can drive past the tail-window
-// threshold deterministically. Each paragraph is tagged with its
-// (1-based) index so the test can identify head vs tail in the
-// rendered output.
+// thinkingLineTokens is how many words go on each source line of the
+// reasoning fixture: one "L<line>" marker plus this many minus one filler
+// tokens. Ten words is roughly 75 characters, which reflows to more than
+// one terminal line at every width these tests use.
+const thinkingLineTokens = 10
+
+// thinkingLongLines is the shared size of the "must be windowed" fixtures:
+// enough source lines to clear maxExpandedThinkingTailLines twice over both
+// in source lines and in reflowed terminal lines.
+const thinkingLongLines = 600
+
+// thinkingMessageWithLines builds a still-thinking assistant message whose
+// reasoning content is `lines` source lines of ten words each. The first
+// word of line N is the marker "L<N padded to 4>", which is what the
+// assertions below use to tell head from tail.
 //
-// The message has no text content and no Finish part, so
-// IsThinking() returns true and the render path skips the
-// "Thought for" footer — keeping the rendered height computation
-// simple.
-func thinkingMessageWithLines(id string, count int) *message.Message {
-	var b strings.Builder
-	for i := 1; i <= count; i++ {
-		b.WriteString("ln")
-		b.WriteString(itoa(i))
-		if i < count {
-			// Blank line between paragraphs: glamour preserves the
-			// per-paragraph structure rather than reflowing into one
-			// wrapped block, so totalLines tracks count predictably.
-			b.WriteString("\n\n")
-		}
-	}
+// Two separate counts have to be satisfied and that is why the fixture is
+// shaped like this:
+//
+//   - tailWindowWouldTruncate() decides whether a toggle lands on the tail
+//     window by counting SOURCE newlines, so the source needs more than
+//     maxExpandedThinkingTailLines lines;
+//   - the windowing itself slices the RENDERED output, so those lines also
+//     have to reflow past the same cap. Ten-word lines do that at ~600
+//     source lines.
+//
+// The lines are joined with a SINGLE newline, not a blank line. A single
+// newline is a soft break: goldmark keeps the whole run in one paragraph
+// block, and glamour's cost is dominated by its per-block overhead — ~5.7ms
+// per block here, ~140ms under -race. The previous fixture was one block per
+// line, so a 5000-line thinking block cost ~50s to render (~7 minutes under
+// -race) and blew CI's 10-minute per-binary timeout for this package. The
+// same rendered line count from one block costs ~230ms.
+//
+// The message has no text content and no Finish part, so IsThinking()
+// returns true and the render path skips the "Thought for" footer —
+// keeping the rendered height computation simple.
+func thinkingMessageWithLines(id string, lines int) *message.Message {
 	return &message.Message{
-		ID:   id,
-		Role: message.Assistant,
-		Parts: []message.ContentPart{
-			message.ReasoningContent{
-				Thinking:  b.String(),
-				StartedAt: testStartedAt,
-			},
-		},
+		ID:    id,
+		Role:  message.Assistant,
+		Parts: []message.ContentPart{thinkingReasoning(lines)},
 	}
 }
 
-// itoa is a local stdlib-free integer formatter used only by these
-// tests; pulling fmt in just for %d would be wasteful when the test
-// fixtures already churn 5000+ short strings.
-func itoa(n int) string {
-	if n == 0 {
-		return "0"
+// thinkingReasoning is the bare ReasoningContent behind
+// thinkingMessageWithLines, split out so tests that need a finished block
+// (FinishedAt set, plus optional content or finish parts) build on the same
+// source text.
+func thinkingReasoning(lines int) message.ReasoningContent {
+	return message.ReasoningContent{
+		Thinking:  thinkingSource(lines),
+		StartedAt: testStartedAt,
 	}
+}
+
+// thinkingSource builds the reasoning text for `lines` source lines. See
+// thinkingMessageWithLines for why it is one soft-broken paragraph.
+func thinkingSource(lines int) string {
+	var b strings.Builder
+	b.Grow(lines * 8 * thinkingLineTokens)
+	filler := 0
+	for i := 1; i <= lines; i++ {
+		if i > 1 {
+			b.WriteByte('\n')
+		}
+		b.WriteString("L")
+		b.WriteString(pad(i, 4))
+		for j := 1; j < thinkingLineTokens; j++ {
+			filler++
+			b.WriteString(" w")
+			b.WriteString(pad(filler, 5))
+		}
+	}
+	return b.String()
+}
+
+// thinkingHeadMarker is the first word of the fixture, present only when
+// the early part of the thinking block is still on screen.
+const thinkingHeadMarker = "L0001"
+
+// thinkingTailMarker is the first word of the last source line.
+func thinkingTailMarker(lines int) string {
+	return "L" + pad(lines, 4)
+}
+
+// pad renders n as a decimal string of at least `width` digits.
+func pad(n, width int) string {
 	var buf [20]byte
 	i := len(buf)
 	for n > 0 {
@@ -64,7 +106,17 @@ func itoa(n int) string {
 		buf[i] = byte('0' + n%10)
 		n /= 10
 	}
+	for len(buf)-i < width {
+		i--
+		buf[i] = '0'
+	}
 	return string(buf[i:])
+}
+
+// itoa renders n as a decimal string. Used by fixtures that churn large
+// token counts where fmt would be the heavier dependency.
+func itoa(n int) string {
+	return pad(n, 1)
 }
 
 // renderedThinkingHeight returns the line count of the cached
@@ -80,17 +132,18 @@ func renderedThinkingHeight(t *testing.T, item *AssistantMessageItem, width int)
 }
 
 // TestThinkingWindow_CollapsedCapPreserved guards that F5 did not
-// regress the existing collapsed-mode behaviour: a 5000-line
-// thinking block in the default (collapsed) state still renders at
-// most a small bounded height — the last `maxCollapsedThinkingHeight`
-// lines plus the truncation hint. The thinking message keeps
-// IsThinking() == true, so the optional "Thought for" footer is
-// suppressed and the section height equals the box height.
+// regress the existing collapsed-mode behaviour: a thinking block that
+// reflows to hundreds of rendered lines, in the default (collapsed)
+// state, still renders at most a small bounded height — the last
+// `maxCollapsedThinkingHeight` lines plus the truncation hint. The
+// thinking message keeps IsThinking() == true, so the optional "Thought
+// for" footer is suppressed and the section height equals the box
+// height.
 func TestThinkingWindow_CollapsedCapPreserved(t *testing.T) {
 	t.Parallel()
 
 	sty := styles.CharmtonePantera()
-	msg := thinkingMessageWithLines("collapsed", 5000)
+	msg := thinkingMessageWithLines("collapsed", thinkingLongLines)
 	item := NewAssistantMessageItem(&sty, msg).(*AssistantMessageItem)
 
 	// Default state must be collapsed.
@@ -102,11 +155,17 @@ func TestThinkingWindow_CollapsedCapPreserved(t *testing.T) {
 	const width = 91
 	height := renderedThinkingHeight(t, item, width)
 
+	// The truncation hint is only drawn when the render exceeds the
+	// cap, so its presence proves the fixture was long enough for this
+	// test to be exercising truncation rather than a short block.
+	require.Contains(t, ansi.Strip(item.thinkingSec.out), "lines hidden",
+		"fixture must be long enough to be truncated in collapsed mode")
+
 	// Collapsed mode keeps the existing cap: last 10 lines + a
 	// 2-line hint prefix (hint + blank). Allow a small slack for
 	// any future style-driven padding so the test is robust to
 	// cosmetic tweaks while still being orders of magnitude below
-	// the 5000-line source.
+	// the full render.
 	const collapsedUpperBound = maxCollapsedThinkingHeight + 5
 	require.LessOrEqual(t, height, collapsedUpperBound,
 		"collapsed mode must remain bounded by the small cap; got %d", height)
@@ -123,8 +182,6 @@ func TestThinkingWindow_ExpandedShortSkipsTailWindow(t *testing.T) {
 
 	sty := styles.CharmtonePantera()
 	const lines = 50
-	require.Less(t, lines, maxExpandedThinkingTailLines,
-		"this test relies on the source being well under the tail cap")
 	msg := thinkingMessageWithLines("short", lines)
 	item := NewAssistantMessageItem(&sty, msg).(*AssistantMessageItem)
 
@@ -138,14 +195,19 @@ func TestThinkingWindow_ExpandedShortSkipsTailWindow(t *testing.T) {
 	out := item.thinkingSec.out
 	plain := ansi.Strip(out)
 
+	// Guard the premise: this fixture must render below the tail cap,
+	// or "short" would not mean what the test claims.
+	require.Less(t, lipgloss.Height(out), maxExpandedThinkingTailLines,
+		"short fixture must stay under the tail-window cap")
+
 	require.NotContains(t, plain, "earlier lines hidden",
 		"short blocks must not show the tail-window affordance")
 	require.NotContains(t, plain, "lines hidden",
 		"short expanded blocks must not show any truncation hint")
-	require.Contains(t, plain, "ln1 ",
-		"a fully expanded short block must include the very first source paragraph")
-	require.Contains(t, plain, "ln50 ",
-		"a fully expanded short block must include the last source paragraph")
+	require.Contains(t, plain, thinkingHeadMarker,
+		"a fully expanded short block must include the very first source line")
+	require.Contains(t, plain, thinkingTailMarker(lines),
+		"a fully expanded short block must include the last source line")
 }
 
 // TestThinkingWindow_TailWindowed asserts the central F5 behaviour:
@@ -169,7 +231,7 @@ func TestThinkingWindow_TailWindowed(t *testing.T) {
 	t.Parallel()
 
 	sty := styles.CharmtonePantera()
-	const total = 5000
+	const total = thinkingLongLines
 	const width = 95
 
 	// Tail-windowed render.
@@ -196,10 +258,10 @@ func TestThinkingWindow_TailWindowed(t *testing.T) {
 
 	require.Contains(t, tailPlain, "earlier lines hidden",
 		"tail-windowed render must include the affordance footer")
-	require.Contains(t, tailPlain, "ln5000",
-		"tail-windowed render must include the LAST source paragraph — we tailed, not headed")
-	require.NotContains(t, tailPlain, "ln1 ",
-		"tail-windowed render must elide early source paragraphs")
+	require.Contains(t, tailPlain, thinkingTailMarker(total),
+		"tail-windowed render must include the LAST source line — we tailed, not headed")
+	require.NotContains(t, tailPlain, thinkingHeadMarker,
+		"tail-windowed render must elide early source lines")
 
 	// Independent reference render: same source, same width, full
 	// expansion (no tail slice). The tail-windowed output's last K
@@ -241,7 +303,7 @@ func TestThinkingWindow_PromoteToFull(t *testing.T) {
 	t.Parallel()
 
 	sty := styles.CharmtonePantera()
-	const total = 1500
+	const total = thinkingLongLines
 	msg := thinkingMessageWithLines("promote", total)
 	item := NewAssistantMessageItem(&sty, msg).(*AssistantMessageItem)
 
@@ -261,10 +323,10 @@ func TestThinkingWindow_PromoteToFull(t *testing.T) {
 
 	require.NotContains(t, fullPlain, "earlier lines hidden",
 		"full expansion must drop the tail-window affordance")
-	require.Contains(t, fullPlain, "ln1 ",
-		"full expansion must include the first source paragraph")
-	require.Contains(t, fullPlain, "ln1500 ",
-		"full expansion must include the last source paragraph")
+	require.Contains(t, fullPlain, thinkingHeadMarker,
+		"full expansion must include the first source line")
+	require.Contains(t, fullPlain, thinkingTailMarker(total),
+		"full expansion must include the last source line")
 
 	// Independent reference: a fresh item, rendered straight into
 	// the full-expanded state, must produce byte-equal output.
@@ -315,20 +377,12 @@ func TestThinkingWindow_ContentChangeKeepsThinkingCacheInTailWindow(t *testing.T
 	t.Parallel()
 
 	sty := styles.CharmtonePantera()
-	const total = 1000
+	const total = thinkingLongLines
 
 	build := func(content string) *message.Message {
-		var b strings.Builder
-		for i := 1; i <= total; i++ {
-			b.WriteString("ln")
-			b.WriteString(itoa(i))
-			if i < total {
-				b.WriteString("\n\n")
-			}
-		}
 		parts := []message.ContentPart{
 			message.ReasoningContent{
-				Thinking:   b.String(),
+				Thinking:   thinkingSource(total),
 				StartedAt:  testStartedAt,
 				FinishedAt: testFinishedAt,
 			},
@@ -380,22 +434,14 @@ func TestThinkingWindow_ToggleInvalidatesOnlyThinking(t *testing.T) {
 	t.Parallel()
 
 	sty := styles.CharmtonePantera()
-	const total = 1500
+	const total = thinkingLongLines
 	build := func() *message.Message {
-		var b strings.Builder
-		for i := 1; i <= total; i++ {
-			b.WriteString("ln")
-			b.WriteString(itoa(i))
-			if i < total {
-				b.WriteString("\n\n")
-			}
-		}
 		return &message.Message{
 			ID:   "toggle-iso",
 			Role: message.Assistant,
 			Parts: []message.ContentPart{
 				message.ReasoningContent{
-					Thinking:   b.String(),
+					Thinking:   thinkingSource(total),
 					StartedAt:  testStartedAt,
 					FinishedAt: testFinishedAt,
 				},
@@ -475,7 +521,11 @@ func TestThinkingWindow_BoxHeightTracksWindow(t *testing.T) {
 	t.Parallel()
 
 	sty := styles.CharmtonePantera()
-	const total = 5000
+	// Sized so the full-expanded render clears twice the tail cap at
+	// this width (~500 lines at width 103): that doubling is the point
+	// of the assertion below, so the fixture has to be long enough for
+	// it to mean something.
+	const total = thinkingLongLines
 	msg := thinkingMessageWithLines("box-height", total)
 	item := NewAssistantMessageItem(&sty, msg).(*AssistantMessageItem)
 
