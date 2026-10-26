@@ -205,7 +205,8 @@ Open an issue at [github.com/rfaiii/BVR-CLI](https://github.com/rfaiii/BVR-CLI/i
 
 ## License
 
-BVR-CLI is released under the MIT License. See [LICENSE.md](LICENSE.md).
+BVR-CLI is released under the Functional Source License, Version 1.1, MIT Future
+License (FSL-1.1-MIT). See [LICENSE.md](LICENSE.md).
 
 **One terminal. Every project. A little more beaver.**
 

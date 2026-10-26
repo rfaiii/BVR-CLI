@@ -14,8 +14,8 @@ const docTemplate = `{
             "url": "https://bvr-cli.com"
         },
         "license": {
-            "name": "MIT",
-            "url": "https://github.com/richavery/bvr-cli/blob/main/LICENSE"
+            "name": "FSL-1.1-MIT",
+            "url": "https://github.com/rfaiii/BVR-CLI/blob/main/LICENSE.md"
         },
         "version": "{{.Version}}"
     },
@@ -303,8 +303,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK"
+                    "202": {
+                        "description": "Accepted"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -314,6 +314,12 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/proto.Error"
                         }
@@ -616,6 +622,71 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/workspaces/{id}/agent/sessions/{sid}/shell": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "agent"
+                ],
+                "summary": "Run shell command",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "sid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Shell command",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/proto.ShellCommandRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proto.ShellCommandResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
                         }
                     },
                     "404": {
@@ -1100,6 +1171,62 @@ const docTemplate = `{
                 }
             }
         },
+        "/workspaces/{id}/current-session": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspaces"
+                ],
+                "summary": "Set current session for a client",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Client ID (UUID)",
+                        "name": "client_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Current session selection",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/proto.CurrentSession"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
+                        }
+                    }
+                }
+            }
+        },
         "/workspaces/{id}/events": {
             "get": {
                 "produces": [
@@ -1544,6 +1671,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/workspaces/{id}/mcp/prompts": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mcp"
+                ],
+                "summary": "Get MCP prompts",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/proto.MCPPrompt"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
+                        }
+                    }
+                }
+            }
+        },
         "/workspaces/{id}/mcp/read-resource": {
             "post": {
                 "consumes": [
@@ -1825,7 +1995,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_richavery_bvr_cli_internal_proto.Message"
+                                "$ref": "#/definitions/github_com_richavery_bvr-cli_internal_proto.Message"
                             }
                         }
                     },
@@ -1873,7 +2043,10 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proto.PermissionGrantResponse"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -2123,6 +2296,104 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/workspaces/{id}/questions/answer": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "questions"
+                ],
+                "summary": "Answer question batch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Question batch answer",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/proto.QuestionAnswer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proto.QuestionAnswerResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/workspaces/{id}/questions/cancel": {
+            "post": {
+                "tags": [
+                    "questions"
+                ],
+                "summary": "Cancel question batch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proto.QuestionAnswerResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
                         }
                     },
                     "404": {
@@ -2519,8 +2790,74 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_richavery_bvr_cli_internal_proto.Message"
+                                "$ref": "#/definitions/github_com_richavery_bvr-cli_internal_proto.Message"
                             }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/workspaces/{id}/sessions/{sid}/messages/page": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Get a page of session messages",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "sid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum messages to return",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Sequence cursor: read messages older than this",
+                        "name": "before",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proto.MessagePage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
                         }
                     },
                     "404": {
@@ -2569,8 +2906,109 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_richavery_bvr_cli_internal_proto.Message"
+                                "$ref": "#/definitions/github_com_richavery_bvr-cli_internal_proto.Message"
                             }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/workspaces/{id}/skills": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "skills"
+                ],
+                "summary": "List visible skills",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/proto.SkillInfo"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/workspaces/{id}/skills/read": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "skills"
+                ],
+                "summary": "Read skill content",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Read skill request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/proto.ReadSkillRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proto.ReadSkillResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/proto.Error"
                         }
                     },
                     "404": {
@@ -2697,6 +3135,10 @@ const docTemplate = `{
                     "description": "Regex pattern tested against the tool name. Empty means match all.",
                     "type": "string"
                 },
+                "name": {
+                    "description": "Friendly display name shown in the TUI. Falls back to Command when empty.",
+                    "type": "string"
+                },
                 "timeout": {
                     "description": "Timeout in seconds. Default 30.",
                     "type": "integer"
@@ -2795,6 +3237,30 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "oauth": {
+                    "description": "OAuth enables the MCP OAuth 2.1 authorization flow for HTTP\ntransport servers. When true, the client uses dynamic client\nregistration and opens a browser for the user to authorize.\nTokens are persisted automatically. Only supported for type=http.",
+                    "type": "boolean"
+                },
+                "oauth_callback_port": {
+                    "description": "OAuthCallbackPort pins the localhost port used for the OAuth\nredirect listener. Set this when the OAuth provider requires an\nexact-match callback URL (e.g. GitHub OAuth Apps). When omitted,\nBVR picks the first free port from its default range.",
+                    "type": "integer"
+                },
+                "oauth_client_id": {
+                    "description": "OAuthClientID is an optional pre-registered OAuth client ID. Set\nit for servers that do not support dynamic client registration\n(e.g. GitHub, Slack) and instead issue client credentials when you\nregister an OAuth app. Values run through shell expansion, so\n$VAR and $(cmd) work.",
+                    "type": "string"
+                },
+                "oauth_client_secret": {
+                    "description": "OAuthClientSecret is the optional secret paired with\nOAuthClientID for confidential clients. Values run through shell\nexpansion, so $VAR and $(cmd) work.",
+                    "type": "string"
+                },
+                "oauth_token": {
+                    "description": "OAuthToken is the persisted OAuth token for this server. It is\nmanaged internally and stored in the global data config.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/oauth.Token"
+                        }
+                    ]
+                },
                 "timeout": {
                     "type": "integer"
                 },
@@ -2835,17 +3301,6 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "config.Scope": {
-            "type": "integer",
-            "enum": [
-                0,
-                1
-            ],
-            "x-enum-varnames": [
-                "ScopeGlobal",
-                "ScopeWorkspace"
-            ]
         },
         "config.SelectedModel": {
             "type": "object",
@@ -2915,8 +3370,22 @@ const docTemplate = `{
                 "diff_mode": {
                     "type": "string"
                 },
+                "scrollbar": {
+                    "type": "string"
+                },
+                "theme": {
+                    "type": "string"
+                },
                 "transparent": {
                     "type": "boolean"
+                }
+            }
+        },
+        "config.ToolGlob": {
+            "type": "object",
+            "properties": {
+                "timeout": {
+                    "$ref": "#/definitions/time.Duration"
                 }
             }
         },
@@ -2942,6 +3411,9 @@ const docTemplate = `{
         "config.Tools": {
             "type": "object",
             "properties": {
+                "glob": {
+                    "$ref": "#/definitions/config.ToolGlob"
+                },
                 "grep": {
                     "$ref": "#/definitions/config.ToolGrep"
                 },
@@ -2966,7 +3438,7 @@ const docTemplate = `{
         "csync.Map-string-config_ProviderConfig": {
             "type": "object"
         },
-        "github_com_richavery_bvr_cli_internal_config.Config": {
+        "github_com_richavery_bvr-cli_internal_config.Config": {
             "type": "object",
             "properties": {
                 "$schema": {
@@ -2995,7 +3467,7 @@ const docTemplate = `{
                     }
                 },
                 "options": {
-                    "$ref": "#/definitions/github_com_richavery_bvr_cli_internal_config.Options"
+                    "$ref": "#/definitions/github_com_richavery_bvr-cli_internal_config.Options"
                 },
                 "permissions": {
                     "$ref": "#/definitions/config.Permissions"
@@ -3023,11 +3495,14 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_richavery_bvr_cli_internal_config.Options": {
+        "github_com_richavery_bvr-cli_internal_config.Options": {
             "type": "object",
             "properties": {
                 "attribution": {
                     "$ref": "#/definitions/config.Attribution"
+                },
+                "audio_volume": {
+                    "type": "string"
                 },
                 "auto_lsp": {
                     "type": "boolean"
@@ -3072,6 +3547,12 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "global_context_paths": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "initialize_as": {
                     "type": "string"
                 },
@@ -3092,7 +3573,18 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_richavery_bvr_cli_internal_proto.Message": {
+        "github_com_richavery_bvr-cli_internal_config.Scope": {
+            "type": "integer",
+            "enum": [
+                0,
+                1
+            ],
+            "x-enum-varnames": [
+                "ScopeGlobal",
+                "ScopeWorkspace"
+            ]
+        },
+        "github_com_richavery_bvr-cli_internal_proto.Message": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -3141,6 +3633,46 @@ const docTemplate = `{
                 "StateDisabled"
             ]
         },
+        "oauth.OAuthClient": {
+            "type": "object",
+            "properties": {
+                "auth_style": {
+                    "type": "integer"
+                },
+                "auth_url": {
+                    "type": "string"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "client_secret": {
+                    "type": "string"
+                },
+                "token_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "oauth.Token": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "client": {
+                    "$ref": "#/definitions/oauth.OAuthClient"
+                },
+                "expires_at": {
+                    "type": "integer"
+                },
+                "expires_in": {
+                    "type": "integer"
+                },
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
         "proto.APIKeyKind": {
             "type": "string",
             "enum": [
@@ -3181,6 +3713,9 @@ const docTemplate = `{
                 "prompt": {
                     "type": "string"
                 },
+                "run_id": {
+                    "type": "string"
+                },
                 "session_id": {
                     "type": "string"
                 }
@@ -3189,6 +3724,9 @@ const docTemplate = `{
         "proto.AgentSession": {
             "type": "object",
             "properties": {
+                "attached_clients": {
+                    "type": "integer"
+                },
                 "completion_tokens": {
                     "type": "integer"
                 },
@@ -3218,6 +3756,12 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
+                },
+                "todos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/proto.Todo"
+                    }
                 },
                 "updated_at": {
                     "type": "integer"
@@ -3251,7 +3795,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "scope": {
-                    "$ref": "#/definitions/config.Scope"
+                    "$ref": "#/definitions/github_com_richavery_bvr-cli_internal_config.Scope"
                 }
             }
         },
@@ -3265,7 +3809,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/config.SelectedModelType"
                 },
                 "scope": {
-                    "$ref": "#/definitions/config.Scope"
+                    "$ref": "#/definitions/github_com_richavery_bvr-cli_internal_config.Scope"
                 }
             }
         },
@@ -3285,7 +3829,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "scope": {
-                    "$ref": "#/definitions/config.Scope"
+                    "$ref": "#/definitions/github_com_richavery_bvr-cli_internal_config.Scope"
                 }
             }
         },
@@ -3296,7 +3840,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "scope": {
-                    "$ref": "#/definitions/config.Scope"
+                    "$ref": "#/definitions/github_com_richavery_bvr-cli_internal_config.Scope"
                 }
             }
         },
@@ -3307,7 +3851,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "scope": {
-                    "$ref": "#/definitions/config.Scope"
+                    "$ref": "#/definitions/github_com_richavery_bvr-cli_internal_config.Scope"
                 }
             }
         },
@@ -3318,9 +3862,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "scope": {
-                    "$ref": "#/definitions/config.Scope"
+                    "$ref": "#/definitions/github_com_richavery_bvr-cli_internal_config.Scope"
                 },
                 "value": {}
+            }
+        },
+        "proto.CurrentSession": {
+            "type": "object",
+            "properties": {
+                "session_id": {
+                    "type": "string"
+                }
             }
         },
         "proto.Error": {
@@ -3460,6 +4012,49 @@ const docTemplate = `{
                 }
             }
         },
+        "proto.MCPPrompt": {
+            "type": "object",
+            "properties": {
+                "arguments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/proto.MCPPromptArgument"
+                    }
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "prompt_id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "proto.MCPPromptArgument": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "required": {
+                    "type": "boolean"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "proto.MCPReadResourceRequest": {
             "type": "object",
             "properties": {
@@ -3477,14 +4072,33 @@ const docTemplate = `{
                 0,
                 1,
                 2,
-                3
+                3,
+                4
             ],
             "x-enum-varnames": [
                 "MCPStateDisabled",
                 "MCPStateStarting",
                 "MCPStateConnected",
-                "MCPStateError"
+                "MCPStateError",
+                "MCPStateNeedsAuth"
             ]
+        },
+        "proto.MessagePage": {
+            "type": "object",
+            "properties": {
+                "cursor": {
+                    "type": "integer"
+                },
+                "has_more": {
+                    "type": "boolean"
+                },
+                "messages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_richavery_bvr-cli_internal_proto.Message"
+                    }
+                }
+            }
         },
         "proto.MessageRole": {
             "type": "string",
@@ -3522,6 +4136,14 @@ const docTemplate = `{
                 },
                 "permission": {
                     "$ref": "#/definitions/proto.PermissionRequest"
+                }
+            }
+        },
+        "proto.PermissionGrantResponse": {
+            "type": "object",
+            "properties": {
+                "resolved": {
+                    "type": "boolean"
                 }
             }
         },
@@ -3576,6 +4198,76 @@ const docTemplate = `{
                 }
             }
         },
+        "proto.QuestionAnswer": {
+            "type": "object",
+            "properties": {
+                "batch_request_id": {
+                    "type": "string"
+                },
+                "responses": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/proto.QuestionResponse"
+                    }
+                }
+            }
+        },
+        "proto.QuestionAnswerResponse": {
+            "type": "object",
+            "properties": {
+                "resolved": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "proto.QuestionResponse": {
+            "type": "object",
+            "properties": {
+                "fill_in_text": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "selected_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "yes": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "proto.ReadSkillRequest": {
+            "type": "object",
+            "properties": {
+                "skill_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "proto.ReadSkillResponse": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "result": {
+                    "$ref": "#/definitions/proto.SkillReadResult"
+                }
+            }
+        },
         "proto.ServerControl": {
             "type": "object",
             "properties": {
@@ -3587,6 +4279,9 @@ const docTemplate = `{
         "proto.Session": {
             "type": "object",
             "properties": {
+                "attached_clients": {
+                    "type": "integer"
+                },
                 "completion_tokens": {
                     "type": "integer"
                 },
@@ -3598,6 +4293,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "is_busy": {
+                    "type": "boolean"
                 },
                 "message_count": {
                     "type": "integer"
@@ -3614,8 +4312,121 @@ const docTemplate = `{
                 "title": {
                     "type": "string"
                 },
+                "todos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/proto.Todo"
+                    }
+                },
                 "updated_at": {
                     "type": "integer"
+                }
+            }
+        },
+        "proto.ShellCommandRequest": {
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                },
+                "term_width": {
+                    "type": "integer"
+                }
+            }
+        },
+        "proto.ShellCommandResponse": {
+            "type": "object",
+            "properties": {
+                "exit_code": {
+                    "type": "integer"
+                },
+                "output": {
+                    "type": "string"
+                }
+            }
+        },
+        "proto.SkillDiscoveryState": {
+            "type": "integer",
+            "enum": [
+                0,
+                1
+            ],
+            "x-enum-varnames": [
+                "SkillStateNormal",
+                "SkillStateError"
+            ]
+        },
+        "proto.SkillInfo": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "user_invocable": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "proto.SkillReadResult": {
+            "type": "object",
+            "properties": {
+                "builtin": {
+                    "type": "boolean"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                }
+            }
+        },
+        "proto.SkillState": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "state": {
+                    "$ref": "#/definitions/proto.SkillDiscoveryState"
+                }
+            }
+        },
+        "proto.Todo": {
+            "type": "object",
+            "properties": {
+                "active_form": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },
@@ -3642,8 +4453,21 @@ const docTemplate = `{
         "proto.Workspace": {
             "type": "object",
             "properties": {
+                "beastmode": {
+                    "type": "boolean"
+                },
+                "channels": {
+                    "description": "Channels lists the MCP servers opted in as channels for this workspace\n(from the --channels flag).",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "client_id": {
+                    "type": "string"
+                },
                 "config": {
-                    "$ref": "#/definitions/github_com_richavery_bvr_cli_internal_config.Config"
+                    "$ref": "#/definitions/github_com_richavery_bvr-cli_internal_config.Config"
                 },
                 "data_dir": {
                     "type": "string"
@@ -3663,11 +4487,15 @@ const docTemplate = `{
                 "path": {
                     "type": "string"
                 },
+                "skills": {
+                    "description": "Skills carries the snapshot of skill discovery state at workspace\ncreation time. Subsequent updates flow through the SSE event\nstream.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/proto.SkillState"
+                    }
+                },
                 "version": {
                     "type": "string"
-                },
-                "beastmode": {
-                    "type": "boolean"
                 }
             }
         },
@@ -3700,7 +4528,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "1.2.8",
 	Host:             "",
 	BasePath:         "/v1",
 	Schemes:          []string{},

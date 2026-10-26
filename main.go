@@ -5,8 +5,8 @@
 //	@description	BVR is a terminal-based AI coding assistant. This API is served over a Unix socket (or Windows named pipe) and provides programmatic access to workspaces, sessions, agents, LSP, MCP, and more.
 //	@contact.name	BVR
 //	@contact.url	https://bvr-cli.com
-//	@license.name	MIT
-//	@license.url	https://github.com/richavery/bvr-cli/blob/main/LICENSE
+//	@license.name	FSL-1.1-MIT
+//	@license.url	https://github.com/rfaiii/BVR-CLI/blob/main/LICENSE.md
 //	@BasePath		/v1
 package main
 
