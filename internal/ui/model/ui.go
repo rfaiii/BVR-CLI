@@ -2547,7 +2547,7 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 			m.imageLookupPending = false
 			m.dialog.CloseDialog(dialog.FileBrowserID)
 			if msg.Path != "" {
-				cmds = append(cmds, m.runShellCommand("bvr lookup-image "+msg.Path))
+				cmds = append(cmds, m.runLookupImageCommand(msg.Path))
 			}
 		} else {
 			if msg.Path != "" {
@@ -4971,6 +4971,26 @@ func (m *UI) sendMessage(content string, attachments ...message.Attachment) tea.
 		return agentRunSubmittedMsg{}
 	})
 	return tea.Batch(cmds...)
+}
+
+// runLookupImageCommand runs lookup-image against a file-browser selection in a
+// shell session so the result shows up as a chat item. Both words are quoted
+// and the binary comes from os.Executable rather than a name on PATH: the bang
+// string is parsed by mvdan.cc/sh, so a path containing spaces would otherwise
+// split into separate arguments, and a hard-coded name would miss when the app
+// runs from a build that is not installed.
+func (m *UI) runLookupImageCommand(path string) tea.Cmd {
+	exe, err := os.Executable()
+	if err != nil {
+		return util.ReportError(err)
+	}
+	return m.runShellCommand(shellQuote(exe) + " lookup-image " + shellQuote(path))
+}
+
+// shellQuote quotes value for POSIX shells, escaping embedded single quotes so
+// an arbitrary path survives as exactly one word.
+func shellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "'\\''") + "'"
 }
 
 // runShellCommand executes a shell command server-side without triggering

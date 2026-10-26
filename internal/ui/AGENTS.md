@@ -194,7 +194,7 @@ tool names to specific types:
 
 #### File Browser dialog (`dialog/filebrowser.go`)
 
-- `FileBrowserID = "file-browser"` — opened via `ctrl+shift+f` or
+- `FileBrowserID = "file-browser"` — opened via `ctrl+o` or
   `ActionOpenDialog{DialogID: FileBrowserID}`.
 - Two-pane layout (file list + preview) with metadata and clipboard status.
 - Supports `ctrl+n` to open the File Picker for creating new files.
