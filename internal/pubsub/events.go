@@ -25,6 +25,7 @@ const (
 	PayloadTypeFile                   PayloadType = "file"
 	PayloadTypeAgentEvent             PayloadType = "agent_event"
 	PayloadTypeConfigChanged          PayloadType = "config_changed"
+	PayloadTypeProvidersUpdated       PayloadType = "providers_updated"
 	PayloadTypeSkillsEvent            PayloadType = "skills_event"
 	PayloadTypeRunComplete            PayloadType = "run_complete"
 	PayloadTypeUpdateAvailable        PayloadType = "update_available"

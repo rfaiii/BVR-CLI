@@ -16,6 +16,8 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/richavery/bvr-cli/internal/config"
 	"github.com/richavery/bvr-cli/internal/localmodel"
+	"github.com/richavery/bvr-cli/internal/proto"
+	"github.com/richavery/bvr-cli/internal/pubsub"
 	"github.com/richavery/bvr-cli/internal/ui/common"
 	"github.com/richavery/bvr-cli/internal/ui/util"
 )
@@ -174,15 +176,46 @@ func (m *Models) ID() string {
 	return ModelsID
 }
 
+// rebuildProviderItems re-renders the list from the current provider data.
+//
+// SetGroups installs the unfiltered item set, so a filter the user is typing
+// has to be re-applied afterwards or the list would quietly stop matching the
+// text in the input. This is what ctrl+r already did implicitly by moving the
+// caret; pulling it into one place is what makes an unsolicited refresh — a
+// catalog landing — safe to act on.
+func (m *Models) rebuildProviderItems() Action {
+	if err := m.setProviderItems(); err != nil {
+		return util.ReportError(err)
+	}
+	if query := m.input.Value(); query != "" {
+		m.list.SetFilter(query)
+		m.list.SelectFirst()
+		m.list.ScrollToTop()
+	}
+	return nil
+}
+
 // HandleMsg implements Dialog.
 func (m *Models) HandleMsg(msg tea.Msg) Action {
 	switch msg := msg.(type) {
-	case LocalModelsMsg:
-		m.localModels = append(msg.Models, msg.Additional...)
-		if err := m.setProviderItems(); err != nil {
+	case pubsub.Event[proto.ProvidersUpdated]:
+		// The catalog moved underneath the dialog: replace the provider list
+		// the duplicate check compares against, then rebuild. Re-reading
+		// config.Providers is idempotent, so a duplicate or out-of-order
+		// notification costs a rebuild and nothing else.
+		providers, err := config.Providers(m.com.Config())
+		if err != nil && len(providers) == 0 {
+			// A catalog that failed to fetch *and* has nothing to show is worth
+			// saying. A partial failure is not: providers.Err is the startup
+			// warning, already reported once, and replaying it on every landing
+			// would be noise.
 			return util.ReportError(err)
 		}
-		return nil
+		m.providers = providers
+		return m.rebuildProviderItems()
+	case LocalModelsMsg:
+		m.localModels = append(msg.Models, msg.Additional...)
+		return m.rebuildProviderItems()
 	case OllamaPullMsg:
 		m.pullStatus = msg.Progress
 		if msg.Done {

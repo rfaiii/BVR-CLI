@@ -13,13 +13,13 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"charm.land/catwalk/pkg/catwalk"
 	"charm.land/catwalk/pkg/embedded"
 	"github.com/charmbracelet/x/etag"
 	"github.com/richavery/bvr-cli/internal/agent/hyper"
-	"github.com/richavery/bvr-cli/internal/csync"
 	"github.com/richavery/bvr-cli/internal/home"
 )
 
@@ -29,8 +29,27 @@ type syncer[T any] interface {
 
 var (
 	providerOnce sync.Once
+
+	// providerMu guards providerList because a background catalog refresh
+	// replaces it while readers hold the slice it returned earlier. Swaps
+	// publish a brand-new slice and no Provider is ever mutated in place,
+	// so a reader keeps seeing a consistent (if slightly stale) list.
+	providerMu   sync.RWMutex
 	providerList []catwalk.Provider
 	providerErr  error
+
+	// providerVersion counts catalog landings. It is bumped after the list
+	// is swapped, so a consumer that observes version N knows the list
+	// matching N is already served. A landing that happens before anything
+	// has subscribed would otherwise be missed for the life of the process,
+	// which is what OnProvidersUpdated's replay is for.
+	providerVersion atomic.Uint64
+
+	// providerHooksMu guards the listener list and the "a landing has
+	// already happened" flag. Hooks run on the refresh goroutine and must
+	// not block.
+	providerHooksMu sync.Mutex
+	providerHooks   []func(version uint64)
 )
 
 // file to cache provider data
@@ -136,65 +155,132 @@ var (
 // 2. load the cached providers
 // 3. try to get the fresh list of providers, and return either this new list,
 // the cached list, or the embedded list if all others fail.
+//
+// The result is memoized but not frozen: when a background refresh lands a
+// newer catalog the list is rebuilt from the same sources, so a long-running
+// process serves the fresh providers instead of the ones read at startup.
+// [OnProvidersUpdated] is how listeners hear about that.
 func Providers(cfg *Config) ([]catwalk.Provider, error) {
 	providerOnce.Do(func() {
-		var wg sync.WaitGroup
-		var errs []error
-		providers := csync.NewSlice[catwalk.Provider]()
 		autoupdate := !cfg.Options.DisableProviderAutoUpdate
 		customProvidersOnly := cfg.Options.DisableDefaultProviders
 
-		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
-		defer cancel()
+		var providerErrs []error
+		if !customProvidersOnly {
+			var wg sync.WaitGroup
+			var catwalkErr, hyperErr error
 
-		var hyperProvider catwalk.Provider
-		var hyperFound bool
+			ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+			defer cancel()
 
-		wg.Go(func() {
-			if customProvidersOnly {
-				return
-			}
-			catwalkURL := cmp.Or(os.Getenv("CATWALK_URL"), defaultCatwalkURL)
-			client := catwalk.NewWithURL(catwalkURL)
-			path := cachePathFor("providers")
-			catwalkSyncer.Init(client, path, autoupdate)
+			// Install the hooks before the syncers are initialized: Get returns
+			// while the fetch is still in flight, and a landing that beat the
+			// hook would leave the memoized list stale for the session.
+			catwalkSyncer.setOnLanded(onProvidersLanded)
+			hyperSyncer.setOnLanded(onProvidersLanded)
 
-			items, err := catwalkSyncer.Get(ctx)
-			if err != nil {
-				catwalkURL := fmt.Sprintf("%s/v2/providers", cmp.Or(os.Getenv("CATWALK_URL"), defaultCatwalkURL))
-				errs = append(errs, fmt.Errorf("BVR was unable to fetch an updated list of providers from %s. Consider setting BVR_DISABLE_PROVIDER_AUTO_UPDATE=1 to use the embedded providers bundled at the time of this BVR release. You can also update providers manually. For more info see bvr-cli update-providers --help.\n\nCause: %w", catwalkURL, err))
-				return
-			}
-			providers.Append(items...)
-		})
+			// One error variable per goroutine. This path used to append to a
+			// shared slice from both, which -race would have flagged had the
+			// two fetches ever failed together.
+			wg.Go(func() {
+				catwalkURL := cmp.Or(os.Getenv("CATWALK_URL"), defaultCatwalkURL)
+				client := catwalk.NewWithURL(catwalkURL)
 
-		wg.Go(func() {
-			if customProvidersOnly {
-				return
-			}
-			path := cachePathFor("hyper")
-			hyperSyncer.Init(realHyperClient{baseURL: hyper.BaseURL()}, path, autoupdate)
+				catwalkSyncer.Init(client, cachePathFor("providers"), autoupdate)
 
-			item, err := hyperSyncer.Get(ctx)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("BVR was unable to fetch updated information from Hyper: %w", err))
-				return
-			}
-			hyperProvider = item
-			hyperFound = true
-		})
+				if _, err := catwalkSyncer.Get(ctx); err != nil {
+					catwalkErr = fmt.Errorf("BVR was unable to fetch an updated list of providers from %s/v2/providers. Consider setting BVR_DISABLE_PROVIDER_AUTO_UPDATE=1 to use the embedded providers bundled at the time of this BVR release. You can also update providers manually. For more info see bvr-cli update-providers --help.\n\nCause: %w", catwalkURL, err)
+				}
+			})
 
-		wg.Wait()
+			wg.Go(func() {
+				hyperSyncer.Init(realHyperClient{baseURL: hyper.BaseURL()}, cachePathFor("hyper"), autoupdate)
 
-		clineProvider := ClineProvider()
-		if hyperFound {
-			providerList = append([]catwalk.Provider{hyperProvider, clineProvider}, slices.Collect(providers.Seq())...)
-		} else {
-			providerList = append([]catwalk.Provider{clineProvider}, slices.Collect(providers.Seq())...)
+				if _, err := hyperSyncer.Get(ctx); err != nil {
+					hyperErr = fmt.Errorf("BVR was unable to fetch updated information from Hyper: %w", err)
+				}
+			})
+
+			wg.Wait()
+			providerErrs = []error{catwalkErr, hyperErr}
 		}
-		providerErr = errors.Join(errs...)
+
+		// Taken under the same lock the rebuild uses: a refresh can land while
+		// this is still assembling, since Get returns before the fetch does.
+		providerMu.Lock()
+		providerList = currentProviderList()
+		providerErr = errors.Join(providerErrs...)
+		providerMu.Unlock()
 	})
+
+	providerMu.RLock()
+	defer providerMu.RUnlock()
 	return providerList, providerErr
+}
+
+// assembleProviders builds the list Providers serves from the two catalog
+// sources. Startup and the post-refresh rebuild share this function so the
+// rebuilt list has the same contents and the same order — the model dialog
+// relies on Hyper and Cline leading it.
+func assembleProviders(items []catwalk.Provider, hyperProvider catwalk.Provider, hasHyper bool) []catwalk.Provider {
+	list := make([]catwalk.Provider, 0, len(items)+2)
+	if hasHyper {
+		list = append(list, hyperProvider)
+	}
+	list = append(list, ClineProvider())
+	return append(list, items...)
+}
+
+// currentProviderList assembles the served list from whatever the catalog
+// sources hold right now.
+func currentProviderList() []catwalk.Provider {
+	items, _ := catwalkSyncer.current()
+	hyperProvider, hasHyper := hyperSyncer.current()
+	return assembleProviders(items, hyperProvider, hasHyper)
+}
+
+// onProvidersLanded is what a catalog syncer calls once it has swapped in a
+// newer result: rebuild the memoized list, then tell the listeners.
+func onProvidersLanded() {
+	providerMu.Lock()
+	providerList = currentProviderList()
+	providerMu.Unlock()
+
+	// Bumped after the swap, so a reader that sees version N knows the list
+	// matching N is already in place.
+	version := providerVersion.Add(1)
+
+	providerHooksMu.Lock()
+	hooks := slices.Clone(providerHooks)
+	providerHooksMu.Unlock()
+	for _, fn := range hooks {
+		fn(version)
+	}
+}
+
+// ProviderVersion reports how many times a background catalog refresh has
+// landed a newer list in this process. Zero means Providers is still serving
+// the list built at startup.
+func ProviderVersion() uint64 {
+	return providerVersion.Load()
+}
+
+// OnProvidersUpdated registers fn to run when a background provider or Hyper
+// refresh lands a newer catalog, passing the new [ProviderVersion]. fn runs
+// on the goroutine that landed the data and must not block.
+//
+// A landing that happened before fn was registered is replayed immediately.
+// The refresh is one network round trip and can finish before the TUI is
+// constructed, so without the replay the UI could be told nothing and keep
+// showing the startup catalog for the whole session.
+func OnProvidersUpdated(fn func(version uint64)) {
+	providerHooksMu.Lock()
+	providerHooks = append(providerHooks, fn)
+	providerHooksMu.Unlock()
+
+	if version := providerVersion.Load(); version > 0 {
+		fn(version)
+	}
 }
 
 type cache[T any] struct {

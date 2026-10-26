@@ -806,8 +806,8 @@ func (w *ClientWorkspace) sleepOrDone(d time.Duration) bool {
 
 // consumeEvents drives the workspace event loop. It is split out from
 // Subscribe so tests can drive it without a real *tea.Program.
-// ConfigChanged events trigger a workspace refresh; all other events
-// are translated into domain types and forwarded to send.
+// ConfigChanged and ProvidersUpdated events trigger a workspace refresh;
+// all other events are translated into domain types and forwarded to send.
 func (w *ClientWorkspace) consumeEvents(evc <-chan any, send func(tea.Msg)) {
 	for ev := range evc {
 		// Forward events to herdr if running inside a herdr pane.
@@ -815,7 +815,12 @@ func (w *ClientWorkspace) consumeEvents(evc <-chan any, send func(tea.Msg)) {
 			w.herdrClient.HandleEvent(hev)
 		}
 
-		if _, ok := ev.(pubsub.Event[proto.ConfigChanged]); ok {
+		// Both of these mean "the config the workspace serves is no longer
+		// what this client cached". A remote client has no local catalog to
+		// rebuild, so it re-pulls the snapshot rather than forwarding the
+		// notification to its TUI.
+		switch ev.(type) {
+		case pubsub.Event[proto.ConfigChanged], pubsub.Event[proto.ProvidersUpdated]:
 			w.refreshWorkspace()
 			continue
 		}

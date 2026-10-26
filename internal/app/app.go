@@ -34,6 +34,7 @@ import (
 	"github.com/richavery/bvr-cli/internal/lsp"
 	"github.com/richavery/bvr-cli/internal/message"
 	"github.com/richavery/bvr-cli/internal/permission"
+	"github.com/richavery/bvr-cli/internal/proto"
 	"github.com/richavery/bvr-cli/internal/pubsub"
 	"github.com/richavery/bvr-cli/internal/question"
 	"github.com/richavery/bvr-cli/internal/session"
@@ -544,6 +545,17 @@ func (app *App) setupEvents() {
 	if app.Skills != nil {
 		setupSubscriber(ctx, app.serviceEventsWG, "skills", app.Skills.SubscribeEvents, app.events)
 	}
+	// The provider catalog is fetched in the background so the first frame
+	// never waits on the network. When it lands, config rebuilds the memoized
+	// list and calls this hook; forwarding it as an event is what lets an
+	// already-open model list notice that the catalog behind it moved. Not a
+	// setupSubscriber: the hook is a callback, and config must not import app.
+	config.OnProvidersUpdated(func(generation uint64) {
+		app.SendEvent(pubsub.Event[proto.ProvidersUpdated]{
+			Type:    pubsub.UpdatedEvent,
+			Payload: proto.ProvidersUpdated{Generation: generation},
+		})
+	})
 	cleanupFunc := func(context.Context) error {
 		cancel()
 		app.serviceEventsWG.Wait()

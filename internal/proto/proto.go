@@ -43,6 +43,17 @@ type ConfigChanged struct {
 	WorkspaceID string `json:"workspace_id"`
 }
 
+// ProvidersUpdated is published when the background provider-catalog
+// refresh lands a list newer than the one served at startup. The catalog is
+// fetched off the startup path so the first frame never waits on the
+// network, which means anything already open — a model list, most commonly —
+// was built from the cached or embedded catalog. Generation lets a receiver
+// drop duplicate or out-of-order notifications; the list itself is always
+// re-read rather than carried here.
+type ProvidersUpdated struct {
+	Generation uint64 `json:"generation"`
+}
+
 // UpdateAvailable is published when a newer BVR release is detected
 // on the server side. It mirrors app.UpdateAvailableMsg across the SSE
 // boundary so client/server mode TUI clients see the same notification

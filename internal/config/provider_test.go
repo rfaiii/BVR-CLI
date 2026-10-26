@@ -16,6 +16,10 @@ func resetProviderState() {
 	providerOnce = sync.Once{}
 	providerList = nil
 	providerErr = nil
+	providerVersion.Store(0)
+	providerHooksMu.Lock()
+	providerHooks = nil
+	providerHooksMu.Unlock()
 	catwalkSyncer = &catwalkSync{}
 	hyperSyncer = &hyperSync{}
 }

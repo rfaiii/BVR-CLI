@@ -30,13 +30,27 @@ type hyperSync struct {
 	client     hyperClient
 	autoupdate bool
 	init       atomic.Bool
+
+	// onLanded runs on the refresh goroutine after a newer result has been
+	// stored; see catwalkSync.onLanded.
+	onLanded func()
 }
 
 func (s *hyperSync) Init(client hyperClient, path string, autoupdate bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.client = client
 	s.cache = newCache[catwalk.Provider](path)
 	s.autoupdate = autoupdate
 	s.init.Store(true)
+}
+
+// setOnLanded installs the callback for a landed refresh. See
+// catwalkSync.setOnLanded.
+func (s *hyperSync) setOnLanded(fn func()) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.onLanded = fn
 }
 
 func (s *hyperSync) Get(ctx context.Context) (catwalk.Provider, error) {
@@ -81,9 +95,13 @@ func (s *hyperSync) Get(ctx context.Context) (catwalk.Provider, error) {
 
 			s.mu.Lock()
 			s.result = result
+			landed := s.onLanded
 			s.mu.Unlock()
 			if err := s.cache.Store(result); err != nil {
 				slog.Warn("Failed to store hyper cache", "error", err)
+			}
+			if landed != nil {
+				landed()
 			}
 		}()
 	})
@@ -91,6 +109,17 @@ func (s *hyperSync) Get(ctx context.Context) (catwalk.Provider, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.result, nil
+}
+
+// current returns the memoized result, reporting false when the syncer was
+// never initialized. See catwalkSync.current.
+func (s *hyperSync) current() (catwalk.Provider, bool) {
+	if !s.init.Load() {
+		return catwalk.Provider{}, false
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.result, true
 }
 
 var _ hyperClient = realHyperClient{}

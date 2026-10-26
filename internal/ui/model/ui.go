@@ -52,6 +52,7 @@ import (
 	"github.com/richavery/bvr-cli/internal/message"
 	"github.com/richavery/bvr-cli/internal/node"
 	"github.com/richavery/bvr-cli/internal/permission"
+	"github.com/richavery/bvr-cli/internal/proto"
 	"github.com/richavery/bvr-cli/internal/pubsub"
 	"github.com/richavery/bvr-cli/internal/question"
 	"github.com/richavery/bvr-cli/internal/session"
@@ -1112,6 +1113,18 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.lspStates = m.com.Workspace.LSPGetStates()
 	case pubsub.Event[skills.Event]:
 		m.skillStates = msg.Payload.States
+	case pubsub.Event[proto.ProvidersUpdated]:
+		// The background catalog refresh replaced the provider list. A model
+		// list that is already open was built from the list before it moved,
+		// so hand it the notification and let it rebuild in place, then run
+		// whatever action that produced (a failed rebuild reports). With no
+		// list open there is nothing to do: the next one reads the rebuilt
+		// list through config.Providers anyway.
+		if dlg, ok := m.dialog.Dialog(dialog.ModelsID).(*dialog.Models); ok {
+			if cmd := m.handleDialogAction(dlg.HandleMsg(msg)); cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+		}
 	case pubsub.Event[mcp.Event]:
 		switch msg.Payload.Type {
 		case mcp.EventStateChanged:
