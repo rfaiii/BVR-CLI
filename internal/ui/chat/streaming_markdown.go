@@ -784,6 +784,29 @@ func isListItemMarker(line string) bool {
 	return line[i+1] == ' ' || line[i+1] == '\t'
 }
 
+// isOrderedListItemMarker reports whether line (already left-trimmed)
+// starts an ORDERED list item — digits followed by '.' or ')' and a
+// space. isListItemMarker covers both list kinds; this narrower form
+// exists for the thinking tail cut, which may split between two bullets
+// that render identically apart but must not split an ordered list,
+// whose window would restart the numbering at 1.
+func isOrderedListItemMarker(line string) bool {
+	i := 0
+	for i < len(line) && line[i] >= '0' && line[i] <= '9' {
+		i++
+	}
+	if i == 0 || i > 9 {
+		return false
+	}
+	if i >= len(line) || (line[i] != '.' && line[i] != ')') {
+		return false
+	}
+	if i+1 >= len(line) {
+		return false
+	}
+	return line[i+1] == ' ' || line[i+1] == '\t'
+}
+
 // isSetextUnderlineCandidate reports whether line (with optional
 // leading whitespace) consists entirely of '=' or entirely of '-'
 // characters with optional trailing whitespace. CommonMark

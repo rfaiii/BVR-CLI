@@ -153,6 +153,224 @@ func tailLines(s string, n, totalLines int) (tail string, hidden int) {
 	return s, 0
 }
 
+// thinkingWindowTarget reports how many rendered lines the current view
+// mode shows, or zero when the mode shows the whole document.
+func (a *AssistantMessageItem) thinkingWindowTarget() int {
+	switch a.thinkingViewMode {
+	case thinkingCollapsed:
+		return maxCollapsedThinkingHeight
+	case thinkingTailWindow:
+		return maxExpandedThinkingTailLines
+	default:
+		return 0
+	}
+}
+
+// thinkingWindow returns the slice of the reasoning source that the
+// current view mode actually needs rendered, and how many source lines
+// sit before it — zero when the whole source was returned. target is the
+// number of lines the view shows, or zero for the mode that shows
+// everything.
+//
+// The whole source is returned when the mode shows everything, when the
+// document is not clearly bigger than the window, or when it holds no
+// safe cut point — a single soft-broken paragraph, for instance, cannot
+// be tail-cut without splitting mid-block and changing how it wraps.
+//
+// The cut is sticky while the text only grows, which is what keeps the
+// streamingMarkdown stable-prefix cache warm: re-cutting on every flush
+// would hand Render a string that is not a prefix-extension of the last
+// one and trade an O(window) tick for an O(document) one. See item 24 of
+// docs/TASKLIST.md for the measurements.
+func (a *AssistantMessageItem) thinkingWindow(src string, target int) (string, int) {
+	if target <= 0 {
+		a.thinkingWindowStart = 0
+		a.thinkingWindowLines = 0
+		return src, 0
+	}
+
+	start := a.thinkingWindowStart
+	if start > len(src) || a.thinkingWindowFor != a.thinkingViewMode {
+		start = 0
+	}
+	if start > 0 {
+		// The window grows as text is appended to it. Re-cut once it is
+		// both past four times what the view shows and double what it was
+		// when cut. The second term matters because block granularity, not
+		// the target, sets the smallest window a document can be cut to: a
+		// trace made of 25-line blocks can never hold a 20-line window, and
+		// re-cutting against an immovable limit would drop the sticky cache
+		// on every single flush.
+		current := 1 + strings.Count(src[start:], "\n")
+		if !isThinkingWindowStart(src, start) ||
+			(current > target*4 && current > a.thinkingWindowLines*2) {
+			start = 0
+		}
+	}
+
+	if start == 0 {
+		start = thinkingTailCut(src, target*2)
+		if start == 0 {
+			a.thinkingWindowStart = 0
+			a.thinkingWindowLines = 0
+			return src, 0
+		}
+		a.thinkingWindowStart = start
+		a.thinkingWindowFor = a.thinkingViewMode
+		a.thinkingWindowLines = 1 + strings.Count(src[start:], "\n")
+	}
+	return src[start:], strings.Count(src[:start], "\n")
+}
+
+// thinkingTailCut returns the byte offset of the LATEST cut point whose
+// tail still holds at least wantLines source logical lines, or 0 when no
+// such cut point exists.
+//
+// Candidates are the blank-line separators, walked from the end backwards,
+// so the window is as small as the markdown structure allows: glamour's
+// cost is per block, and every block left behind is a block not rendered.
+// Line accounting is done in source lines because counting them costs a
+// byte scan, while counting rendered lines would cost the render this is
+// trying to avoid.
+func thinkingTailCut(src string, wantLines int) int {
+	if wantLines <= 0 || len(src) == 0 {
+		return 0
+	}
+	totalNewlines := strings.Count(src, "\n")
+	if 1+totalNewlines < wantLines*2 {
+		// The document is barely bigger than the window: cutting would
+		// save less than it risks.
+		return 0
+	}
+
+	p := blankLineBefore(src, len(src))
+	if p <= 0 {
+		return 0
+	}
+	newlinesBefore := strings.Count(src[:p], "\n")
+	for p > 0 {
+		if 1+totalNewlines-newlinesBefore >= wantLines && isSafeThinkingTailCut(src, p) {
+			return p
+		}
+		// The separator that puts a window at p ends at p-1, so search
+		// for the one before it: blankLineBefore(src, p) would simply
+		// return p again.
+		next := blankLineBefore(src, p-1)
+		if next <= 0 || next >= p {
+			break
+		}
+		newlinesBefore -= strings.Count(src[next:p], "\n")
+		p = next
+	}
+	return 0
+}
+
+// isThinkingWindowStart reports whether p is a line start preceded by a
+// blank line — the shape a cut must have to be re-validatable after the
+// source changed underneath a sticky window offset.
+func isThinkingWindowStart(src string, p int) bool {
+	if p <= 0 || p >= len(src) || src[p-1] != '\n' || src[p] == '\n' {
+		return false
+	}
+	blank := p - 1 // index of the newline that ends the blank line before p
+	prev := strings.LastIndexByte(src[:blank], '\n')
+	return isBlankOrSpaces(src[prev+1 : blank])
+}
+
+// isSafeThinkingTailCut reports whether rendering src[p:] as its own
+// document shows the same thing as part of the whole. A blank line ends
+// most CommonMark constructs, so the interesting cases are the ones it
+// does not: fences, setext headings, indented code, block quotes, tables,
+// and lists.
+func isSafeThinkingTailCut(src string, p int) bool {
+	if !isThinkingWindowStart(src, p) {
+		return false
+	}
+	tail := src[p:]
+	if countFenceLines(tail)%2 != 0 {
+		// The window would open inside a fenced block and lose its
+		// language and its closing rule.
+		return false
+	}
+	// Both sides keep their source indentation: lineOpensConstruct reads
+	// leading whitespace to spot indented code, and the list rule below
+	// compares indent levels.
+	first := firstNonBlankLine(tail)
+	last := lastLineBefore(src, p)
+	if isSetextUnderlineCandidate(first) {
+		// Rendered together these two blocks are one heading; apart, the
+		// underline is a stray line.
+		return false
+	}
+	if last != "" && lineOpensConstruct(last) && !isFlatListItem(last, first) {
+		return false
+	}
+	// An ordered list cannot be split because the window would restart
+	// the numbering; an unordered one can, provided neither side is
+	// nested, which is what isFlatListItem checks.
+	return !isOrderedListItemMarker(strings.TrimLeft(first, " \t"))
+}
+
+// isFlatListItem reports whether last and first are sibling unordered list
+// items — same bullet character ignored, same indentation, neither
+// continued by a nested or indented block. Cutting between siblings keeps
+// each item's own rendering; cutting anywhere else in a list risks it.
+func isFlatListItem(last, first string) bool {
+	if !isUnorderedListItem(last) || !isUnorderedListItem(first) {
+		return false
+	}
+	return indentOf(last) == indentOf(first)
+}
+
+// isUnorderedListItem reports whether line is a "- ", "* " or "+ " item at
+// the start of a list block. A deeper-indented line can also look like a
+// marker, which is why indentOf is checked separately.
+func isUnorderedListItem(line string) bool {
+	trimmed := strings.TrimLeft(line, " \t")
+	if len(trimmed) < 2 {
+		return false
+	}
+	switch trimmed[0] {
+	case '-', '*', '+':
+		return trimmed[1] == ' ' || trimmed[1] == '\t'
+	}
+	return false
+}
+
+// indentOf counts the leading spaces of line, treating a leading tab as
+// four-space indent so it can never compare equal to a flat item.
+func indentOf(line string) int {
+	n := 0
+	for n < len(line) {
+		switch line[n] {
+		case ' ':
+			n++
+		case '\t':
+			return 4
+		default:
+			return n
+		}
+	}
+	return n
+}
+
+// lastLineBefore returns the last non-blank line ending before byte p, or
+// "" when only blank lines precede it. It is the local form of
+// lastNonBlankLine(src[:p]): a cut candidate is followed by one blank-line
+// separator, so the scan stops after a couple of lines instead of walking
+// the whole prefix on every candidate.
+func lastLineBefore(src string, p int) string {
+	for end := p; end > 0; {
+		start := strings.LastIndexByte(src[:end-1], '\n') + 1
+		line := src[start : end-1]
+		if strings.TrimSpace(line) != "" {
+			return line
+		}
+		end = start
+	}
+	return ""
+}
+
 // fnvFields hashes a list of byte fields with length-prefix framing
 // so that no concatenation collision can occur between distinct
 // field tuples (a NUL inside one field cannot impersonate a
@@ -214,6 +432,23 @@ type AssistantMessageItem struct {
 	// thinking text, which burns CPU and starves the terminal emulator
 	// during long reasoning traces.
 	streamingThinking streamingMarkdown
+
+	// Tail-window state for the windowed thinking views.
+	// thinkingWindowStart is the byte offset in the reasoning source where
+	// the rendered window begins; zero means no window has been chosen, so
+	// the zero value needs no constructor support. It is held still while
+	// text is only appended, because re-cutting the window on every flush
+	// would hand streamingMarkdown a string that is not a prefix-extension
+	// of the last one and throw away its stable-prefix cache — that is, it
+	// would trade an O(window) render for an O(document) one on every
+	// streaming tick. thinkingWindowLines is the window's size AT THE TIME
+	// IT WAS CUT, so the drift test can tell "the window grew" apart from
+	// "this document cannot be cut any smaller"; thinkingWindowFor records
+	// which view the cut was made for, since the three modes want sizes
+	// twenty times apart.
+	thinkingWindowStart int
+	thinkingWindowLines int
+	thinkingWindowFor   thinkingViewMode
 }
 
 var _ Expandable = (*AssistantMessageItem)(nil)
@@ -549,14 +784,24 @@ func (a *AssistantMessageItem) cachedError(width int) string {
 
 // renderThinking renders the thinking/reasoning content with footer.
 //
-// Slicing happens AFTER glamour rendering so fenced code blocks, list
-// continuations, and tables are not split mid-block — the same
-// boundary problem §4.4 of the design note flags. The bordered
-// ThinkingBox style is applied on top of the (already-windowed)
-// lines so the visual box matches what the user sees today.
+// Two windows are applied, in this order:
+//
+//  1. a SOURCE window (thinkingWindow): the tail of the reasoning text
+//     that the view mode can actually show, cut at a markdown block
+//     boundary. This keeps one render's cost proportional to the window
+//     rather than to the whole trace, which matters because glamour's
+//     cost is per block.
+//  2. a RENDERED window (tailLines): the last N lines of the render,
+//     sliced AFTER glamour so fenced code blocks, list continuations,
+//     and tables are not split mid-block — the same boundary problem
+//     §4.4 of the design note flags.
+//
+// The bordered ThinkingBox style is applied on top of the (already
+// windowed) lines so the visual box matches what the user sees today.
 func (a *AssistantMessageItem) renderThinking(thinking string, width int) string {
 	renderer := common.QuietMarkdownRenderer(a.sty, width)
-	rendered := a.streamingThinking.Render(thinking, width, renderer)
+	window, hiddenSource := a.thinkingWindow(thinking, a.thinkingWindowTarget())
+	rendered := a.streamingThinking.Render(window, width, renderer)
 	rendered = strings.TrimSpace(rendered)
 
 	// Count lines and, for the windowed view modes, slice the tail
@@ -564,6 +809,13 @@ func (a *AssistantMessageItem) renderThinking(thinking string, width int) string
 	// 1200-line render just to keep the last 10 lines is O(n) per
 	// tick; tailLines finds the cut point with a bounded backward
 	// scan. See CHARM-1785.
+	//
+	// The hidden count is the render's elided lines plus the source
+	// lines the window cut off the front, which the render alone cannot
+	// see. Source lines and rendered lines are different units, so the
+	// total is an approximation; overstating is the better error, since
+	// the affordance is the user's only signal that earlier reasoning
+	// exists at all.
 	var lines []string
 	var totalLines int
 	switch a.thinkingViewMode {
@@ -572,7 +824,7 @@ func (a *AssistantMessageItem) renderThinking(thinking string, width int) string
 		if totalLines > maxCollapsedThinkingHeight {
 			tail, hidden := tailLines(rendered, maxCollapsedThinkingHeight, totalLines)
 			hint := a.sty.Messages.ThinkingTruncationHint.Render(
-				fmt.Sprintf(assistantMessageTruncateFormat, hidden),
+				fmt.Sprintf(assistantMessageTruncateFormat, hidden+hiddenSource),
 			)
 			lines = append([]string{hint, ""}, strings.Split(tail, "\n")...)
 		} else {
@@ -583,7 +835,7 @@ func (a *AssistantMessageItem) renderThinking(thinking string, width int) string
 		if totalLines > maxExpandedThinkingTailLines {
 			tail, hidden := tailLines(rendered, maxExpandedThinkingTailLines, totalLines)
 			hint := a.sty.Messages.ThinkingTruncationHint.Render(
-				fmt.Sprintf(assistantMessageTailWindowFormat, hidden),
+				fmt.Sprintf(assistantMessageTailWindowFormat, hidden+hiddenSource),
 			)
 			lines = append([]string{hint, ""}, strings.Split(tail, "\n")...)
 		} else {
