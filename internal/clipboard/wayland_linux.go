@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -15,25 +16,35 @@ import (
 // down with it, and no clipboard read should ever take seconds.
 const wlTimeout = 2 * time.Second
 
-// wayland is set by Init. It stays zero-valued until then, so an uninitialised
-// process keeps using the X11 backend.
-var wayland backend
+// wayland is set by Init and stays nil until then, so an uninitialised process
+// keeps using the X11 backend. It is a pointer rather than package state because
+// Init runs on a goroutine started per workspace while other goroutines read it.
+var wayland atomic.Pointer[backend]
 
-func canWrite() bool { return wayland.canWrite() }
-func canRead() bool  { return wayland.canRead() }
+func canWrite() bool {
+	b := wayland.Load()
+	return b != nil && b.canWrite()
+}
+
+func canRead() bool {
+	b := wayland.Load()
+	return b != nil && b.canRead()
+}
 
 func initFallback() bool {
-	wayland = detect(os.Getenv("WAYLAND_DISPLAY"), exec.LookPath)
-	return wayland.canWrite() || wayland.canRead()
+	found := detect(os.Getenv("WAYLAND_DISPLAY"), exec.LookPath)
+	wayland.Store(&found)
+	return found.canWrite() || found.canRead()
 }
 
 func writeFallback(text string) {
-	if !wayland.canWrite() {
+	b := wayland.Load()
+	if b == nil || !b.canWrite() {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), wlTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, wayland.copyBin)
+	cmd := exec.CommandContext(ctx, b.copyBin)
 	cmd.Stdin = strings.NewReader(text)
 	// wl-copy forks into the background to hold the selection; the process this
 	// command starts exits once stdin has drained.
@@ -41,13 +52,14 @@ func writeFallback(text string) {
 }
 
 func readFallback(f Format) ([]byte, error) {
+	b := wayland.Load()
 	args, ok := pasteArgs(f)
-	if !wayland.canRead() || !ok {
+	if b == nil || !b.canRead() || !ok {
 		return nil, ErrUnsupported
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), wlTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, wayland.pasteBin, args...)
+	cmd := exec.CommandContext(ctx, b.pasteBin, args...)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	if err := cmd.Run(); err != nil || out.Len() == 0 {

@@ -3,7 +3,10 @@
 // requiring CGO or platform-specific dependencies.
 package clipboard
 
-import "errors"
+import (
+	"errors"
+	"sync"
+)
 
 // Format identifies the kind of data to read from the clipboard.
 type Format int
@@ -24,10 +27,20 @@ var (
 	ErrEmpty = errors.New("clipboard is empty or holds an unsupported format")
 )
 
+var (
+	initOnce sync.Once
+	initErr  error
+)
+
 // Init initializes the clipboard subsystem. On unsupported platforms it
 // returns ErrUnsupported but is otherwise safe to call.
+//
+// It is called from a goroutine that every app.New starts, and initialization
+// writes package state on Linux, so repeated calls are folded into one and the
+// first result is what later callers see.
 func Init() error {
-	return initClipboard()
+	initOnce.Do(func() { initErr = initClipboard() })
+	return initErr
 }
 
 // WriteText writes plain text to the system clipboard. On unsupported
