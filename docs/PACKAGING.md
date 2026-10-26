@@ -5,15 +5,17 @@ and where each artifact lives.
 
 ## Release automation
 
-- `.goreleaser.yml` — main release config
-  - Homebrew tap: `richavery/homebrew-tap`
-  - Scoop bucket: `richavery/scoop-bucket`
-  - NPM package: `@bvrcli/bvr-cli`
-  - Linux packages via `nfpms`
-  - AUR source/binary packages
-  - Nix package
-  - Winget manifest
-- `.github/workflows/release.yml` — GitHub Actions release workflow
+- `.goreleaser.yml` — main release config. It would publish to a Homebrew tap
+  (`rfaiii/homebrew-tap`), a Scoop bucket (`rfaiii/scoop-bucket`), AUR packages,
+  a Nix overlay, a winget fork PR, and the NPM package `@bvrcli/bvr-cli`.
+  **None of those destinations exist yet**, and the config cannot run as-is: it
+  needs a GoReleaser PRO license key and Charm's `releasers` runner group.
+- Linux and Arch packages via `nfpm`, driven by
+  `scripts/package/build-installers.sh`, which is what actually produces the
+  shipping artifacts today.
+- `.github/workflows/release.yml` — triggers on `v*.*.*` tags and delegates to
+  charmbracelet/meta's GoReleaser workflow. It has never succeeded here: the
+  v1.2.5 run ended in `startup_failure`, and that release was published by hand.
 
 ## Platform packaging scripts
 
@@ -25,7 +27,11 @@ and where each artifact lives.
 
 ## Install wrappers
 
-- `packaging/homebrew-bvr-cli.rb` — Homebrew formula skeleton
+- `packaging/homebrew-bvr-cli.rb` — Homebrew formula. It is no longer a
+  skeleton: the URL and `sha256` match the published `v1.2.8` source tarball,
+  which was built with `CGO_ENABLED=0` and reports `bvr-cli version 1.2.8`, and
+  its `man` and `completion` subcommands both work. It still cannot be
+  installed, because no tap repository hosts it.
 - `packaging/npm-package.json` — NPM package manifest
 - `packaging/scripts/install.js` — NPM postinstall downloader
 - `packaging/scripts/uninstall.js` — NPM uninstall cleanup
