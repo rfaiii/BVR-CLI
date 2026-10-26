@@ -160,18 +160,18 @@ bvr-cli --continue
 // Keep it ASCII-first and line-art based so it remains readable in every
 // terminal instead of turning into a solid block when font rendering differs.
 var versionMascot = lipgloss.NewStyle().Foreground(lipgloss.Color("#3BF66B")).SetString(`
-          .--.
-         /    \
-        |  @ @  |
-        |       |
-        |  \_/  |
-         \_____/
-          |  |
-         _|  |_
-        /  __  \
-       /  /  \  \
-      /  /    \  \
-     =============
+      .--.  .--.
+     /    \/    \
+    |  @  @  @  |
+    |           |
+    |  \____/   |
+     \__________/
+      |      |
+     _|      |_
+    /  \____/  \
+   /  /      \  \
+  /  /        \  \
+ =================
 `)
 
 // copied from cobra:
