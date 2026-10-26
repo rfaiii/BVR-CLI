@@ -555,6 +555,18 @@
           "description": "Notification style to use. Options: auto (default), native, osc, bell, disabled. Auto selects based on environment: native for local sessions, osc for SSH (with automatic OSC 99/777 detection).",
           "default": "auto"
         },
+        "audio_volume": {
+          "type": "string",
+          "enum": [
+            "25",
+            "50",
+            "75",
+            "100",
+            "silent"
+          ],
+          "description": "Volume for audio notifications. Options: 25 (default), 50, 75, 100, silent.",
+          "default": "25"
+        },
         "disabled_skills": {
           "items": {
             "type": "string",
