@@ -4,10 +4,44 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+  pull-requests: read
+  checks: write
+
+concurrency:
+  group: lint-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # This was `uses: charmbracelet/meta/.github/workflows/lint.yml@main`, which
+  # is written for Charm's own org layout: it checks the caller out into a
+  # directory named after github.repository, falls back to
+  # <owner>/meta/golangci.yml for its config, and pinned golangci-lint to
+  # v2.11, a version that cannot read Go 1.27 export data ("export data version
+  # 5 is greater than maximum supported version 2"). Here it only ever produced
+  # startup_failure with zero jobs.
+  #
+  # Per-OS matrix on purpose: golangci-lint type-checks under the runner's GOOS,
+  # so a single OS never sees the files behind the other platforms' build tags.
   lint:
-    uses: charmbracelet/meta/.github/workflows/lint.yml@main
-    with:
-      golangci_path: .golangci.yml
-      golangci_version: v2.11
-      timeout: 10m
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      # The action defaults to core.autocrlf=true on Windows, which turns every
+      # LF file into CRLF on disk and makes the formatter linters report drift.
+      - run: git config --global core.autocrlf input
+        if: matrix.os == 'windows-latest'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0
+      - name: golangci-lint
+        run: golangci-lint run --timeout=10m ./...

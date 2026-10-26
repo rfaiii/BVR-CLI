@@ -8,13 +8,19 @@ on:
       - "internal/agent/hyper/**"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   update-schema:
     runs-on: ubuntu-latest
     steps:
+      # secrets.PERSONAL_ACCESS_TOKEN does not exist on this repository, so the
+      # interpolation was empty and actions/checkout refused to start ("Input
+      # required and not supplied: token"). The job token can commit here, and
+      # commits made with it do not re-trigger this workflow, so there is no
+      # push loop to guard against.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
