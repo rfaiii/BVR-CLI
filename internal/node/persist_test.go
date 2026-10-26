@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -84,7 +85,20 @@ func TestSaveRestoreRoundTrip(t *testing.T) {
 	// The file lists LAN hosts, so it must not be readable by other accounts.
 	info, err := os.Stat(path)
 	require.NoError(t, err)
-	require.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+	if runtime.GOOS != "windows" {
+		require.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+	} else {
+		// Windows has no POSIX permission bits for Go to report: it
+		// synthesizes the mode from the file attributes, so the 0o600 the
+		// writer asked for comes back as 0o666. Isolation there is an ACL
+		// question, not a mode one, so assert only what the platform
+		// actually promises — that the file is not left read-only, which
+		// would break the next save. Same reasoning as
+		// TestAtomicWriteFile_PermissionsApplied, which skips outright;
+		// this test also covers the round trip, so it must not.
+		require.NotZero(t, info.Mode().Perm()&0o200,
+			"the saved registry must stay writable")
+	}
 	require.NoFileExists(t, path+".tmp")
 }
 
