@@ -15,7 +15,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/ansi/kitty"
 	"github.com/disintegration/imaging"
-	paintbrush "github.com/jordanella/go-ansi-paintbrush"
+	paintbrush "github.com/richavery/bvr-cli/internal/ui/image/paintbrush"
 	"github.com/richavery/bvr-cli/internal/ui/util"
 )
 
