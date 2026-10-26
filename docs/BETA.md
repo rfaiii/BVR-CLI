@@ -316,7 +316,9 @@ Weekly email to beta list:
 
 ### Changelog
 
-Maintain `CHANGELOG.md` with:
+Release notes are published on the GitHub release page for each tag.
+`CHANGELOG.md` is maintained locally only (it is gitignored and not part of the
+published tree), and tracks:
 - Beta-specific changes
 - Known issues
 - Upgrade instructions

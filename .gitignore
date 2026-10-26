@@ -71,6 +71,9 @@ mcp-server/src/mcp_server/__pycache__/
 docs/TASKLIST.md
 docs/ignore/
 CONTEXT.md
+# CHANGELOG.md is kept and edited locally only; releases are announced on the
+# GitHub release page rather than from a tracked changelog file.
+CHANGELOG.md
 *.asd
 
 # GGWave native build artifacts and the vendored upstream checkout.
