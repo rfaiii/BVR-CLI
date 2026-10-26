@@ -90,6 +90,16 @@ what); the Beta map holds the x-ray expressions (error, confused). The boot
 demo (`boot.Run`) cycles through the full frame set, so every expression is
 shown during startup.
 
+### ASCII art design
+
+The dense beaver head is a compact 7-cell pattern: `(\.-.\\)` — the backslash
+for the right ear (`\\)` instead of a closing parenthesis `)`) connects the ear
+visually to the head, creating a continuous line from the top of the head down
+the right side. This design choice ensures the ears appear attached at all
+font renderings and terminal sizes. The single dash `.-.` on top keeps the
+head silhouette clean while providing enough width for both ears to sit
+symmetrically.
+
 ### Frame lookup across the Alpha and Beta maps
 
 The two maps hold **disjoint** poses, so `BeaverFrame` consults both:

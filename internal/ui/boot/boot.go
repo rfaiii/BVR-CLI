@@ -19,22 +19,22 @@ import (
 //   - right-dir: keys or selected text are to the RIGHT of center.
 //   - what: the user clicked the beaver mascot.
 var BeaverFramesDenseAlpha = map[string]string{
-	"center": `  (\.-./)  
+	"center": `  (\.-.\\)  
  /   0_0  \
 |   -(v)-  |
  \   [=]  /
   '-------'  `,
-	"left-dir": `  (\.-./)  
+	"left-dir": `  (\.-.\\)  
  / X_X    \
 | \X(v)/   |
  \ [X]    /
   '-------'  `,
-	"right-dir": `  (\.-./)  
+	"right-dir": `  (\.-.\\)  
  /     X_X\
 |    \X(v)/|
  \     [X]/
   '-------'  `,
-	"what": `  (\.-./)  
+	"what": `  (\.-.\\)  
  /  -0_0- \
 |  \X(o)// |
  \  ((0))  /
@@ -42,12 +42,12 @@ var BeaverFramesDenseAlpha = map[string]string{
 }
 
 var BeaverFramesDenseBeta = map[string]string{
-	"error": `  (\.-./)  
+	"error": `  (\.-.\\)  
  /   X_X  \
 |   \X(v)/ |
  \   [=]  /
   '-------'  `,
-	"confused": `  (\.-./)  
+	"confused": `  (\.-.\\)  
  /  -9_g- \
 |   >(%)<  |
  \   [*}  /

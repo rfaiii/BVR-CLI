@@ -363,7 +363,7 @@ var mascotStyle = lipgloss.NewStyle().Foreground(boot.MascotColor).Bold(true)
 //   - "error": the agent errored (X_X x-ray eyes).
 //   - "confused": the agent is loading or thinking.
 //
-// Every dense frame is 13×5 cells: a 7-cell head (\\.-./), 13-wide body rows,
+// Every dense frame is 13×5 cells: a 7-cell head (\\.-.\\\), 13-wide body rows,
 // and a centered 9-cell base. normalizeDenseFrame pads short rows to exactly
 // 13 so the grid never collapses while the mascot reacts.
 type BeaverFrameKey string
