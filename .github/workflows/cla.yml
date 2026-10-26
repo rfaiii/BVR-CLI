@@ -14,7 +14,13 @@ permissions:
 
 jobs:
   CLAAssistant:
-    if: github.repository == 'richavery/bvr-cli'
+    # Deliberately disabled. The guard below used to compare against
+    # richavery/bvr-cli, a name this repository has never had, so the job was
+    # skipped by accident instead of by choice. It still cannot run: the action
+    # needs PERSONAL_ACCESS_TOKEN to commit signatures to
+    # .github/cla-signatures.json, and this repository has no secrets
+    # configured at all. To enable: add that secret, then delete this line.
+    if: false
     runs-on: ubuntu-latest
     steps:
       - name: "CLA Assistant"
@@ -27,10 +33,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           path-to-signatures: ".github/cla-signatures.json"
-          path-to-document: "https://github.com/richavery/bvr-cli/blob/main/CLA.md"
+          path-to-document: "https://github.com/rfaiii/BVR-CLI/blob/main/CLA.md"
           branch: "main"
           allowlist: bvrcli,bvr,dependabot[bot],Copilot
           custom-pr-sign-comment: "I have read the Contributor License Agreement (CLA) and hereby sign the CLA."
-          custom-notsigned-prcomment: "Thank you for your submission. We really appreciate it! Like many open-source projects, we ask that you sign our [Contributor License Agreement](https://github.com/richavery/bvr-cli/blob/main/CLA.md) before we can accept your contribution. You can sign the CLA by just posting a Pull Request comment same as the below format."
+          custom-notsigned-prcomment: "Thank you for your submission. We really appreciate it! Like many open-source projects, we ask that you sign our [Contributor License Agreement](https://github.com/rfaiii/BVR-CLI/blob/main/CLA.md) before we can accept your contribution. You can sign the CLA by just posting a Pull Request comment same as the below format."
           lock-pullrequest-aftermerge: false
           signed-commit-message: "chore(legal): @$contributorName has signed the CLA"
