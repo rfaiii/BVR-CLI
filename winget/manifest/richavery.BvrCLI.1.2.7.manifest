@@ -34,7 +34,7 @@
         "InstallLocation": "/D={0}"
       },
       "InstallerUrl": "https://github.com/rfaiii/BVR-CLI/releases/download/v1.2.7/bvr-cli_1.2.7_windows_amd64.exe",
-      "InstallerSha256": "c91a483cabc19f698d192d5415475e87a4023c3386a39e976d302f5347e7231d"
+      "InstallerSha256": "ff9e64c0041712d877dcf17738f464bb7b56c004e0ae2520234de56dc47a54b7"
     }
   ]
 }
