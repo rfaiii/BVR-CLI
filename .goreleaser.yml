@@ -11,7 +11,7 @@ includes:
 metadata:
   mod_timestamp: "{{ .CommitTimestamp }}"
   license: "FSL-1.1-MIT"
-  homepage: "https://github.com/richavery/bvr-cli"
+  homepage: "https://github.com/rfaiii/BVR-CLI"
   description: "BVR is a keyboard-first terminal AI workspace for projects, local models, tools, and automation."
   full_description: "BVR is a keyboard-first terminal AI workspace for projects, local models, tools, and automation."
   maintainers:
@@ -202,8 +202,8 @@ scoops:
 
 npms:
   - name: "@bvrcli/bvr-cli"
-    repository: "git+https://github.com/richavery/bvr-cli.git"
-    bugs: https://github.com/richavery/bvr-cli/issues
+    repository: "git+https://github.com/rfaiii/BVR-CLI.git"
+    bugs: https://github.com/rfaiii/BVR-CLI/issues
     access: public
     disable: "{{ with .Prerelease }}true{{ end }}"
 
@@ -267,9 +267,9 @@ nix:
 winget:
   - publisher: bvr-cli
     copyright: BVR, Inc
-    publisher_url: https://github.com/richavery/bvr-cli
-    release_notes_url: "https://github.com/richavery/bvr-cli/releases/tag/{{.Tag}}"
-    license_url: https://github.com/richavery/bvr-cli/blob/main/LICENSE.md
+    publisher_url: https://github.com/rfaiii/BVR-CLI
+    release_notes_url: "https://github.com/rfaiii/BVR-CLI/releases/tag/{{.Tag}}"
+    license_url: https://github.com/rfaiii/BVR-CLI/blob/main/LICENSE.md
     skip_upload: "{{ with .Prerelease }}true{{ end }}"
     commit_author:
       name: "BVR"

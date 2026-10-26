@@ -102,7 +102,7 @@ For local beta package generation across all six targets:
 Requirements: Go 1.26 or newer.
 
 ```sh
-git clone https://github.com/richavery/bvr-cli.git
+git clone https://github.com/rfaiii/BVR-CLI.git
 cd BVR-CLI
 go build -o ./bvr-cli .
 ./bvr-cli --version

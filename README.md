@@ -69,7 +69,7 @@ shortcuts and escape hatches experienced developers expect.
 Build and run the current checkout:
 
 ```sh
-git clone https://github.com/richavery/bvr-cli.git
+git clone https://github.com/rfaiii/BVR-CLI.git
 cd BVR-CLI
 go run .
 ```
@@ -201,7 +201,7 @@ When reporting an issue, include:
 5. Provider/model configuration, if relevant
 6. Reproduction steps and terminal output
 
-Open an issue at [github.com/richavery/bvr-cli](https://github.com/richavery/bvr-cli).
+Open an issue at [github.com/rfaiii/BVR-CLI](https://github.com/rfaiii/BVR-CLI/issues).
 
 ## License
 

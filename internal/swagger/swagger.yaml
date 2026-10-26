@@ -772,7 +772,7 @@ info:
     sessions, agents, LSP, MCP, and more.
   license:
     name: MIT
-    url: https://github.com/richavery/bvr-cli/blob/main/LICENSE
+    url: https://github.com/rfaiii/BVR-CLI/blob/main/LICENSE
   title: BVR API
   version: "1.0"
 paths:
