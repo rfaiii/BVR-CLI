@@ -345,7 +345,7 @@ There are two entry points for commands:
                     │  │OPEN CMD  │  click / ctrl+p            │
                     │  │OPEN DIR  │  click / ctrl+o            │
                     │  │CREATE    │  click / ctrl+n            │
-                    │  │GROK BOT  │  click / ctrl+b            │
+                    │  │GROK BOT  │  click / ctrl+shift+g      │
                     │  └──────────┘                          │
                     │        ┌───────┐                        │
                     │        │ BEAVER│  click → boop SFX      │
@@ -406,7 +406,7 @@ There are two entry points for commands:
 | 1 | OPEN COMMANDS       | `ctrl+p`  | `menu-open`     | Opens the command palette dialog (`openCommandsDialog`)     |
 | 2 | OPEN FILE FINDER    | `ctrl+o`  | `menu-open`     | Opens the project file browser dialog (`openFileBrowserDialog`) |
 | 3 | CREATE FILE         | `ctrl+n`  | `quick-notify-02` | Opens the file picker dialog (`NewCreateFile`)              |
-| 4 | CHAT W/ GROK BOT    | `ctrl+b`  | `quick-notify-03` | Opens the `/bots` picker (`openBotsDialog`) |
+| 4 | CHAT W/ GROK BOT    | `ctrl+shift+g` | `quick-notify-03` | Opens the `/bots` picker (`openBotsDialog`). `ctrl+g` stays help. `ctrl+b` is unbound on the landing screen. |
 | 5 | BEAVER LOGO         | click     | `beaver`        | Triggers beaver boop animation + sound (`triggerBeaverBoop`)  |
 
 ### Command palette — system commands (in order)
@@ -581,7 +581,7 @@ User Input (keyboard / mouse)
             → handleGlobalKeys() (global shortcuts)               │
               → openCommandsDialog() (ctrl+p)                      │
               → openFileBrowserDialog() (ctrl+o)                   │
-              → openBotsDialog() (ctrl+b, landing)              │
+              → openBotsDialog() (ctrl+shift+g, landing)        │
               → openModelsDialog() (ctrl+l)                        │
               → etc.                                               │
             → state-specific handlers (editor, chat, sidebar)      │

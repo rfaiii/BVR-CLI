@@ -289,9 +289,10 @@ type UI struct {
 	sidebarShowsMascot bool
 
 	// imageLookupPending routes the next file-browser selection to the
-	// lookup-image command instead of attaching the file to chat. The
-	// landing button no longer sets it; lookup-image stays available
-	// elsewhere.
+	// lookup-image command instead of attaching the file to chat.
+	// Nothing on the landing screen sets it. ctrl+b is unbound there
+	// and does not start image lookup. lookup-image stays a shell
+	// command.
 	imageLookupPending bool
 
 	// isCanceling tracks whether the user has pressed escape once to cancel.
@@ -2887,7 +2888,7 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				}
 			}
 			return true
-		case key.Matches(msg, m.keyMap.Browser):
+		case key.Matches(msg, m.keyMap.Bots):
 			if m.state == uiLanding {
 				cmds = append(cmds, m.playAudio("Bots", "Chat with Grok bot", "quick-notify-03"))
 				if cmd := m.openBotsDialog(); cmd != nil {
@@ -3788,7 +3789,7 @@ func (m *UI) ShortHelp() []key.Binding {
 			k.Editor.Newline,
 		)
 		if m.state == uiLanding {
-			binds = append(binds, k.Finder, k.Browser)
+			binds = append(binds, k.Finder, k.Bots)
 		}
 	}
 
@@ -3933,7 +3934,7 @@ func (m *UI) FullHelp() [][]key.Binding {
 				},
 			)
 			if m.state == uiLanding {
-				binds = append(binds, []key.Binding{k.Finder, k.Browser})
+				binds = append(binds, []key.Binding{k.Finder, k.Bots})
 			}
 			editorBinds := []key.Binding{
 				k.Editor.Newline,

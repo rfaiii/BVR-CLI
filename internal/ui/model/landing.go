@@ -169,7 +169,7 @@ func (m *UI) landingView() string {
 }
 
 // landingBotsButton is the homescreen control that opens the bot picker.
-const landingBotsButton = "CHAT W/ GROK BOT — ctrl+b"
+const landingBotsButton = "CHAT W/ GROK BOT — ctrl+shift+g"
 
 // landingButtonTop returns the Y coordinate for the top of the vertical
 // button stack on the landing page. Buttons appear after the CWD line and
