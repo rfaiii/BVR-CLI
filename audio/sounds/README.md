@@ -48,6 +48,10 @@ These are deliberately playful additions to the original event list:
   their own quick-notify cue so the four launch buttons do not sound identical.
 - Clicking the animated Beaver logo on the homescreen or in the chat sidebar
   randomly selects one of six Beaver cues, including `WHAT-FLAT.wav`.
+- `/bots` reuses the same player. Each bot's chat lines use `chat-01` …
+  `chat-04`, errors use `error-01` … `error-03`, and selection uses
+  `quick-notify-01` … `quick-notify-03`. Gnarf's boop is `quick-notify-03`
+  and plays unless the bots mute, `NO_SOUND`, or audio volume `silent` is set.
 
 ## Legacy / not-yet-processed cues
 

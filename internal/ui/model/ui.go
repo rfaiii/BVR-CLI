@@ -2259,6 +2259,15 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 		if msg.Cmd != nil {
 			cmds = append(cmds, msg.Cmd)
 		}
+	case dialog.ActionPlayCue:
+		for _, typ := range msg.Types {
+			if typ != "" {
+				cmds = append(cmds, m.playAudio("Bots", typ, typ))
+			}
+		}
+		if msg.Cmd != nil {
+			cmds = append(cmds, msg.Cmd)
+		}
 
 	// Session dialog messages.
 	case dialog.ActionSelectSession:
@@ -5202,6 +5211,11 @@ func (m *UI) openDialog(id string) tea.Cmd {
 	case dialog.ThemesID:
 		cmds = append(cmds, m.playAudio("Themes", "Open themes", "menu-open"))
 		m.dialog.OpenDialog(dialog.NewThemes(m.com, m.themeID))
+	case dialog.BotsID:
+		cmds = append(cmds, m.playAudio("Bots", "Open bots", "menu-open"))
+		if cmd := m.openBotsDialog(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case dialog.SoundsID:
 		cmds = append(cmds, m.playAudio("Sounds", "Open sounds", "menu-open"))
 		var currentVolume string
@@ -5285,6 +5299,21 @@ func (m *UI) openModelsDialog() tea.Cmd {
 
 	m.dialog.OpenDialog(modelsDialog)
 	return modelsDialog.LocalModelsCmd()
+}
+
+// openBotsDialog opens the NES bot picker. The demo backend is local.
+func (m *UI) openBotsDialog() tea.Cmd {
+	if m.dialog.ContainsDialog(dialog.BotsID) {
+		m.dialog.BringToFront(dialog.BotsID)
+		return nil
+	}
+	vol := audio.DefaultVolume
+	if cfg := m.com.Config(); cfg != nil && cfg.Options != nil && cfg.Options.AudioVolume != "" {
+		vol = cfg.Options.AudioVolume
+	}
+	d := dialog.NewBots(m.com, m.caps.Profile, vol, nil)
+	m.dialog.OpenDialog(d)
+	return d.InitCmd()
 }
 
 // openCommandsDialog opens the commands dialog.

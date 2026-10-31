@@ -2,6 +2,26 @@ package audio
 
 import "testing"
 
+func TestBotCueMappings(t *testing.T) {
+	tests := map[string]string{
+		"chat-01":         "CHAT-01-FLAT.wav",
+		"chat-02":         "CHAT-02-FLAT.wav",
+		"chat-03":         "CHAT-03-FLAT.wav",
+		"chat-04":         "CHAT-04-FLAT.wav",
+		"error-01":        "ERROR-01-FLAT.wav",
+		"error-02":        "ERROR-02-FLAT.wav",
+		"error-03":        "ERROR-03-FLAT.wav",
+		"quick-notify-01": "QUICK-NOTIFY-01-FLAT.wav",
+		"quick-notify-02": "QUICK-NOTIFY-02-FLAT.wav",
+		"quick-notify-03": "QUICK-NOTIFY-03-FLAT.wav",
+	}
+	for event, want := range tests {
+		if got := getAudioFilename(event); got != want {
+			t.Errorf("getAudioFilename(%q) = %q, want %q", event, got, want)
+		}
+	}
+}
+
 func TestQuickNotifyMappings(t *testing.T) {
 	tests := map[string]string{
 		"quick-notify-01": "QUICK-NOTIFY-01-FLAT.wav",

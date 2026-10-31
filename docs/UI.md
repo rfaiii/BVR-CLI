@@ -383,6 +383,7 @@ There are two entry points for commands:
                     │  • Sessions (ctrl+s)                    │
                     │  • NODE Settings (ctrl+shift+n)         │
                     │  • Themes (ctrl+shift+t)                │
+                    │  • Bots (/bots)                         │
                     │  • Sounds                               │
                     │  • Quit (ctrl+c)                        │
                     │  • File Browser (ctrl+o)                │
@@ -425,29 +426,30 @@ There are two entry points for commands:
 | 8  | `other_models`        | Other Models                 | —             | ActionOpenDialog       | `menu-open`      |
 | 9  | `ollama_how_to`       | Ollama How To                | —             | ActionOpenDialog       | `menu-open`      |
 | 10 | `themes`              | Themes                       | `ctrl+shift+t`| ActionOpenDialog       | `menu-open`      |
-| 11 | `sounds`              | Sounds                       | —             | ActionOpenDialog       | `menu-open`      |
-| 12 | `open_website`        | Open Website                 | —             | ActionOpenDialog (BrowserID) | `quick-notify-03` |
-| 13 | `select_notifications`| Notification Style           | —             | ActionSelectNotificationStyle | `menu-close`  |
-| 14 | `toggle_beastmode`    | Toggle Beast Mode            | `ctrl+y`      | ActionToggleBeastmodeMode | `chainsaw`     |
-| 15 | `toggle_code_mode`    | Toggle Code Mode             | `ctrl+shift+c`| ActionToggleCodeMode   | `quick-notify-01`|
-| 16 | `toggle_help`         | Toggle Help                  | `ctrl+g`      | ActionToggleHelp       | `quick-notify-02`|
-| 17 | `init`                | Initialize Project           | —             | ActionInitializeProject | `quick-notify-01`|
-| 18 | `toggle_transparent`  | Toggle Transparent BG        | —             | ActionToggleTransparentBackground | `quick-notify-01`|
-| 19 | `quit`                | Quit                         | `ctrl+c`      | ActionQuit             | `exit`           |
+| 11 | `bots`                | Bots                         | —             | ActionOpenDialog       | `menu-open`      |
+| 12 | `sounds`              | Sounds                       | —             | ActionOpenDialog       | `menu-open`      |
+| 13 | `open_website`        | Open Website                 | —             | ActionOpenDialog (BrowserID) | `quick-notify-03` |
+| 14 | `select_notifications`| Notification Style           | —             | ActionSelectNotificationStyle | `menu-close`  |
+| 15 | `toggle_beastmode`    | Toggle Beast Mode            | `ctrl+y`      | ActionToggleBeastmodeMode | `chainsaw`     |
+| 16 | `toggle_code_mode`    | Toggle Code Mode             | `ctrl+shift+c`| ActionToggleCodeMode   | `quick-notify-01`|
+| 17 | `toggle_help`         | Toggle Help                  | `ctrl+g`      | ActionToggleHelp       | `quick-notify-02`|
+| 18 | `init`                | Initialize Project           | —             | ActionInitializeProject | `quick-notify-01`|
+| 19 | `toggle_transparent`  | Toggle Transparent BG        | —             | ActionToggleTransparentBackground | `quick-notify-01`|
+| 20 | `quit`                | Quit                         | `ctrl+c`      | ActionQuit             | `exit`           |
 
 ### Conditional commands (shown only when conditions are met)
 
 | #  | ID                    | Title                        | Condition        | Action Type            | SFX Type         |
 |----|-----------------------|------------------------------|-------------------|------------------------|------------------|
-| 20 | `summarize` ⚑         | Summarize Session            | has active session | ActionSummarize       | `long-load`      |
-| 21 | `toggle_thinking` ⚑   | Enable/Disable Thinking Mode | Anthropic model that supports thinking | ActionToggleThinking | `quick-notify-03` |
-| 22 | `select_reasoning_effort` ⚑ | Select Reasoning Effort | OpenAI model with reasoning levels | ActionSelectReasoningEffort | `menu-open` |
-| 23 | `toggle_sidebar` ⚑    | Toggle Sidebar               | active session + width ≥ 120 | ActionToggleCompactMode | `quick-notify-01` |
-| 24 | `file_picker` ⚑       | Open File Picker             | active session + model supports images | ActionOpenDialog (FilePickerID) | `menu-open` |
-| 25 | `open_external_editor` ⚑ | Open External Editor       | `$EDITOR` env var set | ActionExternalEditor  | `quick-notify-03` |
-| 26 | `enable_docker_mcp` ⚑  | Enable Docker MCP Catalog    | Docker MCP available but not enabled | ActionEnableDockerMCP | `menu-open` |
-| 27 | `disable_docker_mcp` ⚑ | Disable Docker MCP Catalog   | Docker MCP currently enabled | ActionDisableDockerMCP | `menu-close` |
-| 28 | `toggle_pills` ⚑       | Toggle To-Dos/Queue          | has todos or queue items | ActionTogglePills   | `quick-notify-02` |
+| 21 | `summarize` ⚑         | Summarize Session            | has active session | ActionSummarize       | `long-load`      |
+| 22 | `toggle_thinking` ⚑   | Enable/Disable Thinking Mode | Anthropic model that supports thinking | ActionToggleThinking | `quick-notify-03` |
+| 23 | `select_reasoning_effort` ⚑ | Select Reasoning Effort | OpenAI model with reasoning levels | ActionSelectReasoningEffort | `menu-open` |
+| 24 | `toggle_sidebar` ⚑    | Toggle Sidebar               | active session + width ≥ 120 | ActionToggleCompactMode | `quick-notify-01` |
+| 25 | `file_picker` ⚑       | Open File Picker             | active session + model supports images | ActionOpenDialog (FilePickerID) | `menu-open` |
+| 26 | `open_external_editor` ⚑ | Open External Editor       | `$EDITOR` env var set | ActionExternalEditor  | `quick-notify-03` |
+| 27 | `enable_docker_mcp` ⚑  | Enable Docker MCP Catalog    | Docker MCP available but not enabled | ActionEnableDockerMCP | `menu-open` |
+| 28 | `disable_docker_mcp` ⚑ | Disable Docker MCP Catalog   | Docker MCP currently enabled | ActionDisableDockerMCP | `menu-close` |
+| 29 | `toggle_pills` ⚑       | Toggle To-Dos/Queue          | has todos or queue items | ActionTogglePills   | `quick-notify-02` |
 
 ### Action handler flow
 
@@ -636,6 +638,42 @@ User Input (keyboard / mouse)
 | `internal/ui/boot/boot.go` | `BeaverFramesDenseAlpha` + `BeaverFramesDenseBeta` (ASCII frames) |
 | `internal/cmd/version_mascot.go` | `--version` pixel beaver (generated; see `scripts/gen_version_mascot.py`) |
 | `internal/cmd/lookup_image.go` | `bvr lookup-image [path]` CLI command for image recognition |
+
+## Bots
+
+Type `/` in an empty prompt to open the command palette, then choose **Bots**
+(aliases `bots` and `/bots`). The palette entry is `Bots`.
+
+The picker draws five NES-style sprites side by side: Dingus (white circle,
+orange star badge), BroBro (green triangle), Pillo (gray pill), Luvah (pink
+heart), and Gnarf (purple rounded square). Each sprite is 16×16 pixels packed
+into half-block cells (`▀▄█`), truecolor when the terminal allows it, xterm
+256 when it does not, and shaded blocks when `NO_COLOR` is set. Narrow
+terminals drop to fewer columns, then to a one-line list.
+
+Arrow keys or `hjkl` move the highlight. The selected bot sits on a dark
+rounded tile with a blinking `▶`. Enter opens a chat with that bot's sprite
+in the header and a typewriter reply. Esc returns to the picker, then closes.
+`m` (or `ctrl+m` while typing) mutes bot cues for the dialog.
+
+Replies come from a local demo backend (`BotBackend` in `internal/bots`).
+Nothing is sent to a model or the network. The header shows a `DEMO` badge.
+Voices differ: Dingus is calm, BroBro is fast and loud, Pillo is a one-liner,
+Luvah is warm, and Gnarf is all caps. Gnarf also plays a quick-notify boop.
+That boop is on by default. It stays quiet when the dialog is muted, when
+`NO_SOUND` is set, or when audio volume is `silent`.
+
+Cues go through the existing audio backend, which maps event names onto
+`audio/sounds/`:
+
+| Event | File |
+| --- | --- |
+| `chat-01` … `chat-04` | `CHAT-01-FLAT.wav` … `CHAT-04-FLAT.wav` |
+| `error-01` … `error-03` | `ERROR-01-FLAT.wav` … `ERROR-03-FLAT.wav` |
+| `quick-notify-01` … `03` | `QUICK-NOTIFY-01-FLAT.wav` … `QUICK-NOTIFY-03-FLAT.wav` |
+
+An ASCII capture of the picker is in
+[`docs/media/bots-picker.txt`](media/bots-picker.txt).
 
 ## Dialogs and user controls
 
