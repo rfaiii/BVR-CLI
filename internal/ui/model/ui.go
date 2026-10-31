@@ -459,10 +459,13 @@ type UI struct {
 // New creates a new instance of the [UI] model.
 func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 	node.EnsureDefaultDevice()
-	// Hosts found by a previous `bvr node scan` come back as offline rows, so
-	// the picker shows what was reachable last time while the live probe runs.
+	// Hosts found by a previous `bvr node scan` or `node connect` come back
+	// as offline rows. Saved tokens register a live transport in this process.
 	if _, err := node.LoadDeviceRegistry(); err != nil {
 		slog.Debug("Failed to restore the NODE device registry", "error", err)
+	}
+	if err := node.AttachSavedTransports(); err != nil {
+		slog.Debug("Failed to attach saved NODE transports", "error", err)
 	}
 	// Editor components
 	ta := textarea.New()
@@ -5424,8 +5427,10 @@ func (m *UI) openNodeSettingsDialog() tea.Cmd {
 	nodeSettings := dialog.NewNodeSettings(m.com)
 	m.dialog.OpenDialog(nodeSettings)
 	return func() tea.Msg {
-		node.DiscoverDevices()
-		return dialog.NodeSettingsUpdateMsg{Devices: node.Devices()}
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		node.ProbeSavedNodes(ctx)
+		return dialog.NodeSettingsUpdateMsg{Devices: node.Devices(), Status: "Probed saved NODEs"}
 	}
 }
 
