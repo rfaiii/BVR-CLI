@@ -15,11 +15,11 @@ repository signs or notarizes, so Gatekeeper prompts on first launch)
 
 ```bash
 # Build DMG for distribution (run from the repository root)
-./scripts/package/macos-dmg.sh v1.2.8-beta.1
+./scripts/package/macos-dmg.sh v1.2.9-beta.1
 ```
 
 **Installation:**
-1. Download `bvr-cli_1.2.8-beta.1_darwin_arm64.dmg`
+1. Download `bvr-cli_1.2.9-beta.1_darwin_arm64.dmg`
 2. Open DMG and drag BVR.app to Applications
 3. First launch may require: Right-click → Open (to bypass Gatekeeper)
 4. Launcher auto-detects terminal preference
@@ -185,7 +185,7 @@ Verify:
 
 **Template:**
 ```
-**Version:** v1.2.8-beta.X
+**Version:** v1.2.9-beta.X
 **Platform:** macOS/Windows/Linux
 **Terminal:** Ghostty/Alacritty/etc.
 **Go Version:** (if applicable)
@@ -246,7 +246,7 @@ reach out to the maintainer through the project site.
 
 1. **Build beta DMG:**
    ```bash
-   ./scripts/package/macos-dmg.sh v1.2.8-beta.1
+   ./scripts/package/macos-dmg.sh v1.2.9-beta.1
    ```
 
 2. **Upload to distribution:**
@@ -271,7 +271,7 @@ After 2 weeks of beta testing:
 1. **Fix all P0/P1 bugs**
 2. **Build RC:**
    ```bash
-   ./scripts/package/macos-dmg.sh v1.2.8-rc.1
+   ./scripts/package/macos-dmg.sh v1.2.9-rc.1
    ```
 3. **Send to full beta list**
 4. **Wait 3 days for showstoppers**
@@ -288,16 +288,16 @@ If no showstoppers:
    today (v1.2.5 was):
 
    ```bash
-   git tag v1.2.8
-   git push origin v1.2.8
-   ./scripts/package/build-installers.sh 1.2.8
-   gh release create v1.2.8 ./dist/installers/bvr-cli_1.2.8_* \
-       ./dist/installers/bvr-cli-1.2.8-*
+   git tag v1.2.9
+   git push origin v1.2.9
+   ./scripts/package/build-installers.sh 1.2.9
+   gh release create v1.2.9 ./dist/installers/bvr-cli_1.2.9_* \
+       ./dist/installers/bvr-cli-1.2.9-*
    ```
 
 2. **Build final DMG:**
    ```bash
-   ./scripts/package/macos-dmg.sh v1.2.8
+   ./scripts/package/macos-dmg.sh v1.2.9
    ```
 
 3. **Publish:**
