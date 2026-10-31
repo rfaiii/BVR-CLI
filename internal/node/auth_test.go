@@ -17,14 +17,14 @@ func TestTokensEqualIgnoresTimingShape(t *testing.T) {
 }
 
 func TestAuthorizedBearer(t *testing.T) {
-	open := httptest.NewRequest(http.MethodGet, "/v1/node/health", nil)
+	open := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/v1/node/health", nil)
 	require.True(t, authorizedBearer("", open))
 
-	authed := httptest.NewRequest(http.MethodGet, "/v1/node/health", nil)
+	authed := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/v1/node/health", nil)
 	authed.Header.Set("Authorization", "Bearer secret")
 	require.True(t, authorizedBearer("secret", authed))
 
-	wrong := httptest.NewRequest(http.MethodGet, "/v1/node/health", nil)
+	wrong := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/v1/node/health", nil)
 	wrong.Header.Set("Authorization", "Bearer nope")
 	require.False(t, authorizedBearer("secret", wrong))
 }
@@ -45,16 +45,16 @@ func TestExecPolicyAllowList(t *testing.T) {
 }
 
 func TestOriginAllowed(t *testing.T) {
-	same := httptest.NewRequest(http.MethodGet, "http://127.0.0.1:7777/v1/node/ws", nil)
+	same := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "http://127.0.0.1:7777/v1/node/ws", nil)
 	same.Host = "127.0.0.1:7777"
 	same.Header.Set("Origin", "http://127.0.0.1:7777")
 	require.True(t, originAllowed(same))
 
-	native := httptest.NewRequest(http.MethodGet, "http://127.0.0.1:7777/v1/node/ws", nil)
+	native := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "http://127.0.0.1:7777/v1/node/ws", nil)
 	native.Host = "127.0.0.1:7777"
 	require.True(t, originAllowed(native))
 
-	evil := httptest.NewRequest(http.MethodGet, "http://127.0.0.1:7777/v1/node/ws", nil)
+	evil := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "http://127.0.0.1:7777/v1/node/ws", nil)
 	evil.Host = "127.0.0.1:7777"
 	evil.Header.Set("Origin", "https://evil.example")
 	require.False(t, originAllowed(evil))
@@ -69,7 +69,7 @@ func TestWebSocketRejectsForeignOrigin(t *testing.T) {
 	header := http.Header{}
 	header.Set("Origin", "https://evil.example")
 	header.Set("Authorization", "Bearer secret")
-	_, resp, err := dialer.Dial(wsURL(server.URL), header)
+	_, resp, err := dialer.DialContext(t.Context(), wsURL(server.URL), header)
 	require.Error(t, err)
 	if resp != nil {
 		require.Equal(t, http.StatusForbidden, resp.StatusCode)

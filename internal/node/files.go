@@ -264,7 +264,7 @@ func (p *sharedProject) list(rel string, depth int) (FileList, error) {
 	if err != nil {
 		return FileList{}, err
 	}
-	info, err := os.Lstat(full)
+	info, err := lstatContained(p.Root, full)
 	if err != nil {
 		return FileList{}, err
 	}
@@ -300,7 +300,7 @@ func (p *sharedProject) read(rel string) (FileContent, error) {
 	if err != nil {
 		return FileContent{}, err
 	}
-	info, err := os.Lstat(full)
+	info, err := lstatContained(p.Root, full)
 	if err != nil {
 		return FileContent{}, err
 	}
@@ -316,7 +316,7 @@ func (p *sharedProject) read(rel string) (FileContent, error) {
 	if info.Size() > MaxFileBytes {
 		return FileContent{}, fmt.Errorf("file exceeds %d bytes", MaxFileBytes)
 	}
-	data, err := os.ReadFile(full)
+	data, err := readFileContained(p.Root, full)
 	if err != nil {
 		return FileContent{}, err
 	}
@@ -345,7 +345,7 @@ func (p *sharedProject) write(rel string, content []byte, expected *string) (Fil
 	if full == p.Root {
 		return FileEntry{}, errIsDir
 	}
-	info, statErr := os.Lstat(full)
+	info, statErr := lstatContained(p.Root, full)
 	switch {
 	case statErr != nil && !os.IsNotExist(statErr):
 		return FileEntry{}, statErr
@@ -360,7 +360,7 @@ func (p *sharedProject) write(rel string, content []byte, expected *string) (Fil
 		if info.IsDir() {
 			return FileEntry{}, errIsDir
 		}
-		current, err := fileETag(full)
+		current, err := fileETag(p.Root, full)
 		if err != nil {
 			return FileEntry{}, err
 		}
@@ -369,38 +369,13 @@ func (p *sharedProject) write(rel string, content []byte, expected *string) (Fil
 		}
 	}
 	parent := filepath.Dir(full)
-	if err := os.MkdirAll(parent, 0o755); err != nil {
+	if err := mkdirAllContained(p.Root, parent); err != nil {
 		return FileEntry{}, err
 	}
-	if !within(p.Root, parent) {
-		return FileEntry{}, errPathEscape
-	}
-	tmp, err := os.CreateTemp(parent, ".bvrnode-*")
-	if err != nil {
+	if err := writeAtomicContained(p.Root, full, content); err != nil {
 		return FileEntry{}, err
 	}
-	tmpName := tmp.Name()
-	cleanup := true
-	defer func() {
-		if cleanup {
-			_ = os.Remove(tmpName)
-		}
-	}()
-	if _, err := tmp.Write(content); err != nil {
-		_ = tmp.Close()
-		return FileEntry{}, err
-	}
-	if err := tmp.Close(); err != nil {
-		return FileEntry{}, err
-	}
-	if err := os.Chmod(tmpName, 0o644); err != nil {
-		return FileEntry{}, err
-	}
-	if err := os.Rename(tmpName, full); err != nil {
-		return FileEntry{}, err
-	}
-	cleanup = false
-	info, err = os.Lstat(full)
+	info, err = lstatContained(p.Root, full)
 	if err != nil {
 		return FileEntry{}, err
 	}
@@ -422,7 +397,7 @@ func (p *sharedProject) mkdir(rel string) (FileEntry, error) {
 	if full == p.Root {
 		return FileEntry{}, fmt.Errorf("project root already exists")
 	}
-	if info, err := os.Lstat(full); err == nil {
+	if info, err := lstatContained(p.Root, full); err == nil {
 		if info.IsDir() {
 			return FileEntry{}, &ConflictError{Msg: "directory already exists"}
 		}
@@ -430,16 +405,15 @@ func (p *sharedProject) mkdir(rel string) (FileEntry, error) {
 	} else if !os.IsNotExist(err) {
 		return FileEntry{}, err
 	}
-	if err := os.MkdirAll(full, 0o755); err != nil {
+	if err := mkdirAllContained(p.Root, full); err != nil {
 		return FileEntry{}, err
 	}
-	if !within(p.Root, full) {
-		return FileEntry{}, errPathEscape
+	if p.watcher != nil && (strings.HasPrefix(full, p.Root+string(filepath.Separator)) || full == p.Root) {
+		if strings.HasPrefix(full, p.Root) {
+			_ = p.watcher.Add(full)
+		}
 	}
-	if p.watcher != nil {
-		_ = p.watcher.Add(full)
-	}
-	info, err := os.Lstat(full)
+	info, err := lstatContained(p.Root, full)
 	if err != nil {
 		return FileEntry{}, err
 	}
@@ -456,31 +430,31 @@ func (p *sharedProject) remove(rel string, expected *string) error {
 	if full == p.Root {
 		return fmt.Errorf("refusing to delete the project root")
 	}
-	info, err := os.Lstat(full)
+	info, err := lstatContained(p.Root, full)
 	if err != nil {
 		return err
 	}
 	if info.IsDir() && info.Mode()&os.ModeSymlink == 0 {
-		empty, err := dirEmpty(full)
+		empty, err := dirEmpty(p.Root, full)
 		if err != nil {
 			return err
 		}
 		if !empty {
 			return errNotEmpty
 		}
-		return os.Remove(full)
+		return removeContained(p.Root, full)
 	}
 	if expected == nil {
 		return errETagRequired
 	}
-	current, err := lstatETag(full, info)
+	current, err := lstatETag(p.Root, full, info)
 	if err != nil {
 		return err
 	}
 	if current != *expected {
 		return &ConflictError{ETag: current}
 	}
-	return os.Remove(full)
+	return removeContained(p.Root, full)
 }
 
 func (p *sharedProject) rename(from, to string, expected *string) (FileEntry, error) {
@@ -497,11 +471,11 @@ func (p *sharedProject) rename(from, to string, expected *string) (FileEntry, er
 	if src == p.Root || dst == p.Root {
 		return FileEntry{}, fmt.Errorf("refusing to rename the project root")
 	}
-	info, err := os.Lstat(src)
+	info, err := lstatContained(p.Root, src)
 	if err != nil {
 		return FileEntry{}, err
 	}
-	if _, err := os.Lstat(dst); err == nil {
+	if _, err := lstatContained(p.Root, dst); err == nil {
 		return FileEntry{}, &ConflictError{Msg: "destination already exists"}
 	} else if !os.IsNotExist(err) {
 		return FileEntry{}, err
@@ -510,7 +484,7 @@ func (p *sharedProject) rename(from, to string, expected *string) (FileEntry, er
 		if expected == nil {
 			return FileEntry{}, errETagRequired
 		}
-		current, err := lstatETag(src, info)
+		current, err := lstatETag(p.Root, src, info)
 		if err != nil {
 			return FileEntry{}, err
 		}
@@ -519,17 +493,17 @@ func (p *sharedProject) rename(from, to string, expected *string) (FileEntry, er
 		}
 	}
 	parent := filepath.Dir(dst)
-	parentInfo, err := os.Lstat(parent)
+	parentInfo, err := lstatContained(p.Root, parent)
 	if err != nil {
 		return FileEntry{}, err
 	}
 	if !parentInfo.IsDir() || parentInfo.Mode()&os.ModeSymlink != 0 {
 		return FileEntry{}, fmt.Errorf("destination parent is not a directory")
 	}
-	if err := os.Rename(src, dst); err != nil {
+	if err := renameContained(p.Root, src, dst); err != nil {
 		return FileEntry{}, err
 	}
-	info, err = os.Lstat(dst)
+	info, err = lstatContained(p.Root, dst)
 	if err != nil {
 		return FileEntry{}, err
 	}
@@ -541,9 +515,18 @@ func canonicalRoot(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	abs = filepath.Clean(abs)
+	prefix := filepath.VolumeName(abs) + string(filepath.Separator)
+	if !strings.HasPrefix(abs, prefix) {
+		return "", fmt.Errorf("project path is not absolute")
+	}
 	resolved, err := filepath.EvalSymlinks(abs)
 	if err != nil {
 		return "", fmt.Errorf("project %s: %w", abs, err)
+	}
+	resolved = filepath.Clean(resolved)
+	if !strings.HasPrefix(resolved, prefix) {
+		return "", fmt.Errorf("project path is not absolute")
 	}
 	info, err := os.Stat(resolved)
 	if err != nil {
@@ -582,9 +565,12 @@ func safeID(base string) string {
 	return id
 }
 
-// confine resolves rel inside root. Absolute paths, ".." segments, and
-// any symlink along the way are rejected, including a symlink whose
-// target happens to land back inside the root.
+// confine resolves rel inside root. The relative form must pass
+// filepath.IsLocal. The deepest existing parent is passed through
+// EvalSymlinks and kept only when that path is still inside root.
+// Symlinks are not followed: a symlink component is rejected, and a
+// parent whose resolved path differs from its lexical path is rejected.
+// Missing suffix components are appended only after that check.
 func confine(root, request string) (string, error) {
 	if strings.ContainsRune(request, 0) {
 		return "", errPathEscape
@@ -593,30 +579,35 @@ func confine(root, request string) (string, error) {
 	if request == "" || request == "." {
 		return root, nil
 	}
-	if filepath.IsAbs(request) {
+	if !filepath.IsLocal(request) {
 		return "", errPathEscape
 	}
 	cleaned := filepath.Clean(request)
-	if cleaned == ".." || strings.HasPrefix(cleaned, ".."+string(filepath.Separator)) {
+	if !filepath.IsLocal(cleaned) {
 		return "", errPathEscape
 	}
 	full := filepath.Join(root, cleaned)
-	if !within(root, full) {
+	if !strings.HasPrefix(full, root+string(filepath.Separator)) {
 		return "", errPathEscape
 	}
+	var missing []string
 	current := root
 	for _, part := range strings.Split(cleaned, string(filepath.Separator)) {
 		if part == "" || part == "." {
 			continue
 		}
-		if part == ".." {
+		if !filepath.IsLocal(part) {
 			return "", errPathEscape
 		}
+		if len(missing) > 0 {
+			missing = append(missing, part)
+			continue
+		}
 		next := filepath.Join(current, part)
-		info, err := os.Lstat(next)
+		info, err := lstatContained(root, next)
 		if err != nil {
 			if os.IsNotExist(err) {
-				current = next
+				missing = append(missing, part)
 				continue
 			}
 			return "", err
@@ -626,10 +617,24 @@ func confine(root, request string) (string, error) {
 		}
 		current = next
 	}
-	if !within(root, current) {
+	resolved, err := evalContained(root, current)
+	if err != nil {
+		return "", err
+	}
+	if resolved != current {
+		return "", errSymlink
+	}
+	final := resolved
+	for _, part := range missing {
+		if !filepath.IsLocal(part) {
+			return "", errPathEscape
+		}
+		final = filepath.Join(final, part)
+	}
+	if final != root && !strings.HasPrefix(final, root+string(filepath.Separator)) {
 		return "", errPathEscape
 	}
-	return current, nil
+	return final, nil
 }
 
 func within(root, path string) bool {
@@ -667,7 +672,7 @@ func entryFor(root, full string, info os.FileInfo) (FileEntry, error) {
 	case info.Mode()&os.ModeSymlink != 0:
 		entry.Type = "symlink"
 		entry.Size = 0
-		etag, err := lstatETag(full, info)
+		etag, err := lstatETag(root, full, info)
 		if err != nil {
 			return FileEntry{}, err
 		}
@@ -677,7 +682,7 @@ func entryFor(root, full string, info os.FileInfo) (FileEntry, error) {
 		entry.Size = 0
 	case info.Mode().IsRegular():
 		entry.Type = "file"
-		etag, err := fileETag(full)
+		etag, err := fileETag(root, full)
 		if err != nil {
 			return FileEntry{}, err
 		}
@@ -695,7 +700,7 @@ func walkFiles(root, dir string, depth int) ([]FileEntry, error) {
 		if len(entries) > maxListEntries {
 			return fmt.Errorf("listing exceeds %d entries", maxListEntries)
 		}
-		children, err := os.ReadDir(current)
+		children, err := readDirContained(root, current)
 		if err != nil {
 			return err
 		}
@@ -704,7 +709,7 @@ func walkFiles(root, dir string, depth int) ([]FileEntry, error) {
 				return fmt.Errorf("listing exceeds %d entries", maxListEntries)
 			}
 			full := filepath.Join(current, child.Name())
-			info, err := os.Lstat(full)
+			info, err := lstatContained(root, full)
 			if err != nil {
 				return err
 			}
@@ -733,8 +738,8 @@ func walkFiles(root, dir string, depth int) ([]FileEntry, error) {
 	return entries, nil
 }
 
-func fileETag(path string) (string, error) {
-	file, err := os.Open(path)
+func fileETag(root, path string) (string, error) {
+	file, err := openContained(root, path)
 	if err != nil {
 		return "", err
 	}
@@ -751,9 +756,9 @@ func etagBytes(data []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-func lstatETag(path string, info os.FileInfo) (string, error) {
+func lstatETag(root, path string, info os.FileInfo) (string, error) {
 	if info.Mode()&os.ModeSymlink != 0 {
-		target, err := os.Readlink(path)
+		target, err := readlinkContained(root, path)
 		if err != nil {
 			return "", err
 		}
@@ -762,11 +767,11 @@ func lstatETag(path string, info os.FileInfo) (string, error) {
 	if info.IsDir() {
 		return "", nil
 	}
-	return fileETag(path)
+	return fileETag(root, path)
 }
 
-func dirEmpty(path string) (bool, error) {
-	file, err := os.Open(path)
+func dirEmpty(root, path string) (bool, error) {
+	file, err := openContained(root, path)
 	if err != nil {
 		return false, err
 	}

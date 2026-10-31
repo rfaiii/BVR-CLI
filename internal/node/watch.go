@@ -104,13 +104,15 @@ func (p *sharedProject) onEvent(ev fsnotify.Event) {
 	if rel == "." || watchPathSkipped(rel) || scratchName(filepath.Base(ev.Name)) {
 		return
 	}
-	info, statErr := os.Lstat(ev.Name)
+	info, statErr := lstatContained(p.Root, ev.Name)
 	if statErr == nil && info.IsDir() && info.Mode()&os.ModeSymlink == 0 && op == "create" && p.watcher != nil {
-		_ = p.watcher.Add(ev.Name)
+		if strings.HasPrefix(ev.Name, p.Root+string(filepath.Separator)) {
+			_ = p.watcher.Add(ev.Name)
+		}
 	}
 	var etag string
 	if statErr == nil && (info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0) {
-		etag, _ = lstatETag(ev.Name, info)
+		etag, _ = lstatETag(p.Root, ev.Name, info)
 	}
 	p.share.publish(FSEvent{ProjectID: p.ID, Path: rel, Op: op, ETag: etag})
 }
