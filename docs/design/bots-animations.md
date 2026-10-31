@@ -62,17 +62,17 @@ it off. The badge stays an overlay, same as today.
 
 ## Per-mascot specs
 
-Coordinates are top-left of the trimmed grid. `eye1` is the left oval,
-`eye2` the right. The right oval sits one row higher on Dingus, Pillo,
-Luvah, and Gnarf, which is the tilt.
+Coordinates are the top-left of the trimmed grid. `eye1` is the left
+oval, `eye2` the right. Both eyes on a bot are the same 3×4 oval, top
+shifted one column right. The right oval also sits one row higher.
 
 | Bot | File | Size | Body | Eye | Left eye | Right eye |
 | --- | --- | --- | --- | --- | --- | --- |
-| Dingus | `internal/bots/sprites/dingus.txt` | 16×15 | `#FEFDFE` | `#070606` | 7,3 3×4 | 11,2 3×4 |
-| BroBro | `internal/bots/sprites/brobro.txt` | 17×15 | `#2BE26E` | `#040404` | 7,5 3×4 | 11,5 2×3 |
-| Pillo | `internal/bots/sprites/pillo.txt` | 17×12 | `#9A9898` | `#050404` | 7,3 3×4 | 12,2 2×4 |
-| Luvah | `internal/bots/sprites/luvah.txt` | 16×15 | `#FD3BAC` | `#040404` | 8,5 3×4 | 12,4 2×3 |
-| Gnarf | `internal/bots/sprites/gnarf.txt` | 17×14 | `#9159FD` | `#050505` | 6,5 3×3 | 10,4 3×3 |
+| Dingus | `internal/bots/sprites/dingus.txt` | 16×15 | `#FEFDFE` | `#070606` | 6,3 3×4 | 10,2 3×4 |
+| BroBro | `internal/bots/sprites/brobro.txt` | 17×15 | `#2BE26E` | `#040404` | 6,5 3×4 | 10,4 3×4 |
+| Pillo | `internal/bots/sprites/pillo.txt` | 17×12 | `#9A9898` | `#050404` | 8,3 3×4 | 12,2 3×4 |
+| Luvah | `internal/bots/sprites/luvah.txt` | 16×15 | `#FD3BAC` | `#040404` | 7,4 3×4 | 11,3 3×4 |
+| Gnarf | `internal/bots/sprites/gnarf.txt` | 17×14 | `#9159FD` | `#050505` | 6,5 3×4 | 10,4 3×4 |
 
 Small PNGs of the same pixels, one art pixel per file pixel, with a
 transparent background:
@@ -83,10 +83,17 @@ transparent background:
 - `docs/media/bots/luvah.png`
 - `docs/media/bots/gnarf.png`
 
-BroBro's triangle points right. The right eye is one column narrower
-because the point clips it. Pillo's eyes sit in the right half of the
-pill. Luvah's sit in the right lobe. Gnarf's sit low in the rounded
-square.
+BroBro's triangle points right. Pillo's eyes sit in the right half of
+the pill. Luvah's sit in the right lobe. Gnarf's sit low in the rounded
+square. The downsample had stepped on the ovals, so each eye was redrawn
+by hand to this mask, both eyes identical:
+
+```
+.EE
+EEE
+EEE
+EE.
+```
 
 Half-block terminal size after the odd-height pad: Dingus and BroBro and
 Luvah are 16 or 17 columns by 8 rows. Pillo is 17×6. Gnarf is 17×7.
@@ -104,10 +111,10 @@ outer column. Do not replace the eye with a horizontal dash.
 
 ```
 open          squint
-EEE .. EE     EE. .. E.
-EEE .. EE     EE. .. E.
-EEE .. E.     E.. .. .
-E.. .. ..
+.EE           .E.
+EEE           EEE
+EEE           EE.
+EE.
 ```
 
 Offsets are in art pixels. Positive `dy` moves the body down inside the
