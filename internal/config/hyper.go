@@ -61,7 +61,11 @@ func (s *hyperSync) Get(ctx context.Context) (catwalk.Provider, error) {
 	s.once.Do(func() {
 		if !s.autoupdate {
 			slog.Info("Using embedded Hyper provider")
+			// Same lock as current(): a Catwalk landing can read this result
+			// while the embedded value is being stored.
+			s.mu.Lock()
 			s.result = hyper.Embedded()
+			s.mu.Unlock()
 			return
 		}
 
@@ -70,7 +74,9 @@ func (s *hyperSync) Get(ctx context.Context) (catwalk.Provider, error) {
 			// if cached file is empty, default to embedded provider
 			cached = hyper.Embedded()
 		}
+		s.mu.Lock()
 		s.result = cached
+		s.mu.Unlock()
 
 		// Refresh in the background so startup never blocks on the network.
 		go func() {

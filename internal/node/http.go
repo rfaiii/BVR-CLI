@@ -54,7 +54,7 @@ func (t *HTTPTransport) request(ctx context.Context, method, path string, body a
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		data, _ := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
-		return fmt.Errorf("node HTTP %s: %s", resp.Status, strings.TrimSpace(string(data)))
+		return decodeRemoteError(resp.StatusCode, data)
 	}
 	if out == nil {
 		return nil
@@ -85,6 +85,9 @@ func (t *HTTPTransport) Ping(ctx context.Context) error {
 	if !response.OK {
 		return errors.New("node reported unhealthy")
 	}
+	if response.Protocol != "" && response.Protocol != protocolVersion {
+		return fmt.Errorf("node protocol %s, this client speaks %s", response.Protocol, protocolVersion)
+	}
 	return nil
 }
 
@@ -99,12 +102,28 @@ type (
 type healthResponse struct {
 	OK       bool   `json:"ok"`
 	Protocol string `json:"protocol"`
+	ID       string `json:"id,omitempty"`
+	Name     string `json:"name,omitempty"`
+}
+
+// AgentOptions configures the combined HTTP and WebSocket agent.
+type AgentOptions struct {
+	Token     string
+	Transport Transport
+	Exec      ExecPolicy
+	Share     *FileShare
+	NodeID    string
+	NodeName  string
 }
 
 type NodeHTTPServer struct {
 	Token     string
 	Transport Transport
 	MaxBody   int64
+	Exec      ExecPolicy
+	Share     *FileShare
+	NodeID    string
+	NodeName  string
 }
 
 func (s *NodeHTTPServer) Handler() http.Handler {
@@ -120,13 +139,34 @@ func (s *NodeHTTPServer) registerHTTPRoutes(mux *http.ServeMux) {
 }
 
 // NodeAgentHandler serves the request/response HTTP protocol and persistent
-// WebSocket streaming protocol from one authenticated listener.
+// WebSocket streaming protocol from one authenticated listener. Execute
+// is limited to DefaultAllowExec.
 func NodeAgentHandler(token string, transport Transport) http.Handler {
-	httpServer := &NodeHTTPServer{Token: token, Transport: transport}
-	websocketServer := &NodeWebSocketServer{Token: token, Transport: transport}
+	return NewAgentHandler(AgentOptions{Token: token, Transport: transport})
+}
+
+// NewAgentHandler serves HTTP, WebSocket, and the opt-in file API.
+func NewAgentHandler(opts AgentOptions) http.Handler {
+	if opts.Share == nil {
+		opts.Share, _ = NewFileShare(nil)
+	}
+	if opts.NodeID == "" {
+		opts.NodeID = LocalNodeName()
+	}
+	if opts.NodeName == "" {
+		opts.NodeName = opts.NodeID
+	}
+	httpServer := &NodeHTTPServer{
+		Token: opts.Token, Transport: opts.Transport, Exec: opts.Exec,
+		Share: opts.Share, NodeID: opts.NodeID, NodeName: opts.NodeName,
+	}
+	websocketServer := &NodeWebSocketServer{
+		Token: opts.Token, Transport: opts.Transport, Exec: opts.Exec, Share: opts.Share,
+	}
 	mux := http.NewServeMux()
 	httpServer.registerHTTPRoutes(mux)
 	mux.HandleFunc(websocketPath, websocketServer.handle)
+	opts.Share.registerHTTP(mux, httpServer.authorized)
 	return mux
 }
 
@@ -140,19 +180,12 @@ func (s *NodeHTTPServer) authorized(r *http.Request) bool {
 	return authorizedBearer(s.Token, r)
 }
 
-func authorizedBearer(token string, r *http.Request) bool {
-	if token == "" {
-		return true
-	}
-	return strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")) == token
-}
-
 func (s *NodeHTTPServer) handleHealth(w http.ResponseWriter, r *http.Request) {
 	if !s.authorized(r) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
-	writeJSON(w, healthResponse{OK: true, Protocol: protocolVersion})
+	writeJSON(w, healthResponse{OK: true, Protocol: protocolVersion, ID: s.NodeID, Name: s.NodeName})
 }
 
 func (s *NodeHTTPServer) handleCapabilities(w http.ResponseWriter, r *http.Request) {
@@ -160,7 +193,7 @@ func (s *NodeHTTPServer) handleCapabilities(w http.ResponseWriter, r *http.Reque
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
-	writeJSON(w, map[string]any{"protocol": protocolVersion, "commands": []string{"node", "npm"}})
+	writeJSON(w, map[string]any{"protocol": protocolVersion, "commands": s.Exec.Names()})
 }
 
 func (s *NodeHTTPServer) handleExecute(w http.ResponseWriter, r *http.Request) {
@@ -179,6 +212,10 @@ func (s *NodeHTTPServer) handleExecute(w http.ResponseWriter, r *http.Request) {
 	}
 	if request.Command == "" {
 		http.Error(w, "missing command", http.StatusBadRequest)
+		return
+	}
+	if err := s.Exec.Allows(request.Command); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
 	transport := s.Transport
@@ -224,6 +261,11 @@ func RegisterNodeTransport(id, endpoint, token string) error {
 }
 
 func writeJSON(w http.ResponseWriter, value any) {
+	writeJSONStatus(w, http.StatusOK, value)
+}
+
+func writeJSONStatus(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)
 }

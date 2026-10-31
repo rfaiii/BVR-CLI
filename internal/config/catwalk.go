@@ -61,7 +61,11 @@ func (s *catwalkSync) Get(ctx context.Context) ([]catwalk.Provider, error) {
 	s.once.Do(func() {
 		if !s.autoupdate {
 			slog.Info("Using embedded Catwalk providers")
+			// current() reads result under mu. The other catalog's refresh
+			// can call that while this Once is still storing the embedded list.
+			s.mu.Lock()
 			s.result = embedded.GetAll()
+			s.mu.Unlock()
 			return
 		}
 
@@ -70,7 +74,9 @@ func (s *catwalkSync) Get(ctx context.Context) ([]catwalk.Provider, error) {
 			// if cached file is empty, default to embedded providers
 			cached = embedded.GetAll()
 		}
+		s.mu.Lock()
 		s.result = cached
+		s.mu.Unlock()
 
 		// Refresh in the background so callers never block on the network;
 		// the fresh list lands in the cache for the next start and in memory

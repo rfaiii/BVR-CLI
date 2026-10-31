@@ -38,6 +38,10 @@ var (
 	providerList []catwalk.Provider
 	providerErr  error
 
+	// syncerMu guards the package syncer pointers. Tests replace them
+	// while a background refresh may still be reading them.
+	syncerMu sync.RWMutex
+
 	// providerVersion counts catalog landings. It is bumped after the list
 	// is swapped, so a consumer that observes version N knows the list
 	// matching N is already served. A landing that happens before anything
@@ -173,11 +177,18 @@ func Providers(cfg *Config) ([]catwalk.Provider, error) {
 			ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 			defer cancel()
 
+			// Copy the pointers under the lock, then use those values. A test
+			// can replace the globals while these fetches are in flight.
+			syncerMu.RLock()
+			catwalkCatalog := catwalkSyncer
+			hyperCatalog := hyperSyncer
+			syncerMu.RUnlock()
+
 			// Install the hooks before the syncers are initialized: Get returns
 			// while the fetch is still in flight, and a landing that beat the
 			// hook would leave the memoized list stale for the session.
-			catwalkSyncer.setOnLanded(onProvidersLanded)
-			hyperSyncer.setOnLanded(onProvidersLanded)
+			catwalkCatalog.setOnLanded(onProvidersLanded)
+			hyperCatalog.setOnLanded(onProvidersLanded)
 
 			// One error variable per goroutine. This path used to append to a
 			// shared slice from both, which -race would have flagged had the
@@ -186,17 +197,17 @@ func Providers(cfg *Config) ([]catwalk.Provider, error) {
 				catwalkURL := cmp.Or(os.Getenv("CATWALK_URL"), defaultCatwalkURL)
 				client := catwalk.NewWithURL(catwalkURL)
 
-				catwalkSyncer.Init(client, cachePathFor("providers"), autoupdate)
+				catwalkCatalog.Init(client, cachePathFor("providers"), autoupdate)
 
-				if _, err := catwalkSyncer.Get(ctx); err != nil {
+				if _, err := catwalkCatalog.Get(ctx); err != nil {
 					catwalkErr = fmt.Errorf("BVR was unable to fetch an updated list of providers from %s/v2/providers. Consider setting BVR_DISABLE_PROVIDER_AUTO_UPDATE=1 to use the embedded providers bundled at the time of this BVR release. You can also update providers manually. For more info see bvr-cli update-providers --help.\n\nCause: %w", catwalkURL, err)
 				}
 			})
 
 			wg.Go(func() {
-				hyperSyncer.Init(realHyperClient{baseURL: hyper.BaseURL()}, cachePathFor("hyper"), autoupdate)
+				hyperCatalog.Init(realHyperClient{baseURL: hyper.BaseURL()}, cachePathFor("hyper"), autoupdate)
 
-				if _, err := hyperSyncer.Get(ctx); err != nil {
+				if _, err := hyperCatalog.Get(ctx); err != nil {
 					hyperErr = fmt.Errorf("BVR was unable to fetch updated information from Hyper: %w", err)
 				}
 			})
@@ -234,8 +245,12 @@ func assembleProviders(items []catwalk.Provider, hyperProvider catwalk.Provider,
 // currentProviderList assembles the served list from whatever the catalog
 // sources hold right now.
 func currentProviderList() []catwalk.Provider {
-	items, _ := catwalkSyncer.current()
-	hyperProvider, hasHyper := hyperSyncer.current()
+	syncerMu.RLock()
+	catwalkCatalog := catwalkSyncer
+	hyperCatalog := hyperSyncer
+	syncerMu.RUnlock()
+	items, _ := catwalkCatalog.current()
+	hyperProvider, hasHyper := hyperCatalog.current()
 	return assembleProviders(items, hyperProvider, hasHyper)
 }
 
