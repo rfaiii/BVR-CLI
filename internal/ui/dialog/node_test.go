@@ -4,6 +4,7 @@ import (
 	"image"
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/richavery/bvr-cli/internal/node"
 	"github.com/richavery/bvr-cli/internal/ui/common"
@@ -27,4 +28,25 @@ func TestNodeSettingsDrawShowsDeviceNamesAndStatuses(t *testing.T) {
 	}
 	require.Contains(t, output, "●")
 	require.Contains(t, output, "○")
+	require.Contains(t, output, "host")
+}
+
+func TestNodeSettingsEnterReturnsConnectCommand(t *testing.T) {
+	theme := styles.DarkBvrTheme()
+	settings := NewNodeSettings(&common.Common{Styles: &theme})
+	settings.host = ""
+	require.Nil(t, settings.HandleMsg(tea.KeyPressMsg{Code: tea.KeyEnter}))
+	require.Contains(t, settings.status, "Host is required")
+
+	settings.host = "127.0.0.1:7777"
+	settings.focus = 1
+	settings.HandleMsg(tea.KeyPressMsg{Text: "secret"})
+	require.Equal(t, "secret", settings.token)
+	action := settings.HandleMsg(tea.KeyPressMsg{Code: tea.KeyEnter})
+	_, ok := action.(ActionCmd)
+	require.True(t, ok)
+
+	action = settings.HandleMsg(tea.KeyPressMsg{Code: 'r', Mod: tea.ModCtrl})
+	_, ok = action.(ActionCmd)
+	require.True(t, ok, "ctrl+r probes saved NODEs")
 }
