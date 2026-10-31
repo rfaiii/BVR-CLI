@@ -11,8 +11,10 @@ import (
 )
 
 func TestSpritesAreSixteenSquareWithEyesOnTheBody(t *testing.T) {
+	t.Parallel()
 	for _, bot := range Catalog() {
 		t.Run(bot.ID, func(t *testing.T) {
+			t.Parallel()
 			require.Len(t, bot.Sprite.Open, SpriteH)
 			require.Len(t, bot.Sprite.Blink, SpriteH)
 			openEyes := 0
@@ -57,6 +59,7 @@ func surroundingBody(bot Bot, y, x int) bool {
 }
 
 func TestEyeContrastOnEveryBody(t *testing.T) {
+	t.Parallel()
 	eye, _ := PixEye.rgba()
 	for _, bot := range Catalog() {
 		body, ok := bot.Color.rgba()
@@ -68,8 +71,10 @@ func TestEyeContrastOnEveryBody(t *testing.T) {
 }
 
 func TestRenderHalfBlocksGolden(t *testing.T) {
+	t.Parallel()
 	for _, bot := range Catalog() {
 		t.Run(bot.ID, func(t *testing.T) {
+			t.Parallel()
 			got := Render(bot.Sprite, false, ColorNone, 0, false)
 			lines := strings.Split(got, "\n")
 			require.Len(t, lines, SpriteH/2)
@@ -87,6 +92,7 @@ func TestRenderHalfBlocksGolden(t *testing.T) {
 }
 
 func TestRenderTruecolorAnd256AndNoColor(t *testing.T) {
+	t.Parallel()
 	bot, ok := ByID("dingus")
 	require.True(t, ok)
 	trueColor := Render(bot.Sprite, false, ColorTrue, 0, true)
@@ -104,6 +110,7 @@ func TestRenderTruecolorAnd256AndNoColor(t *testing.T) {
 }
 
 func TestSelectedTileAndBob(t *testing.T) {
+	t.Parallel()
 	bot, ok := ByID("brobro")
 	require.True(t, ok)
 	plain := Render(bot.Sprite, false, ColorTrue, 0, false)
@@ -131,6 +138,7 @@ func TestAudibleHonorsSilentAndNoSound(t *testing.T) {
 }
 
 func TestChunkyNameFitsCard(t *testing.T) {
+	t.Parallel()
 	for _, bot := range Catalog() {
 		name := ChunkyName(bot.Name)
 		require.LessOrEqual(t, len([]rune(name))*2, SpriteW)

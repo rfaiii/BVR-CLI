@@ -35,8 +35,10 @@ var cleanOval = []string{
 }
 
 func TestMascotEyesAreCleanMatchingOvals(t *testing.T) {
+	t.Parallel()
 	for _, g := range loadAll(t) {
 		t.Run(g.Name, func(t *testing.T) {
+			t.Parallel()
 			boxes := eyeBoxes(g.Rows)
 			require.Len(t, boxes, 2, "want two eyes")
 			require.Equal(t, boxes[0].w, boxes[1].w)
@@ -54,6 +56,7 @@ func TestMascotEyesAreCleanMatchingOvals(t *testing.T) {
 }
 
 func TestMascotGridGolden(t *testing.T) {
+	t.Parallel()
 	var b strings.Builder
 	for _, g := range loadAll(t) {
 		b.WriteString(g.Name)
@@ -74,6 +77,7 @@ func TestMascotGridGolden(t *testing.T) {
 }
 
 func TestPreviewLabelsIncludeEveryLetter(t *testing.T) {
+	t.Parallel()
 	grids := loadAll(t)
 	img := RenderMascotPreview(grids)
 	for _, g := range grids {

@@ -140,15 +140,35 @@ Error line: hold the squint one extra tick and play `error-01`. No bob.
 
 Error: `error-02` on the error line. Sprite returns to idle. No extra pose.
 
-### Pillo — no fluff
+### Pillo — shipped
 
-| Anim | Frames | Timing | What moves | Sound |
-| --- | --- | --- | --- | --- |
-| Idle blink | 2 | open 900ms, squint 100ms | Eyes only | none |
-| Selected | 1 | tile only; idle blink keeps running | Tile + cursor | `quick-notify-01` once |
-| Talk nod | 2 | `dy` +1 for 100ms, then rest; typewriter 20ms × 2 runes | Whole body, one pixel | `chat-03` on frame 0 |
+Richard's six rough frames are coded in `internal/bots/pillo_anim.go`,
+not shipped as PNGs. Every frame is 17×13, padded on top, so the bottom
+row stays put. Eyes are the same tilted oval (a smaller one on the hop).
 
-Error: `error-01`. No nod.
+| Frame | Pose |
+| --- | --- |
+| 01 | Rest. Eyes up and to the right. |
+| 02 | Skeptical. Right eye raised. |
+| 03 | Glance up-right. Right eye high, left eye lower. |
+| 04 | Glance left and up. Both eyes shifted left. |
+| 05 | Squish. Narrower body, eyes lower. |
+| 06 | Hop. Taller and narrower, small squint eyes low. |
+
+The clock is the dialog's 100ms tick. Durations are multiples of that.
+
+| Anim | Sequence | Timing | Sound |
+| --- | --- | --- | --- |
+| `idle` | 01, 03, 01, 04, loop | 800ms, 200ms, 600ms, 200ms | none on the frames. `chat-03` still plays when a reply starts |
+| `skeptical` | 02, 01, loop | 300ms, 200ms | none extra. Used while a reply has not drawn yet |
+| `talk` | 03, 01, 04, 01, loop | 200ms each | none extra |
+| `select` | 05, 06, 01, once | 200ms each | `quick-notify-01` on enter, already |
+
+`BVR_REDUCE_MOTION` or `PREFERS_REDUCED_MOTION` holds frame 01.
+Dingus, BroBro, Luvah, and Gnarf stay on their static sprites.
+
+Preview: `docs/media/bots/pillo-anim.gif` and
+`docs/media/bots/pillo-frames.png`.
 
 ### Luvah — sweet
 

@@ -345,7 +345,7 @@ There are two entry points for commands:
                     │  │OPEN CMD  │  click / ctrl+p            │
                     │  │OPEN DIR  │  click / ctrl+o            │
                     │  │CREATE    │  click / ctrl+n            │
-                    │  │IMG RECOG │  click / ctrl+b            │
+                    │  │GROK BOT  │  click / ctrl+b            │
                     │  └──────────┘                          │
                     │        ┌───────┐                        │
                     │        │ BEAVER│  click → boop SFX      │
@@ -406,7 +406,7 @@ There are two entry points for commands:
 | 1 | OPEN COMMANDS       | `ctrl+p`  | `menu-open`     | Opens the command palette dialog (`openCommandsDialog`)     |
 | 2 | OPEN FILE FINDER    | `ctrl+o`  | `menu-open`     | Opens the project file browser dialog (`openFileBrowserDialog`) |
 | 3 | CREATE FILE         | `ctrl+n`  | `quick-notify-02` | Opens the file picker dialog (`NewCreateFile`)              |
-| 4 | IMAGE RECOGNITION   | `ctrl+b`  | `quick-notify-03` | Opens file browser → selects image → runs `bvr lookup-image <path>` |
+| 4 | CHAT W/ GROK BOT    | `ctrl+b`  | `quick-notify-03` | Opens the `/bots` picker (`openBotsDialog`) |
 | 5 | BEAVER LOGO         | click     | `beaver`        | Triggers beaver boop animation + sound (`triggerBeaverBoop`)  |
 
 ### Command palette — system commands (in order)
@@ -548,7 +548,7 @@ There are two entry points for commands:
 | `menu-close`         | MENU-CLOSE-FLAT.wav                    | Close commands dialog, Notification Style, Disable Docker MCP |
 | `quick-notify-01`    | QUICK-NOTIFY-01-FLAT.wav               | File Finder (landing), Create File, Code Mode, Init, Transparent |
 | `quick-notify-02`    | QUICK-NOTIFY-02-FLAT.wav               | Create File (palette), Help toggle, Pills, Permission (session allow) |
-| `quick-notify-03`    | QUICK-NOTIFY-03-FLAT.wav               | Image Recognition, External Editor, Thinking toggle, MCP Prompt, Permission (session allow) |
+| `quick-notify-03`    | QUICK-NOTIFY-03-FLAT.wav               | Chat with Grok bot, External Editor, Thinking toggle, MCP Prompt, Permission (session allow) |
 | `quick-notify`       | QUICK-NOTIFY-01..03 (random)           | Volume Updated |
 | `notification`       | QUICK-NOTIFY-01-FLAT.wav               | Volume Updated (notification type) |
 | `chat`               | CHAT-01..04 (random)                   | Sessions dialog open, Session selected |
@@ -581,7 +581,7 @@ User Input (keyboard / mouse)
             → handleGlobalKeys() (global shortcuts)               │
               → openCommandsDialog() (ctrl+p)                      │
               → openFileBrowserDialog() (ctrl+o)                   │
-              → openFileBrowserDialog + imageLookupPending (ctrl+b) │
+              → openBotsDialog() (ctrl+b, landing)              │
               → openModelsDialog() (ctrl+l)                        │
               → etc.                                               │
             → state-specific handlers (editor, chat, sidebar)      │

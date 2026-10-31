@@ -10,6 +10,7 @@ import (
 )
 
 func TestCatalogPersonalities(t *testing.T) {
+	t.Parallel()
 	roster := Catalog()
 	require.Len(t, roster, 5)
 	require.Equal(t, []string{"dingus", "brobro", "pillo", "luvah", "gnarf"}, ids(roster))
@@ -52,6 +53,7 @@ func TestCatalogPersonalities(t *testing.T) {
 }
 
 func TestFakeSendStreamsPersonalityAndCancels(t *testing.T) {
+	t.Parallel()
 	f := NewFake().Instant()
 	var _ Backend = f
 
@@ -105,6 +107,7 @@ func TestFakeSendStreamsPersonalityAndCancels(t *testing.T) {
 }
 
 func TestMoveAndColumns(t *testing.T) {
+	t.Parallel()
 	require.Equal(t, 1, Move(0, 5, 5, DirRight))
 	require.Equal(t, 0, Move(4, 5, 5, DirRight))
 	require.Equal(t, 4, Move(0, 5, 5, DirLeft))

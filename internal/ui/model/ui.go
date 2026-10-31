@@ -276,7 +276,7 @@ type UI struct {
 	finderButtonRect     image.Rectangle
 	commandButtonRect    image.Rectangle
 	createFileButtonRect image.Rectangle
-	imageButtonRect      image.Rectangle
+	botsButtonRect       image.Rectangle
 
 	// sidebarBeaverFrame is the exact mascot string that was composed into
 	// sidebarLogo by the last cacheSidebarLogo call. drawSidebar measures this
@@ -288,9 +288,10 @@ type UI struct {
 	// logo block and only the compact logo is drawn.
 	sidebarShowsMascot bool
 
-	// imageLookupPending is set when the IMAGE RECOGNITION button on the
-	// landing page is clicked. It routes the next file-browser selection
-	// to the lookup-image command instead of attaching the file to chat.
+	// imageLookupPending routes the next file-browser selection to the
+	// lookup-image command instead of attaching the file to chat. The
+	// landing button no longer sets it; lookup-image stays available
+	// elsewhere.
 	imageLookupPending bool
 
 	// isCanceling tracks whether the user has pressed escape once to cancel.
@@ -1259,13 +1260,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, tea.Batch(cmds...)
 			}
-			if image.Pt(msg.X, msg.Y).In(m.imageButtonRect) {
-				cmds = append(cmds, m.playAudio("Image Recognition", "Open image recognition", "quick-notify-03"))
-				// Open the file browser so the user can pick an image to analyze.
-				// The selection is routed to the lookup-image command via the
-				// imageLookupPending flag (see ActionFileBrowserSelected).
-				m.imageLookupPending = true
-				if cmd := m.openFileBrowserDialog(); cmd != nil {
+			if image.Pt(msg.X, msg.Y).In(m.botsButtonRect) {
+				cmds = append(cmds, m.playAudio("Bots", "Chat with Grok bot", "quick-notify-03"))
+				if cmd := m.openBotsDialog(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 				return m, tea.Batch(cmds...)
@@ -2891,10 +2888,9 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 			}
 			return true
 		case key.Matches(msg, m.keyMap.Browser):
-			if m.state == uiLanding && !m.imageLookupPending {
-				cmds = append(cmds, m.playAudio("Image Recognition", "Open image recognition", "quick-notify-03"))
-				m.imageLookupPending = true
-				if cmd := m.openFileBrowserDialog(); cmd != nil {
+			if m.state == uiLanding {
+				cmds = append(cmds, m.playAudio("Bots", "Chat with Grok bot", "quick-notify-03"))
+				if cmd := m.openBotsDialog(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 				return true

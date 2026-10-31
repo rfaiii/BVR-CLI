@@ -80,6 +80,7 @@ type Bots struct {
 	gen       int
 	cancel    context.CancelFunc
 	width     int
+	pillo     *bots.Player
 
 	panelRect image.Rectangle
 	closeRect image.Rectangle
@@ -155,6 +156,7 @@ func (b *Bots) HandleMsg(msg tea.Msg) Action {
 		return nil
 	case botsTickMsg:
 		b.clock++
+		b.tickPillo()
 		return ActionCmd{Cmd: b.tickCmd()}
 	case writerTickMsg:
 		if b.mode != botsChat {
@@ -254,8 +256,71 @@ func (b *Bots) chatKey(msg tea.KeyPressMsg) Action {
 }
 
 func (b *Bots) move(dir bots.Direction) {
+	prev := b.index
 	cols, _ := b.layout()
 	b.index = bots.Move(b.index, len(b.roster), cols, dir)
+	if b.index != prev {
+		b.playPilloSelect()
+	}
+}
+
+func (b *Bots) tickPillo() {
+	b.ensurePillo()
+	if !b.syncPillo() {
+		b.pillo.Advance()
+	}
+}
+
+func (b *Bots) ensurePillo() {
+	if b.pillo == nil {
+		b.pillo = bots.NewPlayer(bots.PilloClip())
+	}
+}
+
+func (b *Bots) syncPillo() bool {
+	b.ensurePillo()
+	if bots.ReduceMotion() {
+		if b.pillo.Name() != "rest" {
+			b.pillo.Play("rest")
+			return true
+		}
+		return false
+	}
+	if b.pillo.Name() == "select" && !b.pillo.Done() {
+		return false
+	}
+	want := "idle"
+	if b.mode == botsChat && b.current().ID == "pillo" {
+		switch {
+		case b.streaming && b.lastBotEmpty():
+			want = "skeptical"
+		case b.behind() || b.writing:
+			want = "talk"
+		}
+	}
+	if b.pillo.Name() != want {
+		b.pillo.Play(want)
+		return true
+	}
+	return false
+}
+
+func (b *Bots) playPilloSelect() {
+	if b.current().ID != "pillo" || bots.ReduceMotion() {
+		return
+	}
+	b.ensurePillo()
+	b.pillo.Play("select")
+}
+
+func (b *Bots) spriteArt(bot bots.Bot, selected, squint bool) (string, int) {
+	if bot.ID == "pillo" {
+		b.ensurePillo()
+		rows := b.pillo.Rows()
+		return bots.RenderGrid(rows, bots.PilloBody, bots.PilloEye, b.color, selected), len(rows[0])
+	}
+	blink, bob := pose(bot, b.clock, squint)
+	return bots.Render(bot.Sprite, blink, b.color, bob, selected), bots.SpriteW
 }
 
 func (b *Bots) layout() (cols int, list bool) {
@@ -286,6 +351,7 @@ func (b *Bots) openChat() Action {
 	b.streaming = false
 	b.input.SetValue("")
 	b.input.Focus()
+	b.playPilloSelect()
 	cues := []string{bot.Cues.Select}
 	if bot.Cues.Boop != "" {
 		cues = append(cues, bot.Cues.Boop)
@@ -613,14 +679,13 @@ func (b *Bots) pickerBody(width int) string {
 func (b *Bots) card(i int) string {
 	bot := b.roster[i]
 	sel := i == b.index
-	blink, bob := pose(bot, b.clock, false)
-	art := bots.Render(bot.Sprite, blink, b.color, bob, sel)
-	name := centerTo(bots.Paint(bots.ChunkyName(bot.Name), bot.Color, b.color), bots.SpriteW)
+	art, artW := b.spriteArt(bot, sel, false)
+	name := centerTo(bots.Paint(bots.ChunkyName(bot.Name), bot.Color, b.color), artW)
 	mark := " "
 	if sel && (b.clock/4)%2 == 0 {
 		mark = "▶"
 	}
-	cur := centerTo(mark, bots.SpriteW)
+	cur := centerTo(mark, artW)
 	return art + "\n" + name + "\n" + cur
 }
 
@@ -650,12 +715,11 @@ func (b *Bots) chatBody(width int) (string, *tea.Cursor) {
 	if n := len(b.lines); n > 0 && b.lines[n-1].squint {
 		squint = true
 	}
-	blink, bob := pose(bot, b.clock, squint)
-	art := bots.Render(bot.Sprite, blink, b.color, bob, true)
+	art, artW := b.spriteArt(bot, true, squint)
 	box := b.messageBox(width)
 	var view string
-	if width >= bots.SpriteW+20 {
-		box = b.messageBox(width - bots.SpriteW - 1)
+	if width >= artW+20 {
+		box = b.messageBox(width - artW - 1)
 		view = lipgloss.JoinHorizontal(lipgloss.Top, art, " ", box)
 	} else {
 		view = art + "\n" + box

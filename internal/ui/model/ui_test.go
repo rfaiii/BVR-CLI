@@ -102,6 +102,14 @@ func (w *testWorkspace) Config() *config.Config {
 	return w.cfg
 }
 
+func (w *testWorkspace) WorkingDir() string { return "/work" }
+
+func (w *testWorkspace) AgentIsReady() bool { return false }
+
+func (w *testWorkspace) LSPGetStates() map[string]workspace.LSPClientInfo {
+	return map[string]workspace.LSPClientInfo{}
+}
+
 // newTestUIForBeaver builds a minimal but functional UI on the landing page,
 // sufficient to exercise mascot click / mouse-gaze handling without a full
 // session. The beaver rect is fixed at (5,5)-(18,10): 13-wide by 5-tall.

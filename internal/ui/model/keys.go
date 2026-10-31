@@ -121,7 +121,7 @@ func DefaultKeyMap() KeyMap {
 		),
 		Browser: key.NewBinding(
 			key.WithKeys("ctrl+b"),
-			key.WithHelp("ctrl+b", "image recognition"),
+			key.WithHelp("ctrl+b", "grok bots"),
 		),
 		NodeSettings: key.NewBinding(
 			key.WithKeys("ctrl+shift+n"),
