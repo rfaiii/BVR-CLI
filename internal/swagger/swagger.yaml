@@ -1054,7 +1054,7 @@ info:
     name: FSL-1.1-MIT
     url: https://github.com/rfaiii/BVR-CLI/blob/main/LICENSE.md
   title: BVR API
-  version: 1.2.8
+  version: 1.2.9
 paths:
   /config:
     get:

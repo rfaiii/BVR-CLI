@@ -4,7 +4,7 @@ version: "3"
 
 vars:
   VERSION:
-    sh: git describe --long 2>/dev/null || echo "1.2.8"
+    sh: git describe --long 2>/dev/null || echo "1.2.9"
   RACE:
     sh: test -f race.log && echo "1" || echo ""
 
@@ -53,7 +53,7 @@ tasks:
   installers:
     desc: Build unsigned installer artifacts for macOS, Ubuntu, Omarchy and Windows
     vars:
-      VERSION: '{{default "1.2.8" .VERSION}}'
+      VERSION: '{{default "1.2.9" .VERSION}}'
     cmds:
       - ./scripts/package/build-installers.sh {{.VERSION}}
 

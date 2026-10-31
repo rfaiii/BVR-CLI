@@ -1,4 +1,4 @@
-# BVR-CLI 1.2.8
+# BVR-CLI 1.2.9
 <img src="resources/screenshots/HEADER.png" alt="HEADER" width="50%">
 
 ###### an APP BY RICHARD AIZEN AVERY.
@@ -168,7 +168,7 @@ go build ./...
 Package the supported targets with:
 
 ```sh
-./scripts/package/build-all.sh 1.2.8
+./scripts/package/build-all.sh 1.2.9
 ```
 
 ## Documentation
