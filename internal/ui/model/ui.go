@@ -276,7 +276,7 @@ type UI struct {
 	finderButtonRect     image.Rectangle
 	commandButtonRect    image.Rectangle
 	createFileButtonRect image.Rectangle
-	imageButtonRect      image.Rectangle
+	botsButtonRect       image.Rectangle
 
 	// sidebarBeaverFrame is the exact mascot string that was composed into
 	// sidebarLogo by the last cacheSidebarLogo call. drawSidebar measures this
@@ -288,9 +288,11 @@ type UI struct {
 	// logo block and only the compact logo is drawn.
 	sidebarShowsMascot bool
 
-	// imageLookupPending is set when the IMAGE RECOGNITION button on the
-	// landing page is clicked. It routes the next file-browser selection
-	// to the lookup-image command instead of attaching the file to chat.
+	// imageLookupPending routes the next file-browser selection to the
+	// lookup-image command instead of attaching the file to chat.
+	// Nothing on the landing screen sets it. ctrl+b is unbound there
+	// and does not start image lookup. lookup-image stays a shell
+	// command.
 	imageLookupPending bool
 
 	// isCanceling tracks whether the user has pressed escape once to cancel.
@@ -1262,13 +1264,9 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, tea.Batch(cmds...)
 			}
-			if image.Pt(msg.X, msg.Y).In(m.imageButtonRect) {
-				cmds = append(cmds, m.playAudio("Image Recognition", "Open image recognition", "quick-notify-03"))
-				// Open the file browser so the user can pick an image to analyze.
-				// The selection is routed to the lookup-image command via the
-				// imageLookupPending flag (see ActionFileBrowserSelected).
-				m.imageLookupPending = true
-				if cmd := m.openFileBrowserDialog(); cmd != nil {
+			if image.Pt(msg.X, msg.Y).In(m.botsButtonRect) {
+				cmds = append(cmds, m.playAudio("Bots", "Chat with Grok bot", "quick-notify-03"))
+				if cmd := m.openBotsDialog(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 				return m, tea.Batch(cmds...)
@@ -2262,6 +2260,15 @@ func (m *UI) handleDialogAction(action tea.Msg) tea.Cmd {
 		if msg.Cmd != nil {
 			cmds = append(cmds, msg.Cmd)
 		}
+	case dialog.ActionPlayCue:
+		for _, typ := range msg.Types {
+			if typ != "" {
+				cmds = append(cmds, m.playAudio("Bots", typ, typ))
+			}
+		}
+		if msg.Cmd != nil {
+			cmds = append(cmds, msg.Cmd)
+		}
 
 	// Session dialog messages.
 	case dialog.ActionSelectSession:
@@ -2884,11 +2891,10 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				}
 			}
 			return true
-		case key.Matches(msg, m.keyMap.Browser):
-			if m.state == uiLanding && !m.imageLookupPending {
-				cmds = append(cmds, m.playAudio("Image Recognition", "Open image recognition", "quick-notify-03"))
-				m.imageLookupPending = true
-				if cmd := m.openFileBrowserDialog(); cmd != nil {
+		case key.Matches(msg, m.keyMap.Bots):
+			if m.state == uiLanding {
+				cmds = append(cmds, m.playAudio("Bots", "Chat with Grok bot", "quick-notify-03"))
+				if cmd := m.openBotsDialog(); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 				return true
@@ -3786,7 +3792,7 @@ func (m *UI) ShortHelp() []key.Binding {
 			k.Editor.Newline,
 		)
 		if m.state == uiLanding {
-			binds = append(binds, k.Finder, k.Browser)
+			binds = append(binds, k.Finder, k.Bots)
 		}
 	}
 
@@ -3931,7 +3937,7 @@ func (m *UI) FullHelp() [][]key.Binding {
 				},
 			)
 			if m.state == uiLanding {
-				binds = append(binds, []key.Binding{k.Finder, k.Browser})
+				binds = append(binds, []key.Binding{k.Finder, k.Bots})
 			}
 			editorBinds := []key.Binding{
 				k.Editor.Newline,
@@ -5205,6 +5211,11 @@ func (m *UI) openDialog(id string) tea.Cmd {
 	case dialog.ThemesID:
 		cmds = append(cmds, m.playAudio("Themes", "Open themes", "menu-open"))
 		m.dialog.OpenDialog(dialog.NewThemes(m.com, m.themeID))
+	case dialog.BotsID:
+		cmds = append(cmds, m.playAudio("Bots", "Open bots", "menu-open"))
+		if cmd := m.openBotsDialog(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case dialog.SoundsID:
 		cmds = append(cmds, m.playAudio("Sounds", "Open sounds", "menu-open"))
 		var currentVolume string
@@ -5288,6 +5299,21 @@ func (m *UI) openModelsDialog() tea.Cmd {
 
 	m.dialog.OpenDialog(modelsDialog)
 	return modelsDialog.LocalModelsCmd()
+}
+
+// openBotsDialog opens the NES bot picker. The demo backend is local.
+func (m *UI) openBotsDialog() tea.Cmd {
+	if m.dialog.ContainsDialog(dialog.BotsID) {
+		m.dialog.BringToFront(dialog.BotsID)
+		return nil
+	}
+	vol := audio.DefaultVolume
+	if cfg := m.com.Config(); cfg != nil && cfg.Options != nil && cfg.Options.AudioVolume != "" {
+		vol = cfg.Options.AudioVolume
+	}
+	d := dialog.NewBots(m.com, m.caps.Profile, vol, nil)
+	m.dialog.OpenDialog(d)
+	return d.InitCmd()
 }
 
 // openCommandsDialog opens the commands dialog.

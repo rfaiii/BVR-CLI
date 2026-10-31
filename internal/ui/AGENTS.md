@@ -169,8 +169,9 @@ tool names to specific types:
 
 - `BrowserID = "browser"` — opened via the command palette "Open Website"
   entry, `ActionOpenDialog{DialogID: BrowserID}`, or the File Finder's `b`
-  key. (Note: `ctrl+b` was rebound to Image Recognition on the landing
-  screen; the browser dialog still uses `ctrl+b` for "back" while open.)
+  key. The landing screen opens the bot picker with `ctrl+shift+g`
+  (`ctrl+g` stays the help toggle). `ctrl+b` is unbound on the landing
+  screen. This dialog still uses `ctrl+b` for "back" while open.
 - Fetches HTML from any URL using `http.Get` + `codebergreadability.FromReader`
   (bypasses strict content-type checking in `FromURL`).
 - User-Agent header and HTTP status code check included.

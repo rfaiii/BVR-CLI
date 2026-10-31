@@ -45,14 +45,17 @@ func (m *UI) landingView() string {
 		Render(cwd)
 
 	// Home buttons: Command palette launcher, File Finder, Create File,
-	// and Image Recognition, each prefixed with a nerd-font glyph from
+	// and Chat with Grok Bot, each prefixed with a nerd-font glyph from
 	// the superfile icon set so they read as actionable buttons.
 	// Arranged vertically with a blank line between each for even spacing.
 	iconColor := t.Header.LogoGradToColor
 	terminalIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\ue795") // superfile icon.Terminal
 	folderIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\uf07b")   // superfile icon.Directory
 	paperIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\uf15b")    // superfile icon.File
-	cameraIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\uf030")   // superfile icon.Camera
+	// nf-fa-comment. superfile's icon.go has no Chat constant; this is the
+	// comment glyph from the same Font Awesome set as icon.Directory and
+	// icon.File, so it reads as a conversation next to those buttons.
+	chatIcon := lipgloss.NewStyle().Foreground(iconColor).Render("\uf075")
 
 	buttonStyle := lipgloss.NewStyle().
 		Foreground(accent).
@@ -64,11 +67,11 @@ func (m *UI) landingView() string {
 	commandButton := buttonStyle.Render(terminalIcon + " " + "OPEN COMMANDS — ctrl+p")
 	folderButton := buttonStyle.Render(folderIcon + " " + "OPEN FILE FINDER — ctrl+o")
 	createButton := buttonStyle.Render(paperIcon + " " + "CREATE FILE — ctrl+n")
-	imageBtn := buttonStyle.Render(cameraIcon + " " + "IMAGE RECOGNITION — ctrl+b")
+	botsBtn := buttonStyle.Render(chatIcon + " " + landingBotsButton)
 
 	// Stack buttons vertically (one above the other) with a blank line
 	// between each for even, balanced spacing.
-	buttons := lipgloss.JoinVertical(lipgloss.Left, commandButton, "", folderButton, "", createButton, "", imageBtn)
+	buttons := lipgloss.JoinVertical(lipgloss.Left, commandButton, "", folderButton, "", createButton, "", botsBtn)
 
 	// Prominent MODEL / PROVIDER line on the homescreen so it's immediately
 	// visible. Uses ACCENT for the values and ALT for the labels.
@@ -109,12 +112,12 @@ func (m *UI) landingView() string {
 	cmdH := lipgloss.Height(commandButton)
 	folderH := lipgloss.Height(folderButton)
 	createH := lipgloss.Height(createButton)
-	imageH := lipgloss.Height(imageBtn)
+	imageH := lipgloss.Height(botsBtn)
 	btnGap := 1 // blank line between buttons (from the "" separators)
 	col1Width := lipgloss.Width(commandButton)
 	col2Width := lipgloss.Width(folderButton)
 	col3Width := lipgloss.Width(createButton)
-	col4Width := lipgloss.Width(imageBtn)
+	col4Width := lipgloss.Width(botsBtn)
 	x0 := m.layout.main.Min.X
 
 	y := btnTop
@@ -124,7 +127,7 @@ func (m *UI) landingView() string {
 	y += folderH + btnGap
 	m.createFileButtonRect = image.Rect(x0, y, x0+col3Width, y+createH)
 	y += createH + btnGap
-	m.imageButtonRect = image.Rect(x0, y, x0+col4Width, y+imageH)
+	m.botsButtonRect = image.Rect(x0, y, x0+col4Width, y+imageH)
 
 	waveWidth := min(56, max(18, width-4))
 	waveLabel := lipgloss.NewStyle().Foreground(alt).Render("GGWAVE NODE LINK  ")
@@ -164,6 +167,9 @@ func (m *UI) landingView() string {
 			lipgloss.JoinVertical(lipgloss.Left, infoSection, "", content),
 		)
 }
+
+// landingBotsButton is the homescreen control that opens the bot picker.
+const landingBotsButton = "CHAT W/ GROK BOT — ctrl+shift+g"
 
 // landingButtonTop returns the Y coordinate for the top of the vertical
 // button stack on the landing page. Buttons appear after the CWD line and

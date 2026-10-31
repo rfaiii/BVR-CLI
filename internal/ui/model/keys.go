@@ -70,7 +70,7 @@ type KeyMap struct {
 	ToggleBeastmode key.Binding
 	ToggleCodeMode  key.Binding
 	Finder          key.Binding
-	Browser         key.Binding
+	Bots            key.Binding
 	NodeSettings    key.Binding
 	Themes          key.Binding
 	ThemePrev       key.Binding
@@ -119,9 +119,13 @@ func DefaultKeyMap() KeyMap {
 			key.WithKeys("ctrl+o"),
 			key.WithHelp("ctrl+o", "file finder"),
 		),
-		Browser: key.NewBinding(
-			key.WithKeys("ctrl+b"),
-			key.WithHelp("ctrl+b", "image recognition"),
+		// ctrl+g toggles help and the palette's Toggle Help item, so the
+		// landing bot button cannot use it. ctrl+shift+g is free.
+		// ctrl+b is unbound here: image lookup stays off the landing
+		// screen, and the browser dialog keeps ctrl+b for back.
+		Bots: key.NewBinding(
+			key.WithKeys("ctrl+shift+g"),
+			key.WithHelp("ctrl+shift+g", "grok bots"),
 		),
 		NodeSettings: key.NewBinding(
 			key.WithKeys("ctrl+shift+n"),

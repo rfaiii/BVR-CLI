@@ -1,0 +1,26 @@
+name: dingus
+size: 16x15
+source: docs/media/bots/mascots-source.png
+source_pitch: 12
+legend: . transparent  B body  E eye
+body: #FEFDFE
+eye: #070606
+eye1: x=6 y=3 w=3 h=4
+eye2: x=10 y=2 w=3 h=4
+badge: orange star overlay, not in the source painting
+---
+....BBBBBBB.....
+...BBBBBBBBBBB..
+.BBBBBBBBBBEEB..
+.BBBBBBEEBEEEBB.
+BBBBBBEEEBEEEBB.
+BBBBBBEEEBEEBBBB
+BBBBBBEEBBBBBBBB
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBB.
+.BBBBBBBBBBBBBB.
+..BBBBBBBBBBBB..
+...BBBBBBBBBB...
+...BBBBBBB......
