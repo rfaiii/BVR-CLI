@@ -136,7 +136,7 @@ func TestPickerASCIICapture(t *testing.T) {
 	}
 	want, err := os.ReadFile(path)
 	require.NoError(t, err)
-	require.Equal(t, string(want), plain)
+	require.Equal(t, strings.ReplaceAll(string(want), "\r\n", "\n"), strings.ReplaceAll(plain, "\r\n", "\n"))
 }
 
 type configWorkspace struct {

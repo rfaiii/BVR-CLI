@@ -157,5 +157,5 @@ func golden(t *testing.T, name, got string) {
 	}
 	want, err := os.ReadFile(path)
 	require.NoError(t, err)
-	require.Equal(t, string(want), got)
+	require.Equal(t, strings.ReplaceAll(string(want), "\r\n", "\n"), strings.ReplaceAll(got, "\r\n", "\n"))
 }

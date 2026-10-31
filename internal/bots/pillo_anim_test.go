@@ -90,7 +90,7 @@ func TestPilloFrameGolden(t *testing.T) {
 	}
 	want, err := os.ReadFile(path)
 	require.NoError(t, err)
-	require.Equal(t, string(want), b.String())
+	require.Equal(t, strings.ReplaceAll(string(want), "\r\n", "\n"), strings.ReplaceAll(b.String(), "\r\n", "\n"))
 }
 
 func frameIndex(p *Player) int {
