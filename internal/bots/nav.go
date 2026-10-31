@@ -10,16 +10,24 @@ const (
 	DirDown
 )
 
-// Columns reports how many sprites fit on a row. The boolean is list
-// mode: the terminal is too narrow for even one sprite card.
+// Columns reports how many large sprites fit on a row. The boolean is
+// list mode: the terminal is too narrow for even one sprite card.
 func Columns(width, count int) (cols int, list bool) {
+	return ColumnsSized(width, count, SpriteW)
+}
+
+// ColumnsSized is Columns for a card that is cardW cells wide.
+func ColumnsSized(width, count, cardW int) (cols int, list bool) {
+	if cardW < 1 {
+		cardW = SpriteW
+	}
 	if count < 1 {
 		return 1, false
 	}
-	if width < SpriteW {
+	if width < cardW {
 		return 1, true
 	}
-	fit := (width + CardGap) / (SpriteW + CardGap)
+	fit := (width + CardGap) / (cardW + CardGap)
 	if fit < 1 {
 		return 1, true
 	}

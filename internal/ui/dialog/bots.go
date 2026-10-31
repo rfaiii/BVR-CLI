@@ -63,24 +63,26 @@ type chatLine struct {
 
 // Bots is the NES-style roster and the demo chat that follows a pick.
 type Bots struct {
-	com       *common.Common
-	backend   bots.Backend
-	roster    []bots.Bot
-	mode      botsMode
-	index     int
-	clock     int
-	muted     bool
-	volume    string
-	color     bots.ColorMode
-	lines     []chatLine
-	input     textinput.Model
-	writing   bool
-	streaming bool
-	stream    <-chan bots.Reply
-	gen       int
-	cancel    context.CancelFunc
-	width     int
-	pillo     *bots.Player
+	com        *common.Common
+	backend    bots.Backend
+	roster     []bots.Bot
+	mode       botsMode
+	index      int
+	clock      int
+	muted      bool
+	volume     string
+	color      bots.ColorMode
+	lines      []chatLine
+	input      textinput.Model
+	writing    bool
+	streaming  bool
+	stream     <-chan bots.Reply
+	gen        int
+	cancel     context.CancelFunc
+	width      int
+	large      bool
+	pillo      *bots.Player
+	pilloLarge *bots.Player
 
 	panelRect image.Rectangle
 	closeRect image.Rectangle
@@ -232,6 +234,11 @@ func (b *Bots) handleKey(msg tea.KeyPressMsg) Action {
 		b.move(bots.DirDown)
 	case "m":
 		return b.toggleMute()
+	case "z":
+		// Large mascots stay available when the row can hold one.
+		if b.layoutWidth() >= bots.LargeCardW {
+			b.large = !b.large
+		}
 	}
 	return nil
 }
@@ -266,27 +273,39 @@ func (b *Bots) move(dir bots.Direction) {
 
 func (b *Bots) tickPillo() {
 	b.ensurePillo()
-	if !b.syncPillo() {
-		b.pillo.Advance()
+	for _, p := range []*bots.Player{b.pillo, b.pilloLarge} {
+		if !b.syncPillo(p) {
+			p.Advance()
+		}
 	}
 }
 
 func (b *Bots) ensurePillo() {
 	if b.pillo == nil {
-		b.pillo = bots.NewPlayer(bots.PilloClip())
+		b.pillo = bots.NewPlayer(bots.PilloClipSmall())
+	}
+	if b.pilloLarge == nil {
+		b.pilloLarge = bots.NewPlayer(bots.PilloClip())
 	}
 }
 
-func (b *Bots) syncPillo() bool {
+func (b *Bots) activePillo() *bots.Player {
 	b.ensurePillo()
+	if b.pickerLarge() {
+		return b.pilloLarge
+	}
+	return b.pillo
+}
+
+func (b *Bots) syncPillo(p *bots.Player) bool {
 	if bots.ReduceMotion() {
-		if b.pillo.Name() != "rest" {
-			b.pillo.Play("rest")
+		if p.Name() != "rest" {
+			p.Play("rest")
 			return true
 		}
 		return false
 	}
-	if b.pillo.Name() == "select" && !b.pillo.Done() {
+	if p.Name() == "select" && !p.Done() {
 		return false
 	}
 	want := "idle"
@@ -298,8 +317,8 @@ func (b *Bots) syncPillo() bool {
 			want = "talk"
 		}
 	}
-	if b.pillo.Name() != want {
-		b.pillo.Play(want)
+	if p.Name() != want {
+		p.Play(want)
 		return true
 	}
 	return false
@@ -311,20 +330,43 @@ func (b *Bots) playPilloSelect() {
 	}
 	b.ensurePillo()
 	b.pillo.Play("select")
+	b.pilloLarge.Play("select")
+}
+
+// pickerLarge is the opt-in big mascot. Chat always stays on the small
+// sprite so the dialogue window keeps the room.
+func (b *Bots) pickerLarge() bool {
+	return b.large && b.mode == botsPicker && b.layoutWidth() >= bots.LargeCardW
+}
+
+func (b *Bots) cardWidth() int {
+	if b.pickerLarge() {
+		return bots.LargeCardW
+	}
+	return bots.CompactCardW
 }
 
 func (b *Bots) spriteArt(bot bots.Bot, selected, squint bool) (string, int) {
 	if bot.ID == "pillo" {
-		b.ensurePillo()
-		rows := b.pillo.Rows()
+		rows := b.activePillo().Rows()
 		return bots.RenderGrid(rows, bots.PilloBody, bots.PilloEye, b.color, selected), len(rows[0])
 	}
-	blink, bob := pose(bot, b.clock, squint)
-	return bots.Render(bot.Sprite, blink, b.color, bob, selected), bots.SpriteW
+	if b.pickerLarge() {
+		blink, bob := pose(bot, b.clock, squint)
+		return bots.Render(bot.Sprite, blink, b.color, bob, selected), bots.SpriteW
+	}
+	rows, body, eye, ok := bots.Compact(bot.ID)
+	if !ok {
+		return "", 0
+	}
+	if squint {
+		rows = bots.Squint(rows)
+	}
+	return bots.RenderGrid(rows, body, eye, b.color, selected), len(rows[0])
 }
 
 func (b *Bots) layout() (cols int, list bool) {
-	return bots.Columns(b.layoutWidth(), len(b.roster))
+	return bots.ColumnsSized(b.layoutWidth(), len(b.roster), b.cardWidth())
 }
 
 func (b *Bots) layoutWidth() int {
@@ -648,9 +690,9 @@ func (b *Bots) titleLine(width int) string {
 }
 
 func (b *Bots) helpLine(width int) string {
-	text := "←/→ hjkl move   enter chat   m mute   esc close"
+	text := "←/→ hjkl move   enter chat   z size   m mute   esc close"
 	if b.mode == botsChat {
-		text = "enter send   esc back   ctrl+m mute"
+		text = "enter send   esc roster   ctrl+m mute"
 	}
 	if ansi.StringWidth(text) > width {
 		return ansi.Truncate(text, width, "")
@@ -715,15 +757,25 @@ func (b *Bots) chatBody(width int) (string, *tea.Cursor) {
 	if n := len(b.lines); n > 0 && b.lines[n-1].squint {
 		squint = true
 	}
+	// Header is always the small sprite. The main chat's message bars
+	// stay on the transcript; this window uses the chat foreground, the
+	// text input, and the bot color for the name.
 	art, artW := b.spriteArt(bot, true, squint)
-	box := b.messageBox(width)
-	var view string
-	if width >= artW+20 {
-		box = b.messageBox(width - artW - 1)
-		view = lipgloss.JoinHorizontal(lipgloss.Top, art, " ", box)
-	} else {
-		view = art + "\n" + box
+	name := bots.Paint(strings.ToUpper(bot.Name), bot.Color, b.color)
+	tag := b.com.Styles.Messages.NoContent.Render(bot.Tagline)
+	plate := lipgloss.JoinVertical(lipgloss.Left, name, tag)
+	head := lipgloss.JoinHorizontal(lipgloss.Center, art, "  ", plate)
+	boxW := width
+	if lipgloss.Width(head) > width && width > artW {
+		plate = name
+		head = lipgloss.JoinHorizontal(lipgloss.Center, art, " ", plate)
 	}
+	if lipgloss.Width(head) > width {
+		head = art + "\n" + name
+		boxW = width
+	}
+	box := b.messageBox(boxW)
+	view := head + "\n" + box
 	promptW := lipgloss.Width(b.input.Prompt)
 	b.input.SetWidth(max(1, width-promptW-1))
 	view += "\n" + b.input.View()
@@ -741,8 +793,12 @@ func (b *Bots) messageBox(width int) string {
 	}
 	inner := width - 2
 	text := b.transcript(inner)
-	top := "╔" + strings.Repeat("═", width-2) + "╗"
-	bottom := "╚" + strings.Repeat("═", width-2) + "╝"
+	bot := b.current()
+	paint := func(s string) string {
+		return bots.Paint(s, bot.Color, b.color)
+	}
+	top := paint("╔" + strings.Repeat("═", width-2) + "╗")
+	bottom := paint("╚" + strings.Repeat("═", width-2) + "╝")
 	var out strings.Builder
 	out.WriteString(top)
 	for _, ln := range strings.Split(text, "\n") {
@@ -753,10 +809,11 @@ func (b *Bots) messageBox(width int) string {
 		if pad < 0 {
 			pad = 0
 		}
-		out.WriteString("\n║")
+		out.WriteString("\n")
+		out.WriteString(paint("║"))
 		out.WriteString(ln)
 		out.WriteString(strings.Repeat(" ", pad))
-		out.WriteString("║")
+		out.WriteString(paint("║"))
 	}
 	out.WriteString("\n")
 	out.WriteString(bottom)
@@ -765,32 +822,62 @@ func (b *Bots) messageBox(width int) string {
 
 func (b *Bots) transcript(inner int) string {
 	var lines []string
-	for i, ln := range b.lines {
+	bot := b.current()
+	for _, idx := range b.exchange() {
+		ln := b.lines[idx]
 		text := shownText(ln)
 		revealing := ln.fromBot && ln.shown < utf8.RuneCountInString(ln.full)
-		if revealing && i == len(b.lines)-1 {
+		if revealing && idx == len(b.lines)-1 {
 			text += "▌"
 		}
-		if ln.fromBot && text == "" && b.streaming && i == len(b.lines)-1 {
+		if ln.fromBot && text == "" && b.streaming && idx == len(b.lines)-1 {
 			text = "…"
 		}
-		prefix := "YOU "
+		who := "YOU"
 		if ln.fromBot {
-			prefix = ""
+			who = strings.ToUpper(bot.Name)
 			if ln.emote != "" {
-				prefix = ln.emote + " "
+				who += " " + ln.emote
 			}
 		}
-		lines = append(lines, wrapText(prefix+text, inner)...)
-	}
-	const maxLines = 8
-	if len(lines) > maxLines {
-		lines = lines[len(lines)-maxLines:]
+		// Wrap the plain line, then color it. Walking an ANSI string
+		// rune by rune would split the escapes.
+		for _, line := range wrapText(who+"  "+text, inner) {
+			if ln.fromBot {
+				line = bots.Paint(line, bot.Color, b.color)
+			} else if line != "" {
+				line = b.com.Styles.Messages.NoContent.Render(line)
+			}
+			lines = append(lines, line)
+		}
 	}
 	for len(lines) < 3 {
 		lines = append(lines, "")
 	}
 	return strings.Join(lines, "\n")
+}
+
+// exchange is the current one-off: the greeting, or the latest user
+// line plus the reply that follows it.
+func (b *Bots) exchange() []int {
+	if len(b.lines) == 0 {
+		return nil
+	}
+	start := 0
+	for i := len(b.lines) - 1; i >= 0; i-- {
+		if !b.lines[i].fromBot {
+			start = i
+			break
+		}
+	}
+	if start == 0 && b.lines[0].fromBot && len(b.lines) > 1 {
+		start = len(b.lines) - 1
+	}
+	out := make([]int, 0, len(b.lines)-start)
+	for i := start; i < len(b.lines); i++ {
+		out = append(out, i)
+	}
+	return out
 }
 
 func shownText(ln chatLine) string {

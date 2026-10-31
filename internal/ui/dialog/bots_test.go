@@ -53,6 +53,60 @@ func TestBotsNavigationKeys(t *testing.T) {
 	require.IsType(t, ActionClose{}, d.HandleMsg(tea.KeyPressMsg{Code: tea.KeyEscape}))
 }
 
+func TestPickerUsesCompactSprites(t *testing.T) {
+	d := newBots(t, 96, "silent")
+	art, w := d.spriteArt(d.current(), true, false)
+	require.LessOrEqual(t, w, 11)
+	require.NotContains(t, art, "\n\n")
+	require.Contains(t, art, "█")
+
+	d.HandleMsg(keyRune('z'))
+	_, w = d.spriteArt(d.current(), true, false)
+	require.GreaterOrEqual(t, w, 16)
+
+	d.SetWidth(10)
+	d.large = true
+	_, w = d.spriteArt(d.current(), true, false)
+	require.LessOrEqual(t, w, 11, "narrow terminals stay on the small sprite")
+}
+
+func TestChatIsNESExchange(t *testing.T) {
+	d := newBots(t, 96, "silent")
+	d.HandleMsg(tea.KeyPressMsg{Code: tea.KeyEnter})
+	require.True(t, d.InChat())
+	d.lines[0].shown = len([]rune(d.lines[0].full))
+	screen := uv.NewScreenBuffer(100, 40)
+	d.Draw(screen, image.Rect(0, 0, 100, 40))
+	plain := ansi.Strip(screen.Render())
+	require.Contains(t, plain, "DINGUS")
+	require.Contains(t, plain, "DEMO")
+	require.Contains(t, plain, "No rush")
+	require.Contains(t, plain, "╔")
+	require.NotContains(t, plain, "API")
+
+	d.input.SetValue("hello")
+	action := d.HandleMsg(tea.KeyPressMsg{Code: tea.KeyEnter})
+	msg := action.(ActionCmd).Cmd().(streamOpenMsg)
+	require.NoError(t, msg.err)
+	d.HandleMsg(msg)
+	for {
+		chunk := waitChunk(msg.gen, d.stream)().(streamChunkMsg)
+		d.HandleMsg(chunk)
+		if chunk.done {
+			break
+		}
+	}
+	for i := range d.lines {
+		d.lines[i].shown = len([]rune(d.lines[i].full))
+	}
+	screen = uv.NewScreenBuffer(100, 40)
+	d.Draw(screen, image.Rect(0, 0, 100, 40))
+	plain = ansi.Strip(screen.Render())
+	require.Contains(t, plain, "YOU")
+	require.Contains(t, plain, "hello")
+	require.NotContains(t, plain, "No rush")
+}
+
 func TestBotsEnterOpensChatAndEscReturns(t *testing.T) {
 	d := newBots(t, 96, "25")
 	action := d.HandleMsg(tea.KeyPressMsg{Code: tea.KeyEnter})

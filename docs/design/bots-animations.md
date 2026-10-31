@@ -1,9 +1,13 @@
 # Bot mascot animations
 
-Planning note for the `/bots` picker. This document does not change the
-live TUI. The sprites on screen are still the hand-authored frames in
-`internal/bots/roster.go`. The grids below are the source for the next
-implementation pass.
+Planning note for the `/bots` picker. Pillo's six large frames and the
+compact 11×10 grids are on screen. The large extracted grids below remain
+the source for a later swap of Dingus, BroBro, Luvah, and Gnarf. `z` in
+the picker still shows the older 16×16 sprites for those four.
+
+Small preview: [`docs/media/bots/small-preview.png`](../media/bots/small-preview.png).
+Small Pillo loop: [`docs/media/bots/pillo-small.gif`](../media/bots/pillo-small.gif).
+Chat still: [`docs/media/bots/chat-preview.png`](../media/bots/chat-preview.png).
 
 ## Source
 

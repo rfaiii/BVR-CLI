@@ -129,15 +129,15 @@ func dingus() Bot {
 			Lead: 280, Gap: 70, TypeMillis: 34, TypeStep: 1,
 			IdleMillis: 640, Blink: true,
 			Lines: []string{
-				"Understood. {msg}. I will sit with that.",
-				"That tracks. {msg}. No need to rush it.",
-				"Okay. {msg}. One step at a time.",
+				"Understood. {msg}.",
+				"That tracks. {msg}.",
+				"Okay. {msg}.",
 			},
 			Emotes: []Emote{
 				{Glyph: "•ᴗ•", Squint: true},
 				{Glyph: "–"},
 			},
-			Greeting:   "Hey. I am Dingus. Demo replies only, and I am in no hurry.",
+			Greeting:   "Hey. I am Dingus. No rush.",
 			GreetEmote: Emote{Glyph: "•ᴗ•", Squint: true},
 		},
 		Cues: Cues{
@@ -177,16 +177,16 @@ func brobro() Bot {
 			Lead: 40, Gap: 12, TypeMillis: 12, TypeStep: 3,
 			IdleMillis: 180, Blink: true, Bob: true,
 			Lines: []string{
-				"YES!! {msg}!! LET'S GO!!",
-				"BRO!! {msg}!! I AM SO IN!!",
-				"WOOO!! {msg}!! ZOOM!!",
+				"YES!! {msg}!!",
+				"BRO!! {msg}!!",
+				"WOOO!! {msg}!!",
 			},
 			Emotes: []Emote{
 				{Glyph: "!!"},
 				{Glyph: "↗"},
 				{Glyph: "✧"},
 			},
-			Greeting:   "BROBRO IS IN!! DEMO MODE!! LET'S GO!!",
+			Greeting:   "BROBRO IN!! LET'S GO!!",
 			GreetEmote: Emote{Glyph: "!!"},
 		},
 		Cues: Cues{
@@ -234,7 +234,7 @@ func pillo() Bot {
 				{},
 				{Glyph: "·"},
 			},
-			Greeting:   "Pillo. Demo. Ask.",
+			Greeting:   "Pillo. Ask.",
 			GreetEmote: Emote{},
 		},
 		Cues: Cues{
@@ -274,16 +274,16 @@ func luvah() Bot {
 			Lead: 320, Gap: 80, TypeMillis: 42, TypeStep: 1,
 			IdleMillis: 560, Blink: true,
 			Lines: []string{
-				"That is lovely. {msg}. I am right here with you.",
-				"I like that. {msg}. You are doing just fine.",
-				"How sweet. {msg}. Take your time, I am cheering for you.",
+				"Sweet. {msg}.",
+				"I am here. {msg}.",
+				"You are doing fine. {msg}.",
 			},
 			Emotes: []Emote{
 				{Glyph: "♥"},
 				{Glyph: "✧", Squint: true},
 				{Glyph: "♡"},
 			},
-			Greeting:   "Hello, dear. I am Luvah. This is a demo, and I am glad you are here.",
+			Greeting:   "Hello, dear. I am Luvah.",
 			GreetEmote: Emote{Glyph: "♥"},
 		},
 		Cues: Cues{
@@ -323,16 +323,16 @@ func gnarf() Bot {
 			Lead: 90, Gap: 28, TypeMillis: 18, TypeStep: 2,
 			IdleMillis: 280, Blink: true, Bob: true,
 			Lines: []string{
-				"HEARD!! {msg}!! TURN IT UP!!",
-				"LOUD AND CLEAR!! {msg}!! HIT ME WITH A BOOP!!",
-				"YES!! {msg}!! MUSIC ON, I AM LISTENING!!",
+				"HEARD!! {msg}!!",
+				"LOUD!! {msg}!!",
+				"BOOP!! {msg}!!",
 			},
 			Emotes: []Emote{
 				{Glyph: "♪"},
 				{Glyph: "♫"},
 				{Glyph: "🔊"},
 			},
-			Greeting:   "GNARF ONLINE!! DEMO SPEAKERS UP!! SAY SOMETHING!!",
+			Greeting:   "GNARF!! SPEAKERS UP!!",
 			GreetEmote: Emote{Glyph: "♪"},
 		},
 		Cues: Cues{

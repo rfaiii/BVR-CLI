@@ -646,15 +646,18 @@ Type `/` in an empty prompt to open the command palette, then choose **Bots**
 
 The picker draws five NES-style sprites side by side: Dingus (white circle,
 orange star badge), BroBro (green triangle), Pillo (gray pill), Luvah (pink
-heart), and Gnarf (purple rounded square). Each sprite is 16×16 pixels packed
-into half-block cells (`▀▄█`), truecolor when the terminal allows it, xterm
-256 when it does not, and shaded blocks when `NO_COLOR` is set. Narrow
-terminals drop to fewer columns, then to a one-line list.
+heart), and Gnarf (purple rounded square). The on-screen size is the compact
+grid, 11 cells wide, with a hand-tuned 2×3 eye. `z` switches the picker to
+the large sprites when the row has room. The chat header stays small. Cells
+are half-blocks (`▀▄█`), truecolor when the terminal allows it, xterm 256
+when it does not, and shaded blocks when `NO_COLOR` is set. Narrow terminals
+drop to fewer columns, then to a one-line list.
 
 Arrow keys or `hjkl` move the highlight. The selected bot sits on a dark
-rounded tile with a blinking `▶`. Enter opens a chat with that bot's sprite
-in the header and a typewriter reply. Esc returns to the picker, then closes.
-`m` (or `ctrl+m` while typing) mutes bot cues for the dialog.
+rounded tile with a blinking `▶`. Enter opens that bot's NES dialogue
+directly: small sprite, name in the bot's color, and one short exchange.
+Esc returns to the roster, then closes. `m` (or `ctrl+m` while typing)
+mutes bot cues for the dialog.
 
 Replies come from a local demo backend (`BotBackend` in `internal/bots`).
 Nothing is sent to a model or the network. The header shows a `DEMO` badge.
