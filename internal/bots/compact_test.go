@@ -28,7 +28,52 @@ func TestCompactGridsAreSmallAndEyed(t *testing.T) {
 		require.Equal(t, want, cropEye(rows, boxes[0]), id)
 		require.Equal(t, want, cropEye(rows, boxes[1]), id)
 		require.Less(t, boxes[1].y, boxes[0].y, id+" right eye sits higher")
+		require.NoError(t, eyesEnclosed(rows), id)
 	}
+}
+
+func TestPilloSmallEyesStayInside(t *testing.T) {
+	t.Parallel()
+	for i, rows := range PilloClipSmall().Frames {
+		require.Len(t, eyeBoxes(rows), 2, "frame %d", i)
+		require.NoError(t, eyesEnclosed(rows), "frame %d", i)
+	}
+}
+
+func eyesEnclosed(rows []string) error {
+	h, w := len(rows), len(rows[0])
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			if rows[y][x] != 'E' {
+				continue
+			}
+			for _, d := range [][2]int{{0, -1}, {0, 1}, {-1, 0}, {1, 0}} {
+				xx, yy := x+d[0], y+d[1]
+				if yy < 0 || xx < 0 || yy >= h || xx >= w {
+					return errEye(x, y, "touches the canvas edge")
+				}
+				switch rows[yy][xx] {
+				case 'B', 'E':
+				default:
+					return errEye(x, y, "neighbor is outside the body")
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func errEye(x, y int, why string) error {
+	return &eyeEscape{x: x, y: y, why: why}
+}
+
+type eyeEscape struct {
+	x, y int
+	why  string
+}
+
+func (e *eyeEscape) Error() string {
+	return "eye at " + itoa(e.x) + "," + itoa(e.y) + " " + e.why
 }
 
 func TestPilloSmallFramesMatchTheLargeTimings(t *testing.T) {

@@ -14,6 +14,26 @@ func mascotNames() []string {
 	return []string{"dingus", "brobro", "pillo", "luvah", "gnarf"}
 }
 
+func TestNGlyphIsTwoStemsAndOneDiagonal(t *testing.T) {
+	t.Parallel()
+	n := mascotFont['N']
+	require.Equal(t, []string{
+		"#..#",
+		"##.#",
+		"#.##",
+		"#..#",
+		"#..#",
+	}, n)
+	for _, row := range n {
+		require.Equal(t, byte('#'), row[0])
+		require.Equal(t, byte('#'), row[len(row)-1])
+	}
+	// The diagonal steps right once per row, then joins the right stem.
+	require.Equal(t, byte('#'), n[1][1])
+	require.Equal(t, byte('#'), n[2][2])
+	require.Equal(t, byte('.'), n[2][1])
+}
+
 func loadAll(t *testing.T) []MascotGrid {
 	t.Helper()
 	var grids []MascotGrid

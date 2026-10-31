@@ -27,7 +27,7 @@ func RenderChatPreview() *image.RGBA {
 	const scale = 8
 	rows, body, eye, _ := Compact("dingus")
 	sw, sh := len(rows[0])*scale, len(rows)*scale
-	width, height := 520, 280
+	width, height := 640, 300
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 	bg := color.RGBA{8, 8, 10, 255}
 	fill(img, bg)
@@ -49,13 +49,13 @@ func RenderChatPreview() *image.RGBA {
 	drawLabel(img, ox+sw+24, oy+8, "DINGUS")
 	drawLabel(img, width-28-labelWidth("DEMO"), 16, "DEMO")
 	frame := color.RGBA{R: 0xFE, G: 0xFD, B: 0xFE, A: 0xFF}
-	boxX, boxY, boxW, boxH := 24, oy+sh+20, width-48, 96
+	boxX, boxY, boxW, boxH := 24, oy+sh+20, width-48, 110
 	rect(img, boxX, boxY, boxW, 4, frame)
 	rect(img, boxX, boxY+boxH-4, boxW, 4, frame)
 	rect(img, boxX, boxY, 4, boxH, frame)
 	rect(img, boxX+boxW-4, boxY, 4, boxH, frame)
-	drawLabel(img, boxX+16, boxY+16, "YOU  HEY")
-	drawLabel(img, boxX+16, boxY+48, "DINGUS  OK")
+	drawLabel(img, boxX+16, boxY+18, "YOU  CAN WE RUSH")
+	drawLabel(img, boxX+16, boxY+52, "DINGUS  NO RUSH  ONE STEP")
 	return img
 }
 

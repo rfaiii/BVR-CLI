@@ -173,16 +173,20 @@ func oy(base, row, scale, dy int) int {
 }
 
 func labelWidth(name string) int {
+	w := 0
 	n := 0
 	for _, r := range strings.ToUpper(name) {
-		if _, ok := mascotFont[r]; ok {
-			n++
+		glyph, ok := mascotFont[r]
+		if !ok || len(glyph) == 0 {
+			continue
 		}
+		if n > 0 {
+			w += 2
+		}
+		w += len(glyph[0]) * 2
+		n++
 	}
-	if n == 0 {
-		return 0
-	}
-	return n*8 - 2
+	return w
 }
 
 var mascotFont = map[rune][]string{
@@ -198,13 +202,16 @@ var mascotFont = map[rune][]string{
 	'K': {"#.#", "##.", "#..", "##.", "#.#"},
 	'L': {"#..", "#..", "#..", "#..", "###"},
 	'M': {"#.#", "###", "#.#", "#.#", "#.#"},
-	'N': {"#.#", "##.", "#.#", ".##", "#.#"},
+	// Two vertical strokes and one diagonal from top-left to bottom-right.
+	'N': {"#..#", "##.#", "#.##", "#..#", "#..#"},
 	'O': {".#.", "#.#", "#.#", "#.#", ".#."},
 	'P': {"##.", "#.#", "##.", "#..", "#.."},
 	'R': {"##.", "#.#", "##.", "#.#", "#.#"},
 	'S': {"###", "#..", "###", "..#", "###"},
+	'T': {"###", ".#.", ".#.", ".#.", ".#."},
 	'U': {"#.#", "#.#", "#.#", "#.#", "###"},
 	'V': {"#.#", "#.#", "#.#", ".#.", ".#."},
+	'W': {"#.#", "#.#", "#.#", "###", "#.#"},
 	'Y': {"#.#", "#.#", ".#.", ".#.", ".#."},
 }
 
@@ -231,7 +238,7 @@ func drawLabel(img *image.RGBA, x, y int, name string) {
 				}
 			}
 		}
-		x += 8
+		x += len(glyph[0])*2 + 2
 	}
 }
 

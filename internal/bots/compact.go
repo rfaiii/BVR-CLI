@@ -15,15 +15,6 @@ const CompactCardW = 12
 // LargeCardW fits the 17-wide Pillo clip. The other large sprites are 16.
 const LargeCardW = 17
 
-// Small eye, identical on every compact bot. Right eye sits one column
-// gap to the right and one row higher. The corners stay body or empty
-// so the oval still reads after the sprite is shrunk.
-//
-//	.E
-//	EE
-//	E.
-var compactEye = [][2]int{{1, 0}, {0, 1}, {1, 1}, {0, 2}}
-
 // Compact is the hand-tuned small grid for a roster id.
 func Compact(id string) (rows []string, body, eye color.RGBA, ok bool) {
 	switch id {
@@ -59,80 +50,71 @@ var (
 	gnarfEye   = color.RGBA{R: 0x05, G: 0x05, B: 0x05, A: 0xFF}
 )
 
-var dingusSmall = placeEyes(compactRows(
+// Hand-drawn. Both eyes are the same 2×3 oval, the right one one row
+// higher, with a column of body between them and a body pixel on every
+// side. No eye sits on '.' .
+var dingusSmall = []string{
 	"...BBBBB...",
 	"..BBBBBBB..",
-	".BBBBBBBBB.",
-	"BBBBBBBBBBB",
-	"BBBBBBBBBBB",
-	"BBBBBBBBBBB",
+	".BBBBBBBEB.",
+	"BBBBBEBEEBB",
+	"BBBBEEBEBBB",
+	"BBBBEBBBBBB",
 	".BBBBBBBBB.",
 	"..BBBBBBB..",
 	"...BBBBB...",
 	"....BBB....",
-), 5, 2, 9, 1)
+}
 
-var brobroSmall = placeEyes(compactRows(
+var brobroSmall = []string{
 	".....B.....",
 	"....BBB....",
 	"...BBBBB...",
 	"..BBBBBBB..",
-	".BBBBBBBBB.",
-	"BBBBBBBBBBB",
-	"BBBBBBBBBBB",
-	".BBBBBBBBB.",
+	".BBBBBBEBB.",
+	"BBBBEBEEBBB",
+	"BBBEEBEBBBB",
+	".BBEBBBBBB.",
 	"..BBBBBBB..",
 	"...BBBBB...",
-), 4, 4, 7, 3)
+}
 
-var luvahSmall = placeEyes(compactRows(
+var luvahSmall = []string{
 	"...........",
-	"...........",
-	"..BB...BB..",
-	".BBBB.BBBB.",
-	"BBBBBBBBBBB",
-	".BBBBBBBBB.",
+	"..BBB.BBB..",
+	".BBBBBBBEB.",
+	"BBBBBEBEEBB",
+	"BBBBEEBEBBB",
+	".BBBEBBBBB.",
 	"..BBBBBBB..",
 	"...BBBBB...",
 	"....BBB....",
 	".....B.....",
-), 6, 4, 9, 3)
+}
 
-var gnarfSmall = placeEyes(compactRows(
+var gnarfSmall = []string{
 	"....BBB....",
 	"...BBBBB...",
 	"..BBBBBBB..",
 	".BBBBBBBBB.",
 	"BBBBBBBBBBB",
-	"BBBBBBBBBBB",
-	".BBBBBBBBB.",
-	"..BBBBBBB..",
+	"BBBBBBBEBBB",
+	"BBBBEBEEBBB",
+	".BBEEBEBBB.",
+	"..BEBBBBB..",
 	"...BBBBB...",
-	"....BBB....",
-), 4, 5, 7, 4)
-
-// Rest pill. The other small frames share this baseline.
-func pilloRestBody() []string {
-	return compactRows(
-		"...........",
-		"...........",
-		".....BBBBB.",
-		"...BBBBBBBB",
-		"..BBBBBBBBB",
-		".BBBBBBBBBB",
-		"BBBBBBBBBBB",
-		"BBBBBBBBBB.",
-		".BBBBBBBB..",
-		"..BBBBBB...",
-	)
 }
 
 func pilloSmallRest() []string {
-	return placeEyes(pilloRestBody(), 6, 4, 9, 3)
+	return pilloSmall01
 }
 
 var pilloSmallClip = &Clip{
 	W: CompactW, H: CompactH,
+	Frames: [][]string{
+		pilloSmall01, pilloSmall02, pilloSmall03,
+		pilloSmall04, pilloSmall05, pilloSmall06,
+	},
 	Seqs: map[string]Sequence{
 		"rest": {Name: "rest", Steps: []Step{{Frame: 0, Ticks: 1}}},
 		"idle": {Name: "idle", Steps: []Step{
@@ -159,68 +141,86 @@ var pilloSmallClip = &Clip{
 	},
 }
 
-func init() {
-	rest := pilloRestBody()
-	squish := compactRows(
-		"...........",
-		"...........",
-		"...........",
-		"...........",
-		"....BBBBBB.",
-		"..BBBBBBBBB",
-		".BBBBBBBBBB",
-		"BBBBBBBBBBB",
-		".BBBBBBBBB.",
-		"..BBBBBB...",
-	)
-	hop := compactRows(
-		"....BBB....",
-		"...BBBBB...",
-		"..BBBBBBB..",
+var (
+	// Rest. Eyes on the right, feet on the last row.
+	pilloSmall01 = []string{
 		".BBBBBBBBB.",
 		"BBBBBBBBBBB",
+		"BBBBBBBBEBB",
+		"BBBBBEBEEBB",
+		"BBBBEEBEBBB",
+		"BBBBEBBBBBB",
 		"BBBBBBBBBBB",
 		".BBBBBBBBB.",
 		"..BBBBBBB..",
 		"...BBBBB...",
+	}
+	// Skeptical: right eye raised one row.
+	pilloSmall02 = []string{
+		".BBBBBBBBB.",
+		"BBBBBBBBEBB",
+		"BBBBBBBEEBB",
+		"BBBBBEBEBBB",
+		"BBBBEEBBBBB",
+		"BBBBEBBBBBB",
+		"BBBBBBBBBBB",
+		".BBBBBBBBB.",
+		"..BBBBBBB..",
+		"...BBBBB...",
+	}
+	// Glance: right eye high, left eye dropped.
+	pilloSmall03 = []string{
+		".BBBBBBBBB.",
+		"BBBBBBBBEBB",
+		"BBBBBBBEEBB",
+		"BBBBBBBEBBB",
+		"BBBBBEBBBBB",
+		"BBBBEEBBBBB",
+		"BBBBEBBBBBB",
+		".BBBBBBBBB.",
+		"..BBBBBBB..",
+		"...BBBBB...",
+	}
+	// Both eyes shifted left.
+	pilloSmall04 = []string{
+		".BBBBBBBBB.",
+		"BBBBBBBBBBB",
+		"BBBBBBBEBBB",
+		"BBBBEBEEBBB",
+		"BBBEEBEBBBB",
+		"BBBEBBBBBBB",
+		"BBBBBBBBBBB",
+		".BBBBBBBBB.",
+		"..BBBBBBB..",
+		"...BBBBB...",
+	}
+	// Squish. Shorter pill, eyes lower, same feet as rest.
+	pilloSmall05 = []string{
+		"...........",
+		"...........",
+		"...........",
+		".BBBBBBBBB.",
+		"BBBBBBBBEBB",
+		"BBBBBEBEEBB",
+		"BBBBEEBEBBB",
+		".BBBEBBBBB.",
+		"..BBBBBBB..",
+		"...BBBBB...",
+	}
+	// Hop. Taller and narrower, same oval, still inside the body.
+	pilloSmall06 = []string{
 		"....BBB....",
-	)
-	pilloSmallClip.Frames = [][]string{
-		placeEyes(rest, 6, 4, 9, 3),   // rest, eyes on the right
-		placeEyes(rest, 6, 4, 9, 2),   // skeptical: right eye up
-		placeEyes(rest, 6, 5, 9, 2),   // glance: right high, left lower
-		placeEyes(rest, 5, 4, 8, 3),   // both eyes shifted left
-		placeEyes(squish, 5, 6, 8, 5), // squish, eyes lower, same baseline
-		placeEyes(hop, 5, 5, 8, 4),    // hop: taller, narrower
+		"...BBBBB...",
+		"..BBBBBBB..",
+		".BBBBBBEBB.",
+		"BBBBEBEEBBB",
+		"BBBEEBEBBBB",
+		".BBEBBBBBB.",
+		"..BBBBBBB..",
+		"...BBBBB...",
+		"....BBB....",
 	}
-}
-
-func compactRows(rows ...string) []string {
-	out := make([]string, len(rows))
-	copy(out, rows)
-	return out
-}
-
-// placeEyes copies rows and paints two matching eyes. lx,ly and rx,ry
-// are the top-left of each 2×3 oval.
-func placeEyes(rows []string, lx, ly, rx, ry int) []string {
-	g := make([][]byte, len(rows))
-	for i, row := range rows {
-		g[i] = []byte(row)
-	}
-	place := func(ox, oy int) {
-		for _, c := range compactEye {
-			g[oy+c[1]][ox+c[0]] = 'E'
-		}
-	}
-	place(lx, ly)
-	place(rx, ry)
-	out := make([]string, len(g))
-	for i := range g {
-		out[i] = string(g[i])
-	}
-	return out
-}
+)
 
 // Squint drops a protruding top pixel and leaves the oval connected.
 // A pixel goes only when it has an eye below and no eye beside or above.
