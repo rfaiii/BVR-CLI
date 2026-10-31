@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "1.2.7",
+    [string]$Version = "1.2.9",
     # Path to the NSIS exe that will actually be uploaded to the v$Version
     # release. The hash has to come from those exact bytes: Go embeds build
     # info, so two runs of build-installers.sh do not produce the same file and

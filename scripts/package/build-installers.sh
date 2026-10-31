@@ -14,7 +14,7 @@
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-VERSION=${1:-1.2.7}
+VERSION=${1:-1.2.9}
 OUT=${OUT_DIR:-"$ROOT/dist/installers"}
 STAGING="$OUT/.staging"
 

@@ -58,8 +58,8 @@ both fail with "package not found" until that packaging lands. Install the
 built `.pkg.tar.zst` instead:
 
 ```sh
-./scripts/package/build-installers.sh 1.2.8
-sudo pacman -U ./dist/installers/bvr-cli-1.2.8-1-x86_64.pkg.tar.zst
+./scripts/package/build-installers.sh 1.2.9
+sudo pacman -U ./dist/installers/bvr-cli-1.2.9-1-x86_64.pkg.tar.zst
 ```
 
 Use the `aarch64` file on Arm machines. Manjaro and Omarchy use the same
@@ -89,7 +89,7 @@ bvr-cli.exe --help
 For local beta package generation across all six targets:
 
 ```sh
-./scripts/package/build-beta-packages.sh 1.2.8
+./scripts/package/build-beta-packages.sh 1.2.9
 ```
 
 ## Build from source
