@@ -20,9 +20,11 @@ func TestConfineRejectsEscape(t *testing.T) {
 	require.NoError(t, os.Symlink(outside, filepath.Join(root, "sub", "link")))
 	require.NoError(t, os.Symlink(filepath.Join(root, "sub"), filepath.Join(root, "inside-link")))
 
+	resolvedRoot, err := filepath.EvalSymlinks(root)
+	require.NoError(t, err)
 	ok, err := confine(root, "sub/note.txt")
 	require.NoError(t, err)
-	require.Equal(t, filepath.Join(root, "sub", "note.txt"), ok)
+	require.Equal(t, filepath.Join(resolvedRoot, "sub", "note.txt"), ok)
 
 	_, err = confine(root, "../secret.txt")
 	require.ErrorIs(t, err, errPathEscape)

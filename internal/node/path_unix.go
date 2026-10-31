@@ -91,7 +91,7 @@ func writeAtomicContained(root, full string, content []byte) error {
 		return err
 	}
 	resolved = filepath.Clean(resolved)
-	if !(strings.HasPrefix(resolved, rootPrefix(root)) || resolved == root) {
+	if !strings.HasPrefix(resolved, rootPrefix(root)) && resolved != root {
 		return errPathEscape
 	}
 	if resolved != parent {

@@ -572,6 +572,16 @@ func safeID(base string) string {
 // parent whose resolved path differs from its lexical path is rejected.
 // Missing suffix components are appended only after that check.
 func confine(root, request string) (string, error) {
+	// macOS temp dirs live under /var, which is a symlink to /private/var.
+	// Resolve that once so later EvalSymlinks results share the same prefix.
+	if !strings.HasPrefix(root, string(filepath.Separator)) && !strings.HasPrefix(root, filepath.VolumeName(root)+string(filepath.Separator)) {
+		return "", errPathEscape
+	}
+	resolvedRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		return "", err
+	}
+	root = filepath.Clean(resolvedRoot)
 	if strings.ContainsRune(request, 0) {
 		return "", errPathEscape
 	}

@@ -13,15 +13,19 @@ import (
 )
 
 func resetProviderState() {
+	providerMu.Lock()
 	providerOnce = sync.Once{}
 	providerList = nil
 	providerErr = nil
+	providerMu.Unlock()
 	providerVersion.Store(0)
 	providerHooksMu.Lock()
 	providerHooks = nil
 	providerHooksMu.Unlock()
+	syncerMu.Lock()
 	catwalkSyncer = &catwalkSync{}
 	hyperSyncer = &hyperSync{}
+	syncerMu.Unlock()
 }
 
 func TestProviders_Integration_AutoUpdateDisabled(t *testing.T) {
@@ -32,15 +36,21 @@ func TestProviders_Integration_AutoUpdateDisabled(t *testing.T) {
 	testCatwalkSyncer := &catwalkSync{}
 	testHyperSyncer := &hyperSync{}
 
+	syncerMu.RLock()
 	originalCatwalSyncer := catwalkSyncer
 	originalHyperSyncer := hyperSyncer
+	syncerMu.RUnlock()
 	defer func() {
+		syncerMu.Lock()
 		catwalkSyncer = originalCatwalSyncer
 		hyperSyncer = originalHyperSyncer
+		syncerMu.Unlock()
 	}()
 
+	syncerMu.Lock()
 	catwalkSyncer = testCatwalkSyncer
 	hyperSyncer = testHyperSyncer
+	syncerMu.Unlock()
 
 	resetProviderState()
 	defer resetProviderState()
