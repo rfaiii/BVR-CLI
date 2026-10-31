@@ -502,6 +502,7 @@ func (c *Commands) defaultCommands() []*CommandItem {
 		NewCommandItem(c.com.Styles, "other_models", "Other Models", "", ActionOpenDialog{OtherModelsID}).WithAliases("other", "/other", "cline", "/cline", "external"),
 		NewCommandItem(c.com.Styles, "ollama_how_to", "Ollama How To", "", ActionOpenDialog{OllamaHowToID}),
 		NewCommandItem(c.com.Styles, "themes", "Themes", "ctrl+shift+t", ActionOpenDialog{ThemesID}).WithAliases("themes", "/themes"),
+		NewCommandItem(c.com.Styles, "bots", "Bots", "", ActionOpenDialog{BotsID}).WithAliases("bots", "/bots"),
 		NewCommandItem(c.com.Styles, "sounds", "Sounds", "", ActionOpenDialog{SoundsID}).WithAliases("sounds", "/sounds", "volume", "audio"),
 		NewCommandItem(c.com.Styles, "open_website", "Open Website", "", ActionOpenDialog{BrowserID}),
 	}

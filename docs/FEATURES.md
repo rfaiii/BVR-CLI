@@ -7,6 +7,8 @@ for beta marketing, release notes, onboarding copy, and internal triage.
 
 - Terminal-native interactive assistant powered by Bubble Tea.
 - Keyboard-first command palette and editor workflow.
+- `/bots` opens an NES-style picker for Dingus, BroBro, Pillo, Luvah, and
+  Gnarf, then a demo chat. Replies are local canned lines. No network.
 - Session persistence with SQLite-backed history.
 - Streaming assistant responses with markdown rendering.
 - Onboarding wizard with terminal-aware ASCII previews.
