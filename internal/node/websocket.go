@@ -17,6 +17,13 @@ import (
 
 const websocketPath = "/v1/node/ws"
 
+// WatchRequest subscribes the socket to filesystem events for one
+// project. An empty path watches the whole project.
+type WatchRequest struct {
+	ProjectID string `json:"project_id"`
+	Path      string `json:"path,omitempty"`
+}
+
 type WSFrame struct {
 	ID      string          `json:"id"`
 	Type    string          `json:"type"`
@@ -25,6 +32,16 @@ type WSFrame struct {
 	Request *CommandRequest `json:"request,omitempty"`
 	Result  *CommandResult  `json:"result,omitempty"`
 	Error   string          `json:"error,omitempty"`
+	Watch   *WatchRequest   `json:"watch,omitempty"`
+	Event   *FSEvent        `json:"event,omitempty"`
+}
+
+func websocketDialURL(raw string) string {
+	raw = strings.TrimRight(raw, "/")
+	if strings.HasSuffix(raw, websocketPath) {
+		return raw
+	}
+	return raw + websocketPath
 }
 
 type WebSocketTransport struct {
@@ -52,7 +69,7 @@ func (t *WebSocketTransport) connect(ctx context.Context) (*websocket.Conn, erro
 	if t.Token != "" {
 		header.Set("Authorization", "Bearer "+t.Token)
 	}
-	conn, resp, err := dialer.DialContext(ctx, t.URL+websocketPath, header)
+	conn, resp, err := dialer.DialContext(ctx, websocketDialURL(t.URL), header)
 	// On a rejected handshake the response is the only thing carrying the
 	// server's status and body, and it leaks if the caller only sees the error.
 	if resp != nil && resp.Body != nil {
@@ -146,7 +163,20 @@ func (t *WebSocketTransport) Close() error {
 type NodeWebSocketServer struct {
 	Token     string
 	Transport Transport
+	Exec      ExecPolicy
+	Share     *FileShare
 	Upgrader  websocket.Upgrader
+}
+
+type wsWriter struct {
+	mu   sync.Mutex
+	conn *websocket.Conn
+}
+
+func (w *wsWriter) write(value any) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.conn.WriteJSON(value)
 }
 
 func (s *NodeWebSocketServer) Handler() http.Handler {
@@ -166,13 +196,19 @@ func (s *NodeWebSocketServer) handle(w http.ResponseWriter, r *http.Request) {
 	}
 	upgrader := s.Upgrader
 	if upgrader.CheckOrigin == nil {
-		upgrader.CheckOrigin = func(*http.Request) bool { return true }
+		upgrader.CheckOrigin = originAllowed
 	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
 	}
 	defer conn.Close()
+	writer := &wsWriter{conn: conn}
+	var sub *watchSub
+	if s.Share != nil {
+		sub = s.Share.subscribe(func(frame WSFrame) error { return writer.write(frame) })
+		defer s.Share.unsubscribe(sub)
+	}
 	for {
 		var request WSFrame
 		if err := conn.ReadJSON(&request); err != nil {
@@ -180,18 +216,34 @@ func (s *NodeWebSocketServer) handle(w http.ResponseWriter, r *http.Request) {
 		}
 		switch request.Type {
 		case "ping":
-			_ = conn.WriteJSON(WSFrame{ID: request.ID, Type: "pong"})
+			_ = writer.write(WSFrame{ID: request.ID, Type: "pong"})
 		case "execute":
-			s.execute(conn, request)
+			s.execute(writer, request)
+		case "watch":
+			s.watch(writer, sub, request)
 		default:
-			_ = conn.WriteJSON(WSFrame{ID: request.ID, Type: "error", Error: "unknown websocket request"})
+			_ = writer.write(WSFrame{ID: request.ID, Type: "error", Error: "unknown websocket request"})
 		}
 	}
 }
 
-func (s *NodeWebSocketServer) execute(conn *websocket.Conn, frame WSFrame) {
+func (s *NodeWebSocketServer) watch(writer *wsWriter, sub *watchSub, frame WSFrame) {
+	if s.Share == nil || sub == nil || frame.Watch == nil || frame.Watch.ProjectID == "" {
+		_ = writer.write(WSFrame{ID: frame.ID, Type: "error", Error: "missing watch"})
+		return
+	}
+	if err := s.Share.addWatch(sub, frame.ID, frame.Watch.ProjectID, frame.Watch.Path); err != nil {
+		_ = writer.write(WSFrame{ID: frame.ID, Type: "error", Error: err.Error()})
+	}
+}
+
+func (s *NodeWebSocketServer) execute(writer *wsWriter, frame WSFrame) {
 	if frame.Request == nil || frame.Request.Command == "" {
-		_ = conn.WriteJSON(WSFrame{ID: frame.ID, Type: "error", Error: "missing command"})
+		_ = writer.write(WSFrame{ID: frame.ID, Type: "error", Error: "missing command"})
+		return
+	}
+	if err := s.Exec.Allows(frame.Request.Command); err != nil {
+		_ = writer.write(WSFrame{ID: frame.ID, Type: "error", Error: err.Error()})
 		return
 	}
 	transport := s.Transport
@@ -200,13 +252,13 @@ func (s *NodeWebSocketServer) execute(conn *websocket.Conn, frame WSFrame) {
 	}
 	if streamer, ok := transport.(StreamTransport); ok {
 		result, err := streamer.StreamExecute(context.Background(), *frame.Request, func(stream, data string) error {
-			return conn.WriteJSON(WSFrame{ID: frame.ID, Type: stream, Stream: stream, Data: data})
+			return writer.write(WSFrame{ID: frame.ID, Type: stream, Stream: stream, Data: data})
 		})
 		response := WSFrame{ID: frame.ID, Type: "result", Result: &result}
 		if err != nil {
 			response.Error = err.Error()
 		}
-		_ = conn.WriteJSON(response)
+		_ = writer.write(response)
 		return
 	}
 	result, err := transport.Execute(context.Background(), *frame.Request)
@@ -214,7 +266,7 @@ func (s *NodeWebSocketServer) execute(conn *websocket.Conn, frame WSFrame) {
 	if err != nil {
 		response.Error = err.Error()
 	}
-	_ = conn.WriteJSON(response)
+	_ = writer.write(response)
 }
 
 type StreamTransport interface {

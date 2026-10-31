@@ -11,7 +11,8 @@ import (
 )
 
 func TestWebSocketTransportStreamsAndPings(t *testing.T) {
-	httpServer := httptest.NewServer((&NodeWebSocketServer{Token: "secret"}).Handler())
+	server := &NodeWebSocketServer{Token: "secret", Exec: ExecPolicy{Unrestricted: true}}
+	httpServer := httptest.NewServer(server.Handler())
 	defer httpServer.Close()
 	parsed, err := url.Parse(httpServer.URL)
 	require.NoError(t, err)

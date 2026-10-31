@@ -3,6 +3,8 @@
 package node
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"slices"
@@ -19,15 +21,65 @@ const (
 	DeviceStatusError   DeviceStatus = "error"
 )
 
+// Device is one row in the NODE registry. JSON uses snake_case. Older
+// nodes.json files used the Go field names (ID, TransportURL, …); UnmarshalJSON
+// accepts both so a file written before the tags still loads.
 type Device struct {
-	ID             string
-	Name           string
-	Nickname       string
-	ConnectionType string
-	Address        string
-	Status         DeviceStatus
-	LastSeen       time.Time
-	TransportURL   string
+	ID             string       `json:"id"`
+	Name           string       `json:"name,omitempty"`
+	Nickname       string       `json:"nickname,omitempty"`
+	ConnectionType string       `json:"connection_type,omitempty"`
+	Address        string       `json:"address,omitempty"`
+	Status         DeviceStatus `json:"status,omitempty"`
+	LastSeen       time.Time    `json:"last_seen,omitempty"`
+	TransportURL   string       `json:"transport_url,omitempty"`
+}
+
+// UnmarshalJSON reads a current nodes.json object or a legacy one that
+// stored exported Go names.
+func (d *Device) UnmarshalJSON(data []byte) error {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	var out Device
+	if err := firstJSON(raw, &out.ID, "id", "ID"); err != nil {
+		return err
+	}
+	if err := firstJSON(raw, &out.Name, "name", "Name"); err != nil {
+		return err
+	}
+	if err := firstJSON(raw, &out.Nickname, "nickname", "Nickname"); err != nil {
+		return err
+	}
+	if err := firstJSON(raw, &out.ConnectionType, "connection_type", "ConnectionType"); err != nil {
+		return err
+	}
+	if err := firstJSON(raw, &out.Address, "address", "Address"); err != nil {
+		return err
+	}
+	if err := firstJSON(raw, &out.Status, "status", "Status"); err != nil {
+		return err
+	}
+	if err := firstJSON(raw, &out.LastSeen, "last_seen", "LastSeen"); err != nil {
+		return err
+	}
+	if err := firstJSON(raw, &out.TransportURL, "transport_url", "TransportURL"); err != nil {
+		return err
+	}
+	*d = out
+	return nil
+}
+
+func firstJSON(raw map[string]json.RawMessage, dest any, keys ...string) error {
+	for _, key := range keys {
+		val, ok := raw[key]
+		if !ok || string(val) == "null" {
+			continue
+		}
+		return json.Unmarshal(val, dest)
+	}
+	return nil
 }
 
 func (d Device) DisplayName() string {
@@ -184,18 +236,12 @@ func SetDeviceTransportURL(id, endpoint string)      { defaultManager.SetTranspo
 func RemoveDevice(id string)                         { defaultManager.Remove(id) }
 func EnsureDefaultDevice()                           { defaultManager.EnsureDefault() }
 
+// DiscoverDevices probes NODEs already saved in this process. It used to
+// scan a fixed list of local dev-server ports, which never spoke the NODE
+// protocol. Refresh in the settings dialog calls ProbeSavedNodes directly
+// so it can time out; this wrapper remains for older callers.
 func DiscoverDevices() {
-	ports := []int{3000, 5173, 8080, 4200, 8000, 9000}
-	probes := make([]Probe, 0, len(ports)*2)
-	for _, host := range []string{"localhost", "127.0.0.1"} {
-		for _, port := range ports {
-			address := fmt.Sprintf("%s:%d", host, port)
-			probes = append(probes, Probe{ID: host + "-" + fmt.Sprint(port), Name: address, Address: address, ConnectionType: "tcp"})
-		}
-	}
-	for _, device := range Discover(probes, TCPProbe(250*time.Millisecond)) {
-		UpsertDevice(device)
-	}
+	ProbeSavedNodes(context.Background())
 }
 
 // DefaultProbes is exposed for callers that want to run discovery on their

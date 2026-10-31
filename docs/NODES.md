@@ -35,6 +35,132 @@ bvr node scan --wait 4s
 Richards-MacBook-Air     172.20.20.20:7799      proto=1  id=Richards-MacBook-Air
 ```
 
+## MAIN and BACKUP (stage one)
+
+MAIN is the machine that has the files. BACKUP (and, later, the iPhone)
+attaches to MAIN and works on those files. Nothing is copied, and GitHub
+is not in the path. Richard's MAIN today is the M1 MacBook. There is no
+second computer in service yet, so the first test is two `bvr-cli`
+processes on that Mac. The iPhone can already prove the socket with
+`uname`; it cannot yet see the chat or the file API.
+
+### Single Mac
+
+Terminal A is MAIN. The project directory is whatever checkout should
+stay on this machine. Binding `0.0.0.0` makes the same agent reachable
+from this Mac at `127.0.0.1` and from the iPhone on the LAN.
+
+```sh
+export BVR_NODE_TOKEN="$(openssl rand -hex 24)"
+bvr-cli node serve \
+  --host 0.0.0.0:7777 \
+  --token "$BVR_NODE_TOKEN" \
+  --project "$HOME/src/some-project" \
+  --advertise
+```
+
+The process prints a listen line even when `--advertise` is omitted.
+`--advertise` on a loopback address is refused: Bonjour would publish a
+LAN IP for a port that is only open on localhost.
+
+macOS does not deliver a machine's own Bonjour advertisement. `bvr-cli
+node scan` in a second terminal on this Mac will not list the agent
+above. Dial it explicitly:
+
+```sh
+# Terminal B, same Mac
+bvr-cli node connect 127.0.0.1:7777 --token "$BVR_NODE_TOKEN"
+bvr-cli node files ls
+bvr-cli node files cat README.md
+printf 'hello from the other terminal\n' | bvr-cli node files put notes/hello.txt
+bvr-cli node files watch notes
+```
+
+`node connect` checks `/v1/node/health` (protocol must be `1`), writes
+the device to `~/.local/share/bvr/nodes.json`, stores the token in
+`node-credentials.json` (mode `0600`, not inside the device record),
+and registers a live transport. The TUI does the same from NODE
+settings (`ctrl+shift+n`): type `host:port` and the token, press
+enter. `ctrl+r` probes saved NODE rows. It does not scan dev-server
+ports.
+
+`nodes.json` is snake_case (`id`, `transport_url`, …). Files written
+before that change used Go field names (`ID`, `TransportURL`) and still
+load.
+
+### iPhone against this Mac
+
+The phone already speaks the WebSocket. On the same Wi-Fi, with MAIN
+advertising as above:
+
+1. Open BVR CLI, tap the header badge, pick the Mac (or type
+   `mac-lan-ip:7777` if multicast is blocked).
+2. Paste `BVR_NODE_TOKEN` and connect.
+3. Run the `uname` test. `uname` is on the default execute allow-list,
+   so this keeps working.
+
+That is all the phone can do in this stage. Chat, projects, and file
+contents on the phone are still local mock data. Stage two adds
+session frames so MOBILE (and BACKUP) attach to MAIN's live chat
+instead of sending one-off shell commands.
+
+### Another machine, including a future Omarchy box
+
+mDNS does not cross NAT. Put both machines on Tailscale (or any other
+VPN that gives them addresses they can route) and dial the Tailscale
+IP. Do not rely on `node scan` across the internet.
+
+```sh
+# On MAIN (the M1), same serve command as above.
+# On the other machine:
+bvr-cli node connect 100.x.y.z:7777 --token "$BVR_NODE_TOKEN"
+bvr-cli node files ls
+```
+
+### File API
+
+`--project` is explicit and repeatable. Peers can list projects, list a
+directory, read, create, write, rename, and delete, and subscribe to
+change events. Every path is resolved inside the project root.
+`..`, absolute paths, and symlinks are rejected, including a symlink
+that points back inside the root. `.git` and `node_modules` are not
+watched (they are still readable) so a large checkout does not exhaust
+the process file-descriptor limit.
+
+Concurrency is an optimistic etag, not a lock that sticks if a client
+dies. The etag is the SHA-256 of the file bytes. A writer sends
+`expected_etag` from its last read. An empty etag means "create only".
+A mismatch returns HTTP 409 and the current etag, and the bytes on
+disk stay as they were. A per-project mutex makes the check and the
+write atomic on MAIN. `node files put` reads the etag and then writes,
+and exits with an error on 409 instead of retrying.
+
+Watches use `fsnotify` and are pushed on the WebSocket as `fs_event`
+frames (`create`, `write`, `remove`, `rename`, plus `ready`). On Linux
+that is inotify. On the M1 it is kqueue, which is fsnotify's CGO-free
+macOS backend and works in the normal `CGO_ENABLED=0` arm64 build. The
+FSEvents C API is not linked. kqueue needs a watch on each directory;
+the agent adds those, and adds directories created later. A huge tree
+can still hit the open-file limit. The startup line says when the
+watch is only partial. Writes land through a hidden `.bvrnode-*`
+scratch file in the same directory; those names are not listed and do
+not emit events. kqueue sometimes reports a coarser event than
+inotify. `node files ls` is the check when a watch line looks thin.
+
+### Execute allow-list
+
+`POST /v1/node/execute` and the WebSocket `execute` frame accept
+`uname`, `node`, `npm`, `npx`, `pnpm`, `yarn`, `bun`, and `deno` by
+default. Anything else is HTTP 403. This is a behavior change from
+"any command". `--allow-exec <name>` adds one name.
+`--unrestricted-exec` restores the old behavior and the startup line
+says so. The allow-list is the program name, not a sandbox: `node` can
+still open files on MAIN. Prefer the file API for project files.
+
+The bearer compare hashes both tokens and uses a constant-time
+compare. WebSocket clients with no `Origin` header (the CLI and the
+iOS app) are accepted. A browser `Origin` must match the request host.
+
 ### Local-network discovery
 
 `internal/node/discovery.go` publishes and resolves a DNS-SD record so a
@@ -71,9 +197,11 @@ in the UI. The home screen and NODE settings dialog show device name and state:
 grey offline, red error, green online.
 
 The transport layer, mDNS discovery, device registry, and UI status colors are
-complete. Protocol details for each transport follow. Discovery results are not
-yet fed into the registry, and the registry is per-process: nothing persists a
-device across runs.
+in place. `bvr-cli node scan` writes discovered hosts to `nodes.json`.
+`bvr-cli node connect` does the same for an address you type, and it also
+stores the token and registers a transport. A Mac does not see its own
+Bonjour advertisement, so the second process on MAIN uses `node connect`
+with `127.0.0.1`. Protocol details for each transport follow.
 
 ## HTTP protocol
 
@@ -87,10 +215,11 @@ authentication but does not terminate TLS itself.
 
 ### Endpoints
 
-- `GET /v1/node/health` — returns `{ "ok": true, "protocol": "1" }`.
-- `GET /v1/node/capabilities` — reports supported command families.
-- `POST /v1/node/execute` — executes a command request.
-- `GET /v1/node/ws` — persistent WebSocket endpoint for streaming execution.
+- `GET /v1/node/health` — returns `{ "ok": true, "protocol": "1", "id": "<hostname>" }`.
+- `GET /v1/node/capabilities` — reports the execute allow-list (`*` when `--unrestricted-exec` is set).
+- `POST /v1/node/execute` — executes a command on the allow-list.
+- `GET /v1/node/ws` — persistent WebSocket endpoint for streaming execution and `fs_event` watches.
+- `GET /v1/node/projects`, `GET /v1/node/files`, `GET /v1/node/files/read`, `PUT /v1/node/files`, `POST /v1/node/files`, `POST /v1/node/files/rename`, `DELETE /v1/node/files` — opt-in project files. See [MAIN and BACKUP](#main-and-backup-stage-one).
 
 Execute request:
 

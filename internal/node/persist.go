@@ -71,16 +71,22 @@ func (m *Manager) Save(path string) error {
 		return fmt.Errorf("create device registry directory: %w", err)
 	}
 
+	return writePrivateFile(path, data)
+}
+
+// writePrivateFile replaces path atomically. The mode is 0o600 because
+// these files name LAN hosts or hold bearer tokens.
+func writePrivateFile(path string, data []byte) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return fmt.Errorf("create directory for %s: %w", path, err)
+	}
 	tmp := path + ".tmp"
-	// 0o600 rather than the 0o644 the provider cache uses: this file lists
-	// hosts and ports on the local network, which is not something to expose
-	// to other accounts on a shared machine.
 	if err := os.WriteFile(tmp, data, 0o600); err != nil {
-		return fmt.Errorf("write device registry: %w", err)
+		return fmt.Errorf("write %s: %w", path, err)
 	}
 	if err := os.Rename(tmp, path); err != nil {
 		_ = os.Remove(tmp)
-		return fmt.Errorf("replace device registry: %w", err)
+		return fmt.Errorf("replace %s: %w", path, err)
 	}
 	return nil
 }
