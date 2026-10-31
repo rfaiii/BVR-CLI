@@ -98,6 +98,28 @@ final class NodeClient: NSObject, URLSessionWebSocketDelegate {
     private var pending: [String: Pending] = [:]
     private var handshakeWatchdog: DispatchWorkItem?
 
+    /// Origin whose host equals the WebSocket request Host, port included.
+    ///
+    /// Main's agent accepts any Origin. The agent on
+    /// `cursor/node-main-backup-files-7145` accepts a missing Origin and an
+    /// Origin whose host equals the request Host. URLSession sends no Origin
+    /// unless one is set (checked on the iOS 26.5 simulator). Setting this
+    /// value keeps the socket valid if a later OS starts adding its own.
+    static func originHeader(for url: URL) -> String? {
+        guard var host = url.host, !host.isEmpty else { return nil }
+        let scheme = url.scheme == "wss" ? "https" : "http"
+        // `URL.host` sometimes keeps the brackets on an IPv6 address and
+        // sometimes does not. One pair is what Go's origin check compares.
+        if host.hasPrefix("[") && host.hasSuffix("]") {
+            host = String(host.dropFirst().dropLast())
+        }
+        let authority = host.contains(":") ? "[\(host)]" : host
+        if let port = url.port {
+            return "\(scheme)://\(authority):\(port)"
+        }
+        return "\(scheme)://\(authority)"
+    }
+
     func connect(to url: URL, token: String) {
         disconnect()
         lastError = nil
@@ -105,6 +127,9 @@ final class NodeClient: NSObject, URLSessionWebSocketDelegate {
         var request = URLRequest(url: url)
         if !token.isEmpty {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        if let origin = Self.originHeader(for: url) {
+            request.setValue(origin, forHTTPHeaderField: "Origin")
         }
 
         // Handing URLSession the main queue keeps every delegate and completion
@@ -175,7 +200,11 @@ final class NodeClient: NSObject, URLSessionWebSocketDelegate {
     private func send(_ frame: NodeWSFrame,
                       onLine: ((String, String) -> Void)? = nil,
                       completion: @escaping (Result<NodeCommandResult, Error>) -> Void) {
-        guard let task, state == .online || frame.type == "ping" else {
+        guard let task else {
+            completion(.failure(NodeError.notConnected))
+            return
+        }
+        guard state == .online || frame.type == "ping" else {
             completion(.failure(NodeError.notConnected))
             return
         }
@@ -268,8 +297,13 @@ final class NodeClient: NSObject, URLSessionWebSocketDelegate {
     /// A rejected upgrade arrives as an opaque transport error, so the HTTP
     /// status left on the task is what separates "wrong token" from "host gone".
     private func failureReason(for error: Error) -> NodeError {
-        if let http = task?.response as? HTTPURLResponse, http.statusCode == 401 {
-            return .unauthorized
+        if let http = task?.response as? HTTPURLResponse {
+            if http.statusCode == 401 {
+                return .unauthorized
+            }
+            if http.statusCode == 403 {
+                return .hostClosed("The host rejected the WebSocket origin.")
+            }
         }
         return .hostClosed(error.localizedDescription)
     }
@@ -286,6 +320,9 @@ final class NodeClient: NSObject, URLSessionWebSocketDelegate {
     // MARK: - URLSessionWebSocketDelegate
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: (any Error)?) {
+        // A replaced socket still delivers its cancel. Ignoring it keeps the
+        // live connection from being marked offline.
+        guard task === self.task else { return }
         guard let error else { return }
         // A cancelled task is our own disconnect(), not a failure worth
         // reporting to whoever has a request outstanding.
@@ -299,6 +336,7 @@ final class NodeClient: NSObject, URLSessionWebSocketDelegate {
 
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask,
                     didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
+        guard webSocketTask === self.task else { return }
         let why = closeCode == .unsupportedData || closeCode == .protocolError
             ? "The host does not speak the NODE protocol."
             : "The host closed the connection (\(closeCode.rawValue))."

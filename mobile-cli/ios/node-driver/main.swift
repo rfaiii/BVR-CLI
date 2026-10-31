@@ -9,6 +9,7 @@ import Foundation
 //     node-driver/main.swift \
 //     BvrCompanion/BvrCompanion/NodeDiscovery.swift \
 //     BvrCompanion/BvrCompanion/NodeClient.swift \
+//     BvrCompanion/BvrCompanion/NodeTokenStore.swift \
 //     BvrCompanion/BvrCompanion/NodeStore.swift
 //   BVR_TOKEN=<agent token> BVR_MANUAL=<host>:<port> /tmp/nodedrv
 //
@@ -19,8 +20,9 @@ import Foundation
 // mDNS advertisements, so set BVR_MANUAL and point it at a `bvr node serve
 // --advertise` process running somewhere else for the browse path.
 
-let store = NodeStore()
-store.token = ProcessInfo.processInfo.environment["BVR_TOKEN"] ?? ""
+// Memory, not the login keychain. The app itself uses KeychainTokenStore.
+let store = NodeStore(tokens: InMemoryTokenStore())
+store.updateToken(ProcessInfo.processInfo.environment["BVR_TOKEN"] ?? "")
 let manual = ProcessInfo.processInfo.environment["BVR_MANUAL"] ?? ""
 let timeout = TimeInterval(ProcessInfo.processInfo.environment["BVR_TIMEOUT"] ?? "25") ?? 25
 

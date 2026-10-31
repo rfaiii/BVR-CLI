@@ -42,7 +42,7 @@ struct ChatMessage: Identifiable {
 class MockStore {
     let node = NodeStore()
 
-    var mcps: String = "None"
+    var mcps: String = "Off"
     var cpuUsage: Double = 1.0 // 100%
     var ramUsage: Double = 0.64 // 64%
 
@@ -57,12 +57,19 @@ class MockStore {
     ]
     
     var pluginModels: [AIModel] = [
-        AIModel(name: "fastmcp: disconnected", subtitle: nil, status: .alert)
+        AIModel(name: "fastmcp: off", subtitle: nil, status: .alert)
     ]
     
     var messages: [ChatMessage] = []
     
     let mcpClient = MCPClient()
+    var mcpOverride: String {
+        didSet {
+            UserDefaults.standard.set(mcpOverride, forKey: MCPEndpoint.overrideDefaultsKey)
+        }
+    }
+    var mcpStatus: String
+    var mcpConnected = false
     
     var availableCommands: [AppCommand] = [
         AppCommand(command: "themes", description: "Change application theme", icon: "paintbrush.fill"),
@@ -74,16 +81,60 @@ class MockStore {
     ]
     
     init() {
-        // iOS asks for local-network permission on the first browse, so start
-        // immediately rather than hiding that behind the picker.
-        node.startScanning()
-
-        // Automatically try to connect to MCP on launch
-        mcpClient.connect {
+        mcpOverride = UserDefaults.standard.string(forKey: MCPEndpoint.overrideDefaultsKey) ?? ""
+        mcpStatus = "MCP stays off until a NODE host is selected. A localhost URL would dial this phone."
+        mcpClient.onStatus = { [weak self] message in
+            guard let self else { return }
+            self.mcpStatus = message
+            self.mcpConnected = false
+            self.mcps = "Off"
             self.pluginModels = [
-                AIModel(name: "fastmcp: connected", subtitle: nil, status: .ready),
-                AIModel(name: "tool: sync_gemini_command", subtitle: nil, status: .smallDot)
+                AIModel(name: "fastmcp: off", subtitle: nil, status: .alert)
             ]
+        }
+        node.onSelectedHostChange = { [weak self] _ in
+            self?.refreshMCP()
+        }
+        // iOS asks for local-network permission on the first browse, so start
+        // immediately rather than hiding that behind the picker. Unit tests
+        // host this app and must not raise that prompt.
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
+            node.startScanning()
+        }
+        #if DEBUG
+        DebugLaunch.apply(to: self)
+        #endif
+    }
+
+    /// Dials MCP at the override URL, or at the selected NODE host on port
+    /// 8000. A blocked decision leaves the client disconnected.
+    func refreshMCP() {
+        switch MCPEndpoint.decide(override: mcpOverride,
+                                  nodeHost: node.selectedHost?.host,
+                                  allowsLoopback: MCPEndpoint.allowsLoopbackHere) {
+        case .blocked(let reason):
+            mcpClient.disconnect()
+            mcpConnected = false
+            mcpStatus = reason
+            mcps = "Off"
+            pluginModels = [
+                AIModel(name: "fastmcp: off", subtitle: nil, status: .alert)
+            ]
+        case .connect(let url):
+            mcpStatus = "Connecting to \(url.absoluteString)…"
+            mcps = "Connecting"
+            pluginModels = [
+                AIModel(name: "fastmcp: connecting", subtitle: url.host, status: .alert)
+            ]
+            mcpClient.connect(to: url) { [weak self] in
+                guard let self else { return }
+                self.mcpConnected = true
+                self.mcpStatus = "Connected to \(url.absoluteString)"
+                self.mcps = url.host ?? "On"
+                self.pluginModels = [
+                    AIModel(name: "fastmcp: connected", subtitle: url.absoluteString, status: .ready)
+                ]
+            }
         }
     }
     
@@ -116,7 +167,7 @@ class MockStore {
                 }
             }
         } else {
-            messages.append(ChatMessage(isUser: false, text: "MCP Server not connected. Run `uv run mcp-server` first!"))
+            messages.append(ChatMessage(isUser: false, text: mcpStatus))
         }
     }
 }

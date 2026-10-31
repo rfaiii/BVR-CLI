@@ -2,9 +2,9 @@ import Foundation
 
 /// The NODE hosts the app can see, which one is picked, and the live link.
 ///
-/// The token is the credential that opens a shell on the host, so it lives in
-/// this process only: no Keychain and no UserDefaults, which means it is retyped
-/// after every launch. Pairing it out of band is tracked in docs/MOBILE.md.
+/// The bearer token is saved in the Keychain under the host address, so the
+/// next launch of the same host fills the field. The host-side driver passes
+/// `InMemoryTokenStore` and does not touch the login keychain.
 @Observable
 final class NodeStore {
     /// Port assumed for a hand-typed address with no port, matching the
@@ -15,25 +15,35 @@ final class NodeStore {
     private(set) var manualHosts: [DiscoveredNode] = []
     private(set) var isScanning = false
 
-    var selectedID: String?
+    private(set) var selectedID: String?
     var token = ""
     private(set) var state: NodeConnectionState = .offline
     private(set) var statusMessage: String?
     private(set) var probeOutput = ""
 
     private let discovery = NodeDiscovery()
+    private let tokens: any NodeTokenStoring
     let client = NodeClient()
+
+    /// Fires after the selection changes, including a cleared selection.
+    var onSelectedHostChange: ((DiscoveredNode?) -> Void)?
+
+    /// Fires with the text the probe is showing.
+    var onProbe: ((String) -> Void)?
 
     var hosts: [DiscoveredNode] { discovered + manualHosts }
 
     var selectedHost: DiscoveredNode? {
         get { hosts.first { $0.id == selectedID } }
         set {
-            guard let value = newValue else { selectedID = nil; return }
+            guard let value = newValue else {
+                select(nil)
+                return
+            }
             if !hosts.contains(where: { $0.id == value.id }) {
                 manualHosts.append(value)
             }
-            selectedID = value.id
+            select(value.id)
         }
     }
 
@@ -45,12 +55,17 @@ final class NodeStore {
         return host.displayName + suffix
     }
 
-    init() {
+    init(tokens: any NodeTokenStoring = KeychainTokenStore()) {
+        self.tokens = tokens
         discovery.onNodesChanged = { [weak self] found in
-            self?.discovered = found
-            // The first host seen is almost always the one the user just
-            // advertised, so preselect it and let them only type the token.
-            if self?.selectedID == nil { self?.selectedID = found.first?.id }
+            guard let self else { return }
+            self.discovered = found
+            // The first host seen is almost always the one just advertised,
+            // so preselect it. A token already saved for that host is filled
+            // in, and a manual choice is left alone.
+            if self.selectedID == nil, let id = found.first?.id {
+                self.select(id)
+            }
         }
         client.onStateChange = { [weak self] next in
             guard let self else { return }
@@ -62,6 +77,39 @@ final class NodeStore {
             case .offline: self.statusMessage = nil
             }
         }
+    }
+
+    /// Remembers `token` for the selected host. With no host yet, the value
+    /// stays in memory until a host is selected.
+    func updateToken(_ value: String) {
+        token = value
+        guard let host = selectedHost else { return }
+        if !tokens.save(token, for: host.tokenKey) {
+            statusMessage = "The token works for this launch, but the Keychain did not keep it."
+        }
+    }
+
+    /// Switches hosts and loads that host's saved token.
+    func select(_ id: String?) {
+        let previous = selectedID
+        guard previous != id else { return }
+        if let previous, let host = host(for: previous) {
+            tokens.save(token, for: host.tokenKey)
+        }
+        selectedID = id
+        guard let selected = selectedHost else {
+            onSelectedHostChange?(nil)
+            return
+        }
+        let saved = tokens.token(for: selected.tokenKey)
+        if !saved.isEmpty {
+            token = saved
+        } else if previous == nil, !token.isEmpty {
+            tokens.save(token, for: selected.tokenKey)
+        } else if previous != nil {
+            token = ""
+        }
+        onSelectedHostChange?(selected)
     }
 
     func startScanning() {
@@ -88,10 +136,10 @@ final class NodeStore {
         let node = DiscoveredNode(nodeID: "", displayName: "\(parsed.host):\(parsed.port)",
                                   hostName: parsed.host, port: parsed.port, proto: "1")
         if let existing = manualHosts.first(where: { $0.id == node.id }) {
-            selectedID = existing.id
+            select(existing.id)
         } else {
             manualHosts.append(node)
-            selectedID = node.id
+            select(node.id)
         }
         statusMessage = nil
     }
@@ -112,6 +160,7 @@ final class NodeStore {
         let parts = input.split(separator: ":", omittingEmptySubsequences: false)
         switch parts.count {
         case 1:
+            guard !parts[0].isEmpty else { return nil }
             return (String(parts[0]), defaultPort)
         case 2:
             guard !parts[0].isEmpty, let port = Int(parts[1]), (1...65_535).contains(port) else { return nil }
@@ -122,13 +171,20 @@ final class NodeStore {
     }
 
     func connect() {
+        // A second tap while the handshake is in flight used to cancel the
+        // socket and then treat that cancel as a failure.
+        if state == .connecting || state == .online { return }
         guard let host = selectedHost else { statusMessage = "Pick a host first."; return }
         guard let url = host.webSocketURL else { statusMessage = "The host address is not usable."; return }
         guard host.isProtocolCompatible else {
             statusMessage = "Host advertises NODE proto \(host.proto); this app speaks proto 1."
             return
         }
-        statusMessage = nil
+        if !tokens.save(token, for: host.tokenKey) {
+            statusMessage = "The token works for this launch, but the Keychain did not keep it."
+        } else {
+            statusMessage = nil
+        }
         probeOutput = ""
         // Browsing is only useful while there is nothing to talk to; it keeps a
         // multicast socket and a timer alive for the whole session.
@@ -142,6 +198,9 @@ final class NodeStore {
 
     /// Runs one cheap command on the host so the picker can prove the link works
     /// before anything real is typed into it.
+    ///
+    /// `uname` stays on the execute allow-list added in the NODE file-share
+    /// work, so this probe works against that server and against main.
     func runProbe() {
         let request = NodeCommandRequest(command: "uname", args: ["-sr"], workingDir: nil)
         client.execute(request) { [weak self] result in
@@ -153,6 +212,11 @@ final class NodeStore {
             case .failure(let error):
                 self.probeOutput = error.localizedDescription
             }
+            self.onProbe?(self.probeOutput)
         }
+    }
+
+    private func host(for id: String) -> DiscoveredNode? {
+        hosts.first { $0.id == id }
     }
 }

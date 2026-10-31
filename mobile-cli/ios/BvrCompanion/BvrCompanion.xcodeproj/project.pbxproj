@@ -8,12 +8,24 @@
 
 /* Begin PBXFileReference section */
 		2041690A302EF73700D00E84 /* BvrCompanion.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BvrCompanion.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C0FFEE000000000000000003 /* BvrCompanionTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BvrCompanionTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C0FFEE000000000000000013 /* BvrCompanionUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BvrCompanionUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		2041690C302EF73700D00E84 /* BvrCompanion */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = BvrCompanion;
+			sourceTree = "<group>";
+		};
+		C0FFEE000000000000000001 /* BvrCompanionTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = BvrCompanionTests;
+			sourceTree = "<group>";
+		};
+		C0FFEE000000000000000011 /* BvrCompanionUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = BvrCompanionUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -33,6 +45,8 @@
 			isa = PBXGroup;
 			children = (
 				2041690C302EF73700D00E84 /* BvrCompanion */,
+				C0FFEE000000000000000001 /* BvrCompanionTests */,
+				C0FFEE000000000000000011 /* BvrCompanionUITests */,
 				2041690B302EF73700D00E84 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +55,8 @@
 			isa = PBXGroup;
 			children = (
 				2041690A302EF73700D00E84 /* BvrCompanion.app */,
+				C0FFEE000000000000000003 /* BvrCompanionTests.xctest */,
+				C0FFEE000000000000000013 /* BvrCompanionUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -84,6 +100,14 @@
 						CreatedOnToolsVersion = 26.6;
 						LastSwiftMigration = 2660;
 					};
+					C0FFEE000000000000000002 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = 20416909302EF73700D00E84;
+					};
+					C0FFEE000000000000000012 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = 20416909302EF73700D00E84;
+					};
 				};
 			};
 			buildConfigurationList = 20416905302EF73700D00E84 /* Build configuration list for PBXProject "BvrCompanion" */;
@@ -101,6 +125,8 @@
 			projectRoot = "";
 			targets = (
 				20416909302EF73700D00E84 /* BvrCompanion */,
+				C0FFEE000000000000000002 /* BvrCompanionTests */,
+				C0FFEE000000000000000012 /* BvrCompanionUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -335,6 +361,244 @@
 			buildConfigurations = (
 				20416916302EF73800D00E84 /* Debug */,
 				20416917302EF73800D00E84 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin PBXContainerItemProxy section */
+		C0FFEE00000000000000000A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 20416902302EF73700D00E84 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 20416909302EF73700D00E84;
+			remoteInfo = BvrCompanion;
+		};
+		C0FFEE00000000000000001A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 20416902302EF73700D00E84 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 20416909302EF73700D00E84;
+			remoteInfo = BvrCompanion;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		C0FFEE00000000000000000B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 20416909302EF73700D00E84 /* BvrCompanion */;
+			targetProxy = C0FFEE00000000000000000A /* PBXContainerItemProxy */;
+		};
+		C0FFEE00000000000000001B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 20416909302EF73700D00E84 /* BvrCompanion */;
+			targetProxy = C0FFEE00000000000000001A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXNativeTarget section */
+		C0FFEE000000000000000002 /* BvrCompanionTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C0FFEE000000000000000007 /* Build configuration list for PBXNativeTarget "BvrCompanionTests" */;
+			buildPhases = (
+				C0FFEE000000000000000004 /* Sources */,
+				C0FFEE000000000000000005 /* Frameworks */,
+				C0FFEE000000000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C0FFEE00000000000000000B /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				C0FFEE000000000000000001 /* BvrCompanionTests */,
+			);
+			name = BvrCompanionTests;
+			packageProductDependencies = (
+			);
+			productName = BvrCompanionTests;
+			productReference = C0FFEE000000000000000003 /* BvrCompanionTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		C0FFEE000000000000000012 /* BvrCompanionUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C0FFEE000000000000000017 /* Build configuration list for PBXNativeTarget "BvrCompanionUITests" */;
+			buildPhases = (
+				C0FFEE000000000000000014 /* Sources */,
+				C0FFEE000000000000000015 /* Frameworks */,
+				C0FFEE000000000000000016 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C0FFEE00000000000000001B /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				C0FFEE000000000000000011 /* BvrCompanionUITests */,
+			);
+			name = BvrCompanionUITests;
+			packageProductDependencies = (
+			);
+			productName = BvrCompanionUITests;
+			productReference = C0FFEE000000000000000013 /* BvrCompanionUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C0FFEE000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C0FFEE000000000000000014 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C0FFEE000000000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C0FFEE000000000000000015 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C0FFEE000000000000000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C0FFEE000000000000000016 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		C0FFEE000000000000000008 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = A6EF93MTSU;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richard.BvrCompanionTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BvrCompanion.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BvrCompanion";
+			};
+			name = Debug;
+		};
+		C0FFEE000000000000000009 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = A6EF93MTSU;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richard.BvrCompanionTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BvrCompanion.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BvrCompanion";
+			};
+			name = Release;
+		};
+		C0FFEE000000000000000018 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = A6EF93MTSU;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richard.BvrCompanionUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = BvrCompanion;
+			};
+			name = Debug;
+		};
+		C0FFEE000000000000000019 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = A6EF93MTSU;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.richard.BvrCompanionUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = BvrCompanion;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C0FFEE000000000000000007 /* Build configuration list for PBXNativeTarget "BvrCompanionTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C0FFEE000000000000000008 /* Debug */,
+				C0FFEE000000000000000009 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C0FFEE000000000000000017 /* Build configuration list for PBXNativeTarget "BvrCompanionUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C0FFEE000000000000000018 /* Debug */,
+				C0FFEE000000000000000019 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

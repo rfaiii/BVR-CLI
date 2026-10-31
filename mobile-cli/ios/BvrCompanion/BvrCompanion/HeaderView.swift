@@ -16,7 +16,10 @@ struct HeaderView: View {
                               tint: nodeColor)
                 }
                 .buttonStyle(.plain)
-                BadgeView(icon: "powerplug.fill", text: "fastmcp")
+                .accessibilityIdentifier("node-badge")
+                BadgeView(icon: "powerplug.fill",
+                          text: store.mcpConnected ? "fastmcp" : "fastmcp off",
+                          tint: store.mcpConnected ? Theme.success : Theme.textSecondary)
             }
             .padding(.top, 10)
             

@@ -40,12 +40,14 @@ struct NodePickerView: View {
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .submitLabel(.done)
+                        .accessibilityIdentifier("node-address")
                         .onSubmit { node.addManualHost(address) }
                     Button("Add") {
                         node.addManualHost(address)
                         if node.selectedHost != nil { address = "" }
                     }
                     .foregroundColor(Theme.primary)
+                    .accessibilityIdentifier("node-add")
                 }
 
                 Section("Connection") {
@@ -53,6 +55,7 @@ struct NodePickerView: View {
                         .font(.custom("JetBrainsMonoNerdFontMono-Regular", size: 12))
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                        .accessibilityIdentifier("node-token")
 
                     HStack(spacing: 8) {
                         Circle()
@@ -61,17 +64,29 @@ struct NodePickerView: View {
                         Text(node.state.rawValue.uppercased())
                             .font(.custom("JetBrainsMonoNerdFontMono-Regular", size: 11))
                             .foregroundColor(Theme.textPrimary)
+                            .accessibilityIdentifier("node-state")
                         Spacer()
-                        if node.isConnected {
+                    }
+                    if node.isConnected {
+                        // `.borderless` keeps these from becoming full-width
+                        // form rows that overlap and both receive one tap.
+                        HStack {
                             Button("Disconnect") { node.disconnect() }
+                                .buttonStyle(.borderless)
                                 .foregroundColor(Theme.error)
+                                .accessibilityIdentifier("node-disconnect")
+                            Spacer()
                             Button("Test `uname`") { node.runProbe() }
+                                .buttonStyle(.borderless)
                                 .foregroundColor(Theme.primary)
-                        } else {
-                            Button("Connect") { node.connect() }
-                                .disabled(node.selectedHost == nil)
-                                .foregroundColor(Theme.primary)
+                                .accessibilityIdentifier("node-test")
                         }
+                    } else {
+                        Button("Connect") { node.connect() }
+                            .buttonStyle(.borderless)
+                            .disabled(node.selectedHost == nil)
+                            .foregroundColor(Theme.primary)
+                            .accessibilityIdentifier("node-connect")
                     }
 
                     if let status = node.statusMessage {
@@ -83,7 +98,30 @@ struct NodePickerView: View {
                         Text(node.probeOutput)
                             .font(.custom("JetBrainsMonoNerdFontMono-Regular", size: 11))
                             .foregroundColor(Theme.textSecondary)
+                            .accessibilityIdentifier("node-probe")
                     }
+                }
+
+                Section {
+                    TextField("http://host:8000/sse", text: bindMCP)
+                        .font(.custom("JetBrainsMonoNerdFontMono-Regular", size: 12))
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .submitLabel(.done)
+                        .accessibilityIdentifier("mcp-url")
+                        .onSubmit { store.refreshMCP() }
+                    Text(store.mcpStatus)
+                        .font(.custom("JetBrainsMonoNerdFontMono-Regular", size: 11))
+                        .foregroundColor(Theme.textSecondary)
+                        .accessibilityIdentifier("mcp-status")
+                    Button("Reconnect MCP") { store.refreshMCP() }
+                        .foregroundColor(Theme.primary)
+                        .accessibilityIdentifier("mcp-reconnect")
+                } header: {
+                    Text("MCP server")
+                } footer: {
+                    Text("Leave this empty to use the selected NODE host on port 8000. The app will not dial 127.0.0.1 from a phone.")
                 }
             }
             .scrollDismissesKeyboard(.interactively)
@@ -101,7 +139,7 @@ struct NodePickerView: View {
 
     private func hostRow(_ host: DiscoveredNode) -> some View {
         Button {
-            node.selectedID = host.id
+            node.select(host.id)
         } label: {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -128,7 +166,11 @@ struct NodePickerView: View {
     }
 
     private var bindToken: Binding<String> {
-        Binding(get: { node.token }, set: { node.token = $0 })
+        Binding(get: { node.token }, set: { node.updateToken($0) })
+    }
+
+    private var bindMCP: Binding<String> {
+        Binding(get: { store.mcpOverride }, set: { store.mcpOverride = $0 })
     }
 
     private var stateColor: Color {

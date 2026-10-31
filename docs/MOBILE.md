@@ -56,14 +56,29 @@ mobile-cli/
 
 ### Current status
 
-- **iOS Companion App** in `mobile-cli/ios/BvrCompanion/` builds clean for the
-  simulator: chat, command palette, theme switching, MCP client, and stats
-  surfaces. Chat still renders `MockStore` data.
+- **iOS Companion App** in `mobile-cli/ios/BvrCompanion/` builds for the
+  iOS 26.5 simulator with Xcode 26.6. Chat, CPU, RAM, and the model list still
+  render `MockStore` data. NODE connect and the MCP URL do not.
 - **NODE host connection is real**: `NodeDiscovery` browses `_bvr._tcp`,
   `NodeClient` speaks the `/v1/node/ws` frame protocol, and `NodeStore` plus
   `NodePickerView` (opened from the header badge) hold the host list, the
-  selected host, the token field, and the connection state. The stats row and
+  selected host, the token, and the connection state. The stats row and
   header badge read that state instead of a hardcoded "Local Device".
+- **The bearer token is stored in the Keychain per host** (`host:port`,
+  service `com.richard.BvrCompanion.node-token`, this device only, not
+  iCloud). The first launch of a host still needs the token typed in. The
+  host-side driver uses an in-memory store so it does not write the Mac login
+  keychain.
+- **MCP does not dial `127.0.0.1` on launch.** An optional URL wins. Otherwise
+  the app uses `http://<selected NODE host>:8000/sse` once a host is selected.
+  On a phone, loopback is refused. The simulator allows it, because loopback
+  there is the Mac. `NSAllowsLocalNetworking` permits the LAN `ws://` and
+  `http://` URLs without turning ATS off for the rest of the internet.
+- **WebSocket Origin** is set to `http://<host>:<port>` (or `https` for
+  `wss`). URLSession sends no Origin unless the app sets one. Main accepts
+  any Origin. The Origin check on `cursor/node-main-backup-files-7145` accepts
+  a missing Origin and an Origin whose host equals the request Host, so the
+  value above matches. `uname` remains on that branch's execute allow-list.
 - **Host-side bridge** is the NODE agent, not a separate companion server:
   `bvr node serve --host 0.0.0.0:7777 --token <token> --advertise`.
   See [`NODES.md`](NODES.md#local-network-discovery).
@@ -88,6 +103,7 @@ cd mobile-cli/ios
 xcrun --sdk macosx swiftc -o /tmp/nodedrv node-driver/main.swift \
   BvrCompanion/BvrCompanion/NodeDiscovery.swift \
   BvrCompanion/BvrCompanion/NodeClient.swift \
+  BvrCompanion/BvrCompanion/NodeTokenStore.swift \
   BvrCompanion/BvrCompanion/NodeStore.swift
 BVR_TOKEN=<token> BVR_MANUAL=<host>:<port> /tmp/nodedrv
 ```
@@ -102,20 +118,25 @@ reporting `The host rejected the token.`, a closed port reporting
 ### Current limitations
 
 - Bonjour browse is the one path that still needs a second machine or a real
-  device to confirm.
+  device to confirm. A Mac does not receive its own advertisement.
 - Chat prompts do not reach the NODE host yet: the agent executes shell
   commands per frame, while the app's chat is session-oriented, so wiring one to
   the other needs session-scoped frames (below).
-- The bearer token has to be typed by hand; there is no pairing flow. It is held
-  in memory only — never Keychain or UserDefaults — so it is retyped each launch.
+- The bearer token is still typed the first time. There is no pairing flow.
+  After that it is read back from the Keychain for that host.
 - The picker's `Test \`uname\`` button is the only command the app sends.
+  That command is on the default execute allow-list, so the probe works when
+  the agent is not running with `--unrestricted-exec`.
+- MCP is not the NODE protocol. It only connects when a NODE host or an
+  explicit URL is available, and a phone will not use a loopback URL.
 - Android client is not yet scaffolded.
 
 ### Next steps
 
 - Session-scoped frames, then route chat input to the attached session.
-- Pair the token instead of typing it — GGWave or a QR code both already exist
-  as primitives elsewhere in the app.
+- Pair the token instead of typing it the first time. The Keychain already
+  keeps a token that was typed. GGWave or a QR code both already exist as
+  primitives elsewhere in the app.
 - Refine command palette parity: `/themes`, `/node`, `/finder`, `/mcp`, `/cd`.
 - Lock down the minimum viable command set.
 
@@ -132,8 +153,10 @@ bvr node serve --host 0.0.0.0:7777 --token "$BVR_NODE_TOKEN" --advertise
 
 1. The agent starts an HTTP listener and, with `--advertise`, publishes
    `_bvr._tcp.local` with `proto`, `id`, and `name` TXT records.
-2. The companion browses that service type, resolves an IPv4 and port, and
-   dials `ws://<host>:<port>/v1/node/ws` with `Authorization: Bearer <token>`.
+2. The companion browses that service type, resolves a host and port, and
+   dials `ws://<host>:<port>/v1/node/ws` with `Authorization: Bearer <token>`
+   and `Origin: http://<host>:<port>`. The token for that host is loaded from
+   the Keychain when one was saved.
 3. The agent upgrades the connection and exchanges `WSFrame` JSON messages:
    the client sends `ping` or `execute`, the host answers with `stdout` /
    `stderr` lines and a final `result`.

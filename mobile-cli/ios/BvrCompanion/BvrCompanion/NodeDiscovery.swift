@@ -19,6 +19,10 @@ struct DiscoveredNode: Identifiable, Hashable {
 
     var webSocketURL: URL? { URL(string: "ws://\(host):\(port)/v1/node/ws") }
     var isProtocolCompatible: Bool { proto.isEmpty || proto == "1" }
+
+    /// Keychain account. The address is the key, so Bonjour and a typed
+    /// address for the same machine share one token.
+    var tokenKey: String { "\(host):\(port)" }
 }
 
 /// Browses `_bvr._tcp` and reports the agents it can see.
@@ -27,10 +31,9 @@ struct DiscoveredNode: Identifiable, Hashable {
 /// app declares it in `NSBonjourServices`, and iOS only shows results after the
 /// user grants local-network permission on the first browse.
 ///
-/// Apple has marked `NetService` "API to be deprecated" in favour of
-/// Network.framework, but `NWBrowser` hands back endpoints rather than the TXT
-/// records this needs to check the NODE protocol version and node id, so the
-/// older API stays until that moves.
+/// `NWBrowser` can see the TXT record, but the host and port still need a
+/// second resolve. `NetService` returns both, and the iOS 26.5 SDK does not
+/// warn on it, so discovery stays on this API.
 final class NodeDiscovery: NSObject, NetServiceBrowserDelegate, NetServiceDelegate {
     static let serviceType = "_bvr._tcp"
     static let serviceDomain = "local."
