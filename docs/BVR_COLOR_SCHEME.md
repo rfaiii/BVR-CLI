@@ -80,6 +80,7 @@ Use this palette to reason about contrast, hierarchy, and status semantics.
 
 Use this section when you need exact theme colors for docs or marketing.
 Each theme is listed with its role names and hex values.
+<!-- https://www.iconshock.com/animals-icons/ -->
 
 ### Rich Aizen Green
 
